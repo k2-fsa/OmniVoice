@@ -45,6 +45,7 @@ from transformers import (
     AutoFeatureExtractor,
     AutoModel,
     AutoTokenizer,
+    HiggsAudioV2TokenizerModel,
     PretrainedConfig,
     PreTrainedModel,
 )
@@ -264,10 +265,8 @@ class OmniVoice(PreTrainedModel):
                 tokenizer_device = (
                     "cpu" if str(model.device).startswith("mps") else model.device
                 )
-                model.audio_tokenizer = AutoModel.from_pretrained(
-                    audio_tokenizer_path,
-                    device_map=tokenizer_device,
-                    trust_remote_code=True,
+                model.audio_tokenizer = HiggsAudioV2TokenizerModel.from_pretrained(
+                    audio_tokenizer_path, device_map=tokenizer_device
                 )
                 model.feature_extractor = AutoFeatureExtractor.from_pretrained(
                     audio_tokenizer_path
@@ -1131,8 +1130,6 @@ class OmniVoice(PreTrainedModel):
         """
 
         B = task.batch_size
-        is_mps = str(self.device).startswith("mps")
-        op_device = torch.device("cpu") if is_mps else self.device
 
         inputs_list = [
             self._prepare_inference_inputs(
@@ -1212,7 +1209,7 @@ class OmniVoice(PreTrainedModel):
             schedules.append(sched)
 
         layer_ids = torch.arange(
-            self.config.num_audio_codebook, device=op_device
+            self.config.num_audio_codebook, device=self.device
         ).view(1, -1, 1)
 
         for step in range(gen_config.num_step):
@@ -1221,9 +1218,6 @@ class OmniVoice(PreTrainedModel):
                 audio_mask=batch_audio_mask,
                 attention_mask=batch_attention_mask,
             ).logits.to(torch.float32)
-
-            if is_mps:
-                batch_logits = batch_logits.to(op_device)
 
             for i in range(B):
                 k = schedules[i][step]
@@ -1246,10 +1240,7 @@ class OmniVoice(PreTrainedModel):
                 if gen_config.position_temperature > 0.0:
                     scores = _gumbel_sample(scores, gen_config.position_temperature)
 
-                if is_mps:
-                    sample_tokens = tokens[i : i + 1, :, :t_len].to(op_device)
-                else:
-                    sample_tokens = tokens[i : i + 1, :, :t_len]
+                sample_tokens = tokens[i : i + 1, :, :t_len]
                 scores.masked_fill_(
                     sample_tokens != self.config.audio_mask_id, -float("inf")
                 )
@@ -1259,9 +1250,6 @@ class OmniVoice(PreTrainedModel):
                 flat_tokens[topk_idx] = pred_tokens.flatten()[topk_idx]
                 sample_tokens.copy_(flat_tokens.view_as(sample_tokens))
 
-                if is_mps:
-                    sample_tokens = sample_tokens.to(self.device)
-
                 # Update individual slices into batched structure
                 tokens[i : i + 1, :, :t_len] = sample_tokens
                 batch_input_ids[i : i + 1, :, c_len - t_len : c_len] = sample_tokens
@@ -1270,23 +1258,16 @@ class OmniVoice(PreTrainedModel):
         return [tokens[i, :, : task.target_lens[i]] for i in range(B)]
 
     def _predict_tokens_with_scoring(self, c_logits, u_logits, gen_config):
-        c_logits = torch.nan_to_num(c_logits, nan=-1e4, posinf=1e4, neginf=-1e4)
-        u_logits = torch.nan_to_num(u_logits, nan=-1e4, posinf=1e4, neginf=-1e4)
-
         if gen_config.guidance_scale != 0:
             c_log_probs = F.log_softmax(c_logits, dim=-1)
             u_log_probs = F.log_softmax(u_logits, dim=-1)
-            guided_logits = (
-                c_log_probs + gen_config.guidance_scale * (c_log_probs - u_log_probs)
+            log_probs = torch.log_softmax(
+                c_log_probs + gen_config.guidance_scale * (c_log_probs - u_log_probs),
+                dim=-1,
             )
-            guided_logits = torch.nan_to_num(
-                guided_logits, nan=-1e4, posinf=1e4, neginf=-1e4
-            )
-            log_probs = torch.log_softmax(guided_logits, dim=-1)
         else:
             log_probs = F.log_softmax(c_logits, dim=-1)
 
-        log_probs = torch.nan_to_num(log_probs, nan=-1e4, posinf=0.0, neginf=-1e4)
         log_probs[..., self.config.audio_mask_id] = -float("inf")
 
         if gen_config.class_temperature > 0.0:
