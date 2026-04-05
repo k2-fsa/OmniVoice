@@ -25,7 +25,8 @@ OmniVoice is a state-of-the-art massive multilingual zero-shot text-to-speech (T
 - **Voice Design**: Control voices via assigned speaker attributes (gender, age, pitch, dialect/accent, whisper, etc.).
 - **Fine-grained Control**: Non-verbal symbols (e.g., `[laughter]`) and pronunciation correction via pinyin or phonemes.
 - **Fast Inference**: RTF as low as 0.025 (40x faster than real-time).
-- **Diffusion Language Model-Style Architecture**: A clean, streamlined, and scalable design that delivers both quality and speed.
+- **`torch.compile` Acceleration**: Optional `torch.compile` support for the LLM backbone, giving further speed-ups after an initial warm-up call.
+- **Diffusion Language Model Architecture**: A clean, streamlined, and scalable design that delivers both quality and speed.
 
 ---
 
@@ -175,6 +176,35 @@ audio = model.generate(
 )
 ```
 See more detailed control in [docs/generation-parameters.md](docs/generation-parameters.md).
+
+### Accelerating with `torch.compile`
+
+You can compile the LLM backbone with `torch.compile` for faster inference.
+The first `generate()` call after compilation will be slower due to tracing/warm-up;
+subsequent calls benefit from optimised kernels and reduced Python overhead.
+
+**Option 1 — at load time** (pass `compile_llm=True` to `from_pretrained`):
+
+```python
+model = OmniVoice.from_pretrained(
+    "k2-fsa/OmniVoice",
+    device_map="cuda:0",
+    dtype=torch.float16,
+    compile_llm=True,                         # enable torch.compile
+    compile_kwargs={"mode": "max-autotune"},   # optional, default is "max-autotune"
+)
+```
+
+**Option 2 — after loading** (call `model.compile_llm()`):
+
+```python
+model = OmniVoice.from_pretrained(
+    "k2-fsa/OmniVoice",
+    device_map="cuda:0",
+    dtype=torch.float16,
+)
+model.compile_llm(mode="max-autotune")  # or "reduce-overhead", "default"
+```
 
 ### Non-Verbal & Pronunciation Control
 

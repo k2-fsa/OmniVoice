@@ -226,10 +226,38 @@ class OmniVoice(PreTrainedModel):
         self.sampling_rate = None
         self._asr_pipe = None
 
+    def compile_llm(self, **compile_kwargs):
+        """Compile the LLM backbone with ``torch.compile`` for faster inference.
+
+        The first ``generate()`` call after compilation will be slower due to
+        tracing/warmup.  Subsequent calls benefit from optimised kernels and
+        reduced Python overhead.
+
+        Args:
+            **compile_kwargs: Forwarded to :func:`torch.compile`.  Common keys:
+
+                * **mode** – ``"default"``, ``"reduce-overhead"`` (default), or
+                  ``"max-autotune"``.
+                * **fullgraph** – require full-graph capture (bool).
+                * **dynamic** – enable dynamic shapes (bool).
+
+        Returns:
+            ``self`` (allows method chaining).
+        """
+        compile_kwargs.setdefault("mode", "max-autotune")
+        self.llm = torch.compile(self.llm, **compile_kwargs)
+        logger.info(
+            "LLM backbone compiled with torch.compile (mode=%s)",
+            compile_kwargs.get("mode"),
+        )
+        return self
+
     @classmethod
     def from_pretrained(cls, pretrained_model_name_or_path, *args, **kwargs):
         train_mode = kwargs.pop("train", False)
         load_asr = kwargs.pop("load_asr", False)
+        compile_llm_flag = kwargs.pop("compile_llm", False)
+        compile_kwargs = kwargs.pop("compile_kwargs", {})
         asr_model_name = kwargs.pop("asr_model_name", "openai/whisper-large-v3-turbo")
 
         # Suppress noisy INFO logs from transformers/huggingface_hub during loading
@@ -280,6 +308,9 @@ class OmniVoice(PreTrainedModel):
                     model.load_asr_model(model_name=asr_model_name)
         finally:
             logging.disable(_prev_disable)
+
+        if compile_llm_flag:
+            model.compile_llm(**compile_kwargs)
 
         return model
 
