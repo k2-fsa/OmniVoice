@@ -30,8 +30,10 @@ classifiers = [
     "Programming Language :: Python :: 3",
 ]
 dependencies = [
-    "torch==2.8.*",
-    "torchaudio==2.8.*",
+    # torch/torchaudio intentionally unpinned — install manually for your
+    # backend (CUDA, XPU, MPS). See README-INTEL-XPU.md.
+    "torch>=2.8",
+    "torchaudio>=2.8",
     "transformers==5.3.0",
     "accelerate",
     "pydub",
@@ -65,23 +67,14 @@ Repository = "https://github.com/k2-fsa/OmniVoice"
 "Bug Tracker" = "https://github.com/k2-fsa/OmniVoice/issues"
 
 [tool.uv.sources]
-# Install PyTorch with CUDA support on Linux/Windows (CUDA doesn't exist for Mac).
-# NOTE: We must explicitly request them as `dependencies` above. These improved
-# versions will not be selected if they're only third-party dependencies.
-torch = [
-  { index = "pytorch-cuda", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
-]
-torchaudio = [
-  { index = "pytorch-cuda", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
-]
-
-[[tool.uv.index]]
-name = "pytorch-cuda"
-# Use PyTorch built for NVIDIA Toolkit version 12.8.
-# Available versions: https://pytorch.org/get-started/locally/
-url = "https://download.pytorch.org/whl/cu128"
-# Only use this index when explicitly requested by `tool.uv.sources`.
-explicit = true
+# Intel XPU fork: PyTorch is installed manually (see README-INTEL-XPU.md).
+# We intentionally do NOT pin to the CUDA index here so that users on Intel
+# Arc / Apple Silicon / CPU are not forced to download CUDA wheels.
+#
+# Upstream CUDA install (for reference):
+#   pip install torch==2.8.* torchaudio==2.8.* --index-url https://download.pytorch.org/whl/cu128
+# Intel XPU install:
+#   pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/xpu
 
 [tool.hatch.build.targets.sdist]
 include = ["omnivoice"]

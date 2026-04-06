@@ -27,15 +27,7 @@ import torchaudio
 
 from omnivoice.models.omnivoice import OmniVoice
 from omnivoice.utils.common import str2bool
-
-
-def get_best_device():
-    """Auto-detect the best available device: CUDA > MPS > CPU."""
-    if torch.cuda.is_available():
-        return "cuda"
-    if torch.backends.mps.is_available():
-        return "mps"
-    return "cpu"
+from omnivoice.utils.device import get_best_device  # noqa: F401  (Intel XPU aware)
 
 
 def get_parser() -> argparse.ArgumentParser:

@@ -50,15 +50,7 @@ from omnivoice.utils.audio import load_audio
 from omnivoice.utils.common import str2bool
 from omnivoice.utils.data_utils import read_test_list
 from omnivoice.utils.duration import RuleDurationEstimator
-
-
-def get_best_device():
-    """Auto-detect the best available device: CUDA > MPS > CPU."""
-    if torch.cuda.is_available():
-        return "cuda", torch.cuda.device_count()
-    if torch.backends.mps.is_available():
-        return "mps", 1
-    return "cpu", 1
+from omnivoice.utils.device import get_device_and_count as get_best_device  # Intel XPU aware
 
 
 worker_model = None
@@ -223,6 +215,8 @@ def process_init(rank_queue, model_checkpoint, warmup=0):
         worker_device = "cpu"
     elif device_type == "mps":
         worker_device = "mps"
+    elif device_type == "xpu":
+        worker_device = f"xpu:{device_id}"
     else:
         worker_device = f"cuda:{device_id}"
 
