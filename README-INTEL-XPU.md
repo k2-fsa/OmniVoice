@@ -26,12 +26,14 @@ This fork makes minimal, additive changes to get inference running on Intel XPU:
 
 ## Hardware Tested
 
-| GPU | VRAM | Arch | Status |
-|-----|------|------|--------|
-| Intel Arc Pro B50 | 16 GB | Battlemage | Inference working |
-| Intel Arc Pro B70 | 32 GB | Big Battlemage | Planned |
-| Intel Arc A380 | 6 GB | Alchemist | Planned |
-| Intel Arc A310 | 4 GB | Alchemist | Planned (may not fit) |
+| GPU | VRAM | Arch | OS / Setup | Status |
+|-----|------|------|------------|--------|
+| Intel Arc Pro B50 | 16 GB | Battlemage | Windows 11 | Inference working |
+| Intel Arc A310 LP | 3.76 GB usable | Alchemist | Ubuntu 24.04 in privileged Proxmox LXC | Inference working |
+| Intel Arc Pro B70 | 32 GB | Big Battlemage | — | Planned |
+| Intel Arc A380 | 6 GB | Alchemist | — | Planned |
+
+**Cross-architecture confirmed**: the same 9-file, ~300-line diff runs on both Alchemist (first-gen Arc) and Battlemage (second-gen Arc Pro). OmniVoice fp16 occupies roughly 1.9 GB of VRAM once loaded, so it fits even on the 4 GB A310 with room for activations.
 
 ## Installation
 
@@ -139,8 +141,41 @@ The CLI entry points (`omnivoice-infer`, `omnivoice-infer-batch`, `omnivoice-dem
 **Notes:**
 - First successful inference run of OmniVoice on Intel Arc hardware that we're aware of.
 - Model loaded in ~4 seconds from cached weights.
-- RTF is above 1 (slower than real-time) on Windows — expected. Intel's XPU PyTorch backend on Windows is known to be slower than Linux. Linux benchmarks planned next.
+- RTF is above 1 (slower than real-time) on Windows — expected. Intel's XPU PyTorch backend on Windows is known to be slower than Linux.
 - No CUDA emulation, no CPU fallback — the model is running on the Intel GPU directly via `torch.xpu`.
+
+### Intel Arc A310 LP (4 GB, Alchemist) — Ubuntu 24.04 in Proxmox LXC
+
+| Run | Audio duration | Gen time | RTF |
+|-----|---------------|----------|-----|
+| Full run (voice design) | 5.30 s | 8.28 s | 1.56 |
+
+**Environment:**
+- Proxmox VE 9.1.5 host, kernel 6.17.9-1-pve
+- Privileged LXC, Ubuntu 24.04 container
+- `/dev/dri/card1` + `/dev/dri/renderD128` bind-mounted into the container
+- Python 3.12, PyTorch 2.11.0+xpu
+- Intel Arc A310 LP (Alchemist, 3.76 GB usable VRAM)
+- Intel OpenCL ICD 25.18, Level Zero 1.21.9, libze-intel-gpu 25.18
+
+**Compute sanity check (no model):**
+- 1024×1024 fp16 matmul: 0.61 ms/op
+- 4096×4096 fp16 matmul: 88.7 ms/op, **1.55 TFLOPS**
+
+**Notes:**
+- **OmniVoice in fp16 occupies ~1.89 GB of VRAM at steady state.** It fits on the 4 GB A310 with meaningful headroom for activations. I assumed it would OOM — it did not.
+- Model load was faster than the B50 on Windows (2.3 s vs 3.9 s), likely because the Linux XPU stack is better tuned.
+- Same 9-file diff runs on Alchemist and Battlemage with no arch-specific code.
+- Privileged LXC with `lxc.cgroup2.devices.allow` entries for majors 226 (DRI) and 29 (framebuffer) — no VFIO passthrough or kernel command-line changes required.
+
+### Cross-Architecture Summary
+
+| GPU | Arch | VRAM (usable) | OS | Load | Warm RTF | Approx price |
+|-----|------|---------------|-----|------|----------|--------------|
+| Arc A310 LP | Alchemist (Gen 1) | 3.76 GB | Linux (LXC) | 2.3 s | 1.56 | ~$100 |
+| Arc Pro B50 | Battlemage (Gen 2) | 15.5 GB | Windows 11 | 3.9 s | 1.33 | ~$349 |
+
+The same code path works on a $100 low-profile card and a $349 workstation card. That's the headline: **OmniVoice on Intel Arc is not a one-card fluke**.
 
 ## Upstream
 
