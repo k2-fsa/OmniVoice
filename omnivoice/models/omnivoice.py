@@ -40,7 +40,13 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torchaudio
-from torch.nn.attention.flex_attention import create_block_mask
+# flex_attention is used only in the training/packed-sequence path. On some
+# backends (e.g. Intel XPU) the import can succeed but kernels are partial.
+# We import lazily + guard to keep inference-only workflows working.
+try:
+    from torch.nn.attention.flex_attention import create_block_mask
+except Exception:  # pragma: no cover
+    create_block_mask = None
 from transformers import (
     AutoFeatureExtractor,
     AutoModel,
@@ -183,7 +189,11 @@ class OmniVoiceConfig(PretrainedConfig):
 
 class OmniVoice(PreTrainedModel):
     _supports_flex_attn = True
+    # Flash Attention 2 is a CUDA-only kernel. Keep the capability flag but the
+    # model loader will fall back to SDPA automatically when flash_attn is not
+    # installed, which is the case on Intel XPU / Apple MPS / CPU.
     _supports_flash_attn_2 = True
+    _supports_sdpa = True
     config_class = OmniVoiceConfig
 
     def __init__(self, config: OmniVoiceConfig, llm: Optional[PreTrainedModel] = None):
@@ -297,7 +307,9 @@ class OmniVoice(PreTrainedModel):
 
         logger.info("Loading ASR model %s ...", model_name)
         asr_dtype = (
-            torch.float16 if str(self.device).startswith("cuda") else torch.float32
+            torch.float16
+            if str(self.device).startswith(("cuda", "xpu"))
+            else torch.float32
         )
         self._asr_pipe = hf_pipeline(
             "automatic-speech-recognition",
@@ -380,6 +392,12 @@ class OmniVoice(PreTrainedModel):
         inputs_embeds = self._prepare_embed_inputs(input_ids, audio_mask)
 
         if attention_mask is None and document_ids is not None:
+            if create_block_mask is None:
+                raise RuntimeError(
+                    "flex_attention/create_block_mask is not available on this "
+                    "backend. Packed-sequence training is not supported on "
+                    "Intel XPU in this fork. Use standard attention masks."
+                )
             attention_mask = create_block_mask(
                 _get_packed_mask(
                     document_ids[0].to(inputs_embeds.device),
