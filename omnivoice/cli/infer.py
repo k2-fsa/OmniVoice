@@ -26,7 +26,9 @@ import torch
 import torchaudio
 
 from omnivoice.models.omnivoice import OmniVoice
+from omnivoice.utils.audio import save_audio
 from omnivoice.utils.common import str2bool
+from omnivoice.utils.i18n import init_i18n
 
 
 def get_best_device():
@@ -40,52 +42,52 @@ def get_best_device():
 
 def get_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="OmniVoice single-item inference",
+        description=_("OmniVoice single-item inference"),
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     parser.add_argument(
         "--model",
         type=str,
         default="k2-fsa/OmniVoice",
-        help="Model checkpoint path or HuggingFace repo id.",
+        help=_("Model checkpoint path or HuggingFace repo id."),
     )
     parser.add_argument(
         "--text",
         type=str,
         required=True,
-        help="Text to synthesize.",
+        help=_("Text to synthesize."),
     )
     parser.add_argument(
         "--output",
         type=str,
         required=True,
-        help="Output WAV file path.",
+        help=_("Output WAV file path."),
     )
     # Voice cloning
     parser.add_argument(
         "--ref_audio",
         type=str,
         default=None,
-        help="Reference audio file path for voice cloning.",
+        help=_("Reference audio file path for voice cloning."),
     )
     parser.add_argument(
         "--ref_text",
         type=str,
         default=None,
-        help="Reference text describing the reference audio.",
+        help=_("Reference text describing the reference audio."),
     )
     # Voice design
     parser.add_argument(
         "--instruct",
         type=str,
         default=None,
-        help="Style instruction for voice design mode.",
+        help=_("Style instruction for voice design mode."),
     )
     parser.add_argument(
         "--language",
         type=str,
         default=None,
-        help="Language name (e.g. 'English') or code (e.g. 'en').",
+        help=_("Language name (e.g. 'English') or code (e.g. 'en')."),
     )
     # Generation parameters
     parser.add_argument("--num_step", type=int, default=32)
@@ -95,9 +97,9 @@ def get_parser() -> argparse.ArgumentParser:
         "--duration",
         type=float,
         default=None,
-        help="Fixed output duration in seconds. If set, overrides the "
+        help=_("Fixed output duration in seconds. If set, overrides the "
         "model's duration estimation. The speed factor is automatically "
-        "adjusted to match while preserving language-aware pacing.",
+        "adjusted to match while preserving language-aware pacing."),
     )
     parser.add_argument("--t_shift", type=float, default=0.1)
     parser.add_argument("--denoise", type=str2bool, default=True)
@@ -113,7 +115,13 @@ def get_parser() -> argparse.ArgumentParser:
         "--device",
         type=str,
         default=None,
-        help="Device to use for inference. Auto-detected if not specified.",
+        help=_("Device to use for inference. Auto-detected if not specified."),
+    )
+    parser.add_argument(
+        "--lang",
+        type=str,
+        default=None,
+        help=_("Interface language (en, pt_BR, zh)."),
     )
     return parser
 
@@ -124,13 +132,20 @@ def main():
 
     args = get_parser().parse_args()
 
+    # Initialize i18n
+    init_i18n(args.lang)
+
     device = args.device or get_best_device()
-    logging.info(f"Loading model from {args.model} on {device} ...")
+    logging.info(_("Loading model from {model} on {device} ...").format(
+        model=args.model, device=device
+    ))
     model = OmniVoice.from_pretrained(
         args.model, device_map=device, dtype=torch.float16
     )
 
-    logging.info(f"Generating audio for: {args.text[:80]}...")
+    logging.info(_("Generating audio for: {text}...").format(
+        text=args.text[:80]
+    ))
     audios = model.generate(
         text=args.text,
         language=args.language,
@@ -149,8 +164,8 @@ def main():
         class_temperature=args.class_temperature,
     )
 
-    torchaudio.save(args.output, audios[0], model.sampling_rate)
-    logging.info(f"Saved to {args.output}")
+    save_audio(audios[0], model.sampling_rate, args.output)
+    logging.info(_("Saved to {output}").format(output=args.output))
 
 
 if __name__ == "__main__":

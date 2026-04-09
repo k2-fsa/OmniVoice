@@ -46,10 +46,11 @@ import torchaudio
 from tqdm import tqdm
 
 from omnivoice.models.omnivoice import OmniVoice
-from omnivoice.utils.audio import load_audio
+from omnivoice.utils.audio import load_audio, save_audio
 from omnivoice.utils.common import str2bool
 from omnivoice.utils.data_utils import read_test_list
 from omnivoice.utils.duration import RuleDurationEstimator
+from omnivoice.utils.i18n import init_i18n
 
 
 def get_best_device():
@@ -66,24 +67,24 @@ SAMPLING_RATE = 24000
 
 
 def get_parser():
-    parser = argparse.ArgumentParser(description="Infer OmniVoice Model")
+    parser = argparse.ArgumentParser(description=_("Infer OmniVoice Model"))
     parser.add_argument(
         "--model",
         type=str,
         default="k2-fsa/OmniVoice",
-        help="Path to the model checkpoint (local dir or HF repo id). "
-        "Audio tokenizer is expected at <checkpoint>/audio_tokenizer/.",
+        help=_("Path to the model checkpoint (local dir or HF repo id). "
+        "Audio tokenizer is expected at <checkpoint>/audio_tokenizer/."),
     )
     parser.add_argument(
         "--test_list",
         type=str,
         required=True,
-        help="Path to the JSONL file containing test samples. "
+        help=_("Path to the JSONL file containing test samples. "
         'Each line is a JSON object: {"id": "name", "text": "...", '
         '"ref_audio": "/path.wav", "ref_text": "...", '
         '"language_id": "en", "language_name": "English", '
         '"duration": 10.0, "speed": 1.2}. '
-        "language_id, language_name, duration, and speed are optional.",
+        "language_id, language_name, duration, and speed are optional."),
     )
     parser.add_argument(
         "--res_dir",
@@ -193,9 +194,15 @@ def get_parser():
         "--lang_id",
         type=str,
         default=None,
-        help="Language id to use when test_list JSONL entries do not contain "
+        help=_("Language id to use when test_list JSONL entries do not contain "
         "language_id/language_name fields. If provided, both language_id and "
-        "language_name will be set to this value.",
+        "language_name will be set to this value."),
+    )
+    parser.add_argument(
+        "--lang",
+        type=str,
+        default=None,
+        help=_("Interface language (en, pt_BR, zh)."),
     )
     return parser
 
@@ -259,12 +266,15 @@ def estimate_sample_total_duration(
     ref_audio_path: str,
     gen_duration: Optional[float] = None,
 ) -> float:
-    ref_wav = load_audio(ref_audio_path, SAMPLING_RATE)
-    ref_duration = ref_wav.shape[-1] / SAMPLING_RATE
+    if ref_audio_path is not None and ref_audio_path != "":
+        ref_wav = load_audio(ref_audio_path, SAMPLING_RATE)
+        ref_duration = ref_wav.shape[-1] / SAMPLING_RATE
+    else:
+        ref_duration = 0.0
 
     if gen_duration is None:
         gen_duration = duration_estimator.estimate_duration(
-            text, ref_text, ref_duration, low_threshold=2.0
+            text, ref_text if ref_text is not None else "", ref_duration, low_threshold=2.0
         )
 
     total_duration = ref_duration + gen_duration
@@ -361,6 +371,8 @@ def run_inference_batch(
     speeds = []
     instructs = []
 
+    instructs = []
+
     for sample in batch_samples:
         save_name, ref_text, ref_audio_path, text, lang_id, lang_name, dur, spd, instruct = sample
         save_names.append(save_name)
@@ -376,8 +388,9 @@ def run_inference_batch(
     audios = worker_model.generate(
         text=texts,
         language=langs,
-        ref_audio=ref_audio_paths,
-        ref_text=ref_texts,
+        ref_audio=ref_audio_paths if any(r is not None for r in ref_audio_paths) else None,
+        ref_text=ref_texts if any(t is not None for t in ref_texts) else None,
+        instruct=instructs if any(i is not None for i in instructs) else None,
         duration=durations if any(d is not None for d in durations) else None,
         speed=speeds if any(s is not None for s in speeds) else None,
         instruct=instructs if any(i is not None for i in instructs) else None,
@@ -388,7 +401,7 @@ def run_inference_batch(
     results = []
     for save_name, audio in zip(save_names, audios):
         save_path = os.path.join(res_dir, save_name + ".wav")
-        torchaudio.save(save_path, audio, worker_model.sampling_rate)
+        save_audio(audio, worker_model.sampling_rate, save_path)
         audio_duration = audio.shape[-1] / worker_model.sampling_rate
         results.append(
             (
@@ -408,18 +421,23 @@ def main():
     mp.set_start_method("spawn", force=True)
 
     args = get_parser().parse_args()
+
+    # Initialize i18n
+    init_i18n(args.lang)
+
     os.makedirs(args.res_dir, exist_ok=True)
 
     device_type, num_devices = get_best_device()
     if device_type == "cpu":
         logging.warning(
-            "No GPU found. Falling back to CPU inference. This might be slow."
+            _("No GPU found. Falling back to CPU inference. This might be slow.")
         )
 
     num_processes = num_devices * args.nj_per_gpu
     logging.info(
-        f"Using {device_type} ({num_devices} device(s))."
-        f" Spawning {num_processes} worker processes."
+        _("Using {device_type} ({num_devices} device(s)). Spawning {num_processes} worker processes.").format(
+            device_type=device_type, num_devices=num_devices, num_processes=num_processes
+        )
     )
 
     manager = mp.Manager()
@@ -507,20 +525,23 @@ def main():
         )
         detailed_error_info = traceback.format_exc()
         logging.error(f"--- DETAILED TRACEBACK ---\n{detailed_error_info}")
-        os.killpg(os.getpgid(os.getpid()), signal.SIGKILL)
+        if os.name == 'nt':
+            os.kill(os.getpid(), signal.SIGTERM)
+        else:
+            os.killpg(os.getpgid(os.getpid()), signal.SIGKILL)
 
     total_synthesis_time = sum(total_synthesis_time)
     total_audio_duration = sum(total_audio_duration)
-    logging.info("--- Summary ---")
-    logging.info(f"Total audio duration: {total_audio_duration:.2f}s")
-    logging.info(f"Total synthesis time: {total_synthesis_time:.2f}s")
+    logging.info(_("--- Summary ---"))
+    logging.info(_("Total audio duration: {duration:.2f}s").format(duration=total_audio_duration))
+    logging.info(_("Total synthesis time: {time:.2f}s").format(time=total_synthesis_time))
     if total_audio_duration > 0:
         average_rtf = total_synthesis_time / total_audio_duration
-        logging.info(f"Average RTF: {average_rtf:.4f}")
+        logging.info(_("Average RTF: {rtf:.4f}").format(rtf=average_rtf))
     else:
-        logging.warning("No speech was generated. RTF cannot be computed.")
+        logging.warning(_("No speech was generated. RTF cannot be computed."))
 
-    logging.info("Done!")
+    logging.info(_("Done!"))
 
 
 if __name__ == "__main__":

@@ -32,6 +32,7 @@ import numpy as np
 import torch
 
 from omnivoice import OmniVoice, OmniVoiceGenerationConfig
+from omnivoice.utils.i18n import init_i18n
 from omnivoice.utils.lang_map import LANG_NAMES, lang_display_name
 
 
@@ -44,10 +45,6 @@ def get_best_device():
     return "cpu"
 
 
-# ---------------------------------------------------------------------------
-# Language list — all 600+ supported languages
-# ---------------------------------------------------------------------------
-_ALL_LANGUAGES = ["Auto"] + sorted(lang_display_name(n) for n in LANG_NAMES)
 
 
 # ---------------------------------------------------------------------------
@@ -56,53 +53,53 @@ _ALL_LANGUAGES = ["Auto"] + sorted(lang_display_name(n) for n in LANG_NAMES)
 # Each option is displayed as "English / 中文".
 # The model expects English for accents and Chinese for dialects.
 _CATEGORIES = {
-    "Gender / 性别": ["Male / 男", "Female / 女"],
-    "Age / 年龄": [
-        "Child / 儿童",
-        "Teenager / 少年",
-        "Young Adult / 青年",
-        "Middle-aged / 中年",
-        "Elderly / 老年",
+    _("Gender"): [(_("Male"), "male"), (_("Female"), "female")],
+    _("Age"): [
+        (_("Child"), "child"),
+        (_("Teenager"), "teenager"),
+        (_("Young Adult"), "young adult"),
+        (_("Middle-aged"), "middle-aged"),
+        (_("Elderly"), "elderly"),
     ],
-    "Pitch / 音调": [
-        "Very Low Pitch / 极低音调",
-        "Low Pitch / 低音调",
-        "Moderate Pitch / 中音调",
-        "High Pitch / 高音调",
-        "Very High Pitch / 极高音调",
+    _("Pitch"): [
+        (_("Very Low Pitch"), "very low pitch"),
+        (_("Low Pitch"), "low pitch"),
+        (_("Moderate Pitch"), "moderate pitch"),
+        (_("High Pitch"), "high pitch"),
+        (_("Very High Pitch"), "very high pitch"),
     ],
-    "Style / 风格": ["Whisper / 耳语"],
-    "English Accent / 英文口音": [
-        "American Accent / 美式口音",
-        "Australian Accent / 澳大利亚口音",
-        "British Accent / 英国口音",
-        "Chinese Accent / 中国口音",
-        "Canadian Accent / 加拿大口音",
-        "Indian Accent / 印度口音",
-        "Korean Accent / 韩国口音",
-        "Portuguese Accent / 葡萄牙口音",
-        "Russian Accent / 俄罗斯口音",
-        "Japanese Accent / 日本口音",
+    _("Style"): [(_("Whisper"), "whisper")],
+    _("English Accent"): [
+        (_("American Accent"), "american accent"),
+        (_("Australian Accent"), "australian accent"),
+        (_("British Accent"), "british accent"),
+        (_("Chinese Accent"), "chinese accent"),
+        (_("Canadian Accent"), "canadian accent"),
+        (_("Indian Accent"), "indian accent"),
+        (_("Korean Accent"), "korean accent"),
+        (_("Portuguese Accent"), "portuguese accent"),
+        (_("Russian Accent"), "russian accent"),
+        (_("Japanese Accent"), "japanese accent"),
     ],
-    "Chinese Dialect / 中文方言": [
-        "Henan Dialect / 河南话",
-        "Shaanxi Dialect / 陕西话",
-        "Sichuan Dialect / 四川话",
-        "Guizhou Dialect / 贵州话",
-        "Yunnan Dialect / 云南话",
-        "Guilin Dialect / 桂林话",
-        "Jinan Dialect / 济南话",
-        "Shijiazhuang Dialect / 石家庄话",
-        "Gansu Dialect / 甘肃话",
-        "Ningxia Dialect / 宁夏话",
-        "Qingdao Dialect / 青岛话",
-        "Northeast Dialect / 东北话",
+    _("Chinese Dialect"): [
+        (_("Henan Dialect"), "河南话"),
+        (_("Shaanxi Dialect"), "陕西话"),
+        (_("Sichuan Dialect"), "四川话"),
+        (_("Guizhou Dialect"), "贵州话"),
+        (_("Yunnan Dialect"), "云南话"),
+        (_("Guilin Dialect"), "桂林话"),
+        (_("Jinan Dialect"), "济南话"),
+        (_("Shijiazhuang Dialect"), "石家庄话"),
+        (_("Gansu Dialect"), "甘肃话"),
+        (_("Ningxia Dialect"), "宁夏话"),
+        (_("Qingdao Dialect"), "青岛话"),
+        (_("Northeast Dialect"), "东北话"),
     ],
 }
 
 _ATTR_INFO = {
-    "English Accent / 英文口音": "Only effective for English speech.",
-    "Chinese Dialect / 中文方言": "Only effective for Chinese speech.",
+    _("English Accent"): _("Only effective for English speech."),
+    _("Chinese Dialect"): _("Only effective for Chinese speech."),
 }
 
 # ---------------------------------------------------------------------------
@@ -140,8 +137,13 @@ def build_parser() -> argparse.ArgumentParser:
         "--no-asr",
         action="store_true",
         default=False,
-        help="Skip loading Whisper ASR model. Reference text auto-transcription"
-        " will be unavailable.",
+        help=_("Skip loading Whisper ASR model. Reference text auto-transcription will be unavailable."),
+    )
+    parser.add_argument(
+        "--lang",
+        type=str,
+        default=None,
+        help="Interface language (en, pt_BR, zh).",
     )
     return parser
 
@@ -176,7 +178,7 @@ def build_demo(
         ref_text=None,
     ):
         if not text or not text.strip():
-            return None, "Please enter the text to synthesize."
+            return None, _("Please enter the text to synthesize.")
 
         gen_config = OmniVoiceGenerationConfig(
             num_step=int(num_step or 32),
@@ -205,17 +207,20 @@ def build_demo(
                 ref_text=ref_text,
             )
 
-        if instruct and instruct.strip():
-            kw["instruct"] = instruct.strip()
+        if mode == "design":
+            if instruct and instruct.strip():
+                kw["instruct"] = instruct.strip()
 
         try:
             audio = model.generate(**kw)
         except Exception as e:
-            return None, f"Error: {type(e).__name__}: {e}"
+            return None, _("Error: {error_type}: {error_msg}").format(
+                error_type=type(e).__name__, error_msg=e
+            )
 
         waveform = audio[0].squeeze(0).numpy()  # (T,)
         waveform = (waveform * 32767).astype(np.int16)
-        return (sampling_rate, waveform), "Done."
+        return (sampling_rate, waveform), _("Done.")
 
     # Allow external wrappers (e.g. spaces.GPU for ZeroGPU Spaces)
     _gen = generate_fn if generate_fn is not None else _gen_core
@@ -235,115 +240,104 @@ def build_demo(
     """
 
     # Reusable: language dropdown component
-    def _lang_dropdown(label="Language (optional) / 语种 (可选)", value="Auto"):
+    def _lang_dropdown(label=None, value="Auto"):
+        if label is None:
+            label = _("Language (optional)")
         return gr.Dropdown(
             label=label,
-            choices=_ALL_LANGUAGES,
+            choices=[(_("Auto"), "Auto")] + sorted(lang_display_name(n) for n in LANG_NAMES),
             value=value,
             allow_custom_value=False,
             interactive=True,
-            info="Keep as Auto to auto-detect the language.",
+            info=_("Keep as Auto to auto-detect the language."),
         )
 
     # Reusable: optional generation settings accordion
     def _gen_settings():
-        with gr.Accordion("Generation Settings (optional)", open=False):
+        with gr.Accordion(_("Generation Settings (optional)"), open=False):
             sp = gr.Slider(
                 0.5,
                 1.5,
                 value=1.0,
                 step=0.05,
-                label="Speed",
-                info="1.0 = normal. >1 faster, <1 slower. Ignored if Duration is set.",
+                label=_("Speed"),
+                info=_("1.0 = normal. >1 faster, <1 slower. Ignored if Duration is set."),
             )
             du = gr.Number(
                 value=None,
-                label="Duration (seconds)",
-                info=(
-                    "Leave empty to use speed."
-                    " Set a fixed duration to override speed."
-                ),
+                label=_("Duration (seconds)"),
+                info=_("Leave empty to use speed. Set a fixed duration to override speed."),
             )
             ns = gr.Slider(
                 4,
                 64,
                 value=32,
                 step=1,
-                label="Inference Steps",
-                info="Default: 32. Lower = faster, higher = better quality.",
+                label=_("Inference Steps"),
+                info=_("Default: 32. Lower = faster, higher = better quality."),
             )
             dn = gr.Checkbox(
-                label="Denoise",
+                label=_("Denoise"),
                 value=True,
-                info="Default: enabled. Uncheck to disable denoising.",
+                info=_("Default: enabled. Uncheck to disable denoising."),
             )
             gs = gr.Slider(
                 0.0,
                 4.0,
                 value=2.0,
                 step=0.1,
-                label="Guidance Scale (CFG)",
-                info="Default: 2.0.",
+                label=_("Guidance Scale (CFG)"),
+                info=_("Default: 2.0."),
             )
             pp = gr.Checkbox(
-                label="Preprocess Prompt",
+                label=_("Preprocess Prompt"),
                 value=True,
-                info="apply silence removal and trimming to the reference "
-                "audio, add punctuation in the end of reference text (if not already)",
+                info=_(
+                    "apply silence removal and trimming to the reference "
+                    "audio, add punctuation in the end of reference text (if not already)"
+                ),
             )
             po = gr.Checkbox(
-                label="Postprocess Output",
+                label=_("Postprocess Output"),
                 value=True,
-                info="Remove long silences from generated audio.",
+                info=_("Remove long silences from generated audio."),
             )
         return ns, gs, dn, sp, du, pp, po
 
-    with gr.Blocks(theme=theme, css=css, title="OmniVoice Demo") as demo:
-        gr.Markdown(
-            """
-# OmniVoice Demo
-
-State-of-the-art text-to-speech model for **600+ languages**, supporting:
-
-- **Voice Clone** — Clone any voice from a reference audio
-- **Voice Design** — Create custom voices with speaker attributes
-
-Built with [OmniVoice](https://github.com/k2-fsa/OmniVoice)
-by Xiaomi AI Lab Next-gen Kaldi team.
-"""
-        )
+    with gr.Blocks(theme=theme, css=css, title=_("OmniVoice Demo")) as demo:
+        gr.Markdown(_("MD_DEMO_HEADER"))
 
         with gr.Tabs():
             # ==============================================================
             # Voice Clone
             # ==============================================================
-            with gr.TabItem("Voice Clone"):
+            with gr.TabItem(_("Voice Clone")):
                 with gr.Row():
                     with gr.Column(scale=1):
                         vc_text = gr.Textbox(
-                            label="Text to Synthesize / 待合成文本",
+                            label=_("Text to Synthesize"),
                             lines=4,
-                            placeholder="Enter the text you want to synthesize...",
+                            placeholder=_("Enter the text you want to synthesize..."),
                         )
                         vc_ref_audio = gr.Audio(
-                            label="Reference Audio / 参考音频",
+                            label=_("Reference Audio"),
                             type="filepath",
                             elem_classes="compact-audio",
                         )
                         gr.Markdown(
-                            "<span style='font-size:0.85em;color:#888;'>"
+                            _("<span style='font-size:0.85em;color:#888;'>"
                             "Recommended: 3–10 seconds audio. "
-                            "</span>"
+                            "</span>")
                         )
                         vc_ref_text = gr.Textbox(
-                            label=("Reference Text (optional)" " / 参考音频文本（可选）"),
+                            label=_("Reference Text (optional)"),
                             lines=2,
-                            placeholder="Transcript of the reference audio. Leave empty"
-                            " to auto-transcribe via ASR models.",
+                            placeholder=_("Transcript of the reference audio. Leave empty"
+                            " to auto-transcribe via ASR models."),
                         )
-                        vc_lang = _lang_dropdown("Language (optional) / 语种 (可选)")
-                        with gr.Accordion("Instruct (optional)", open=False):
-                            vc_instruct = gr.Textbox(label="Instruct", lines=2)
+                        vc_lang = _lang_dropdown()
+                        with gr.Accordion(_("Instruct (optional)"), open=False):
+                            vc_instruct = gr.Textbox(label=_("Instruct"), lines=2)
                         (
                             vc_ns,
                             vc_gs,
@@ -353,13 +347,13 @@ by Xiaomi AI Lab Next-gen Kaldi team.
                             vc_pp,
                             vc_po,
                         ) = _gen_settings()
-                        vc_btn = gr.Button("Generate / 生成", variant="primary")
+                        vc_btn = gr.Button(_("Generate"), variant="primary")
                     with gr.Column(scale=1):
                         vc_audio = gr.Audio(
-                            label="Output Audio / 合成结果",
+                            label=_("Output Audio"),
                             type="numpy",
                         )
-                        vc_status = gr.Textbox(label="Status / 状态", lines=2)
+                        vc_status = gr.Textbox(label=_("Status"), lines=2)
 
                 def _clone_fn(
                     text, lang, ref_aud, ref_text, instruct, ns, gs, dn, sp, du, pp, po
@@ -402,24 +396,23 @@ by Xiaomi AI Lab Next-gen Kaldi team.
             # ==============================================================
             # Voice Design
             # ==============================================================
-            with gr.TabItem("Voice Design"):
+            with gr.TabItem(_("Voice Design")):
                 with gr.Row():
                     with gr.Column(scale=1):
                         vd_text = gr.Textbox(
-                            label="Text to Synthesize / 待合成文本",
+                            label=_("Text to Synthesize"),
                             lines=4,
-                            placeholder="Enter the text you want to synthesize...",
+                            placeholder=_("Enter the text you want to synthesize..."),
                         )
                         vd_lang = _lang_dropdown()
 
-                        _AUTO = "Auto"
                         vd_groups = []
                         for _cat, _choices in _CATEGORIES.items():
                             vd_groups.append(
                                 gr.Dropdown(
                                     label=_cat,
-                                    choices=[_AUTO] + _choices,
-                                    value=_AUTO,
+                                    choices=[(_("Auto"), "Auto")] + _choices,
+                                    value="Auto",
                                     info=_ATTR_INFO.get(_cat),
                                 )
                             )
@@ -433,35 +426,25 @@ by Xiaomi AI Lab Next-gen Kaldi team.
                             vd_pp,
                             vd_po,
                         ) = _gen_settings()
-                        vd_btn = gr.Button("Generate / 生成", variant="primary")
+                        vd_btn = gr.Button(_("Generate"), variant="primary")
                     with gr.Column(scale=1):
                         vd_audio = gr.Audio(
-                            label="Output Audio / 合成结果",
+                            label=_("Output Audio"),
                             type="numpy",
                         )
-                        vd_status = gr.Textbox(label="Status / 状态", lines=2)
+                        vd_status = gr.Textbox(label=_("Status"), lines=2)
 
                 def _build_instruct(groups):
                     """Extract instruct text from UI dropdowns.
 
-                    Language unification and validation is handled by
-                    _resolve_instruct inside _preprocess_all.
+                    The values in groups are now the canonical English/Chinese strings
+                    because we use (Label, Value) tuples in the Dropdowns.
                     """
-                    selected = [g for g in groups if g and g != "Auto"]
+                    auto_label = "Auto"  # Use the canonical "Auto" value
+                    selected = [g for g in groups if g and g != auto_label]
                     if not selected:
                         return None
-                    parts = []
-                    for v in selected:
-                        if " / " in v:
-                            en, zh = v.split(" / ", 1)
-                            # Dialects have no English equivalent
-                            if "Dialect" in v.split(" / ")[0]:
-                                parts.append(zh.strip())
-                            else:
-                                parts.append(en.strip())
-                        else:
-                            parts.append(v)
-                    return ", ".join(parts)
+                    return ", ".join(selected)
 
                 def _design_fn(text, lang, ns, gs, dn, sp, du, pp, po, *groups):
                     return _gen(
@@ -514,18 +497,23 @@ def main(argv=None) -> int:
 
     device = args.device or get_best_device()
 
+    # Initialize i18n
+    init_i18n(args.lang)
+
     checkpoint = args.model
     if not checkpoint:
         parser.print_help()
         return 0
-    logging.info(f"Loading model from {checkpoint}, device={device} ...")
+    logging.info(_("Loading model from {checkpoint}, device={device} ...").format(
+        checkpoint=checkpoint, device=device
+    ))
     model = OmniVoice.from_pretrained(
         checkpoint,
         device_map=device,
         dtype=torch.float16,
         load_asr=not args.no_asr,
     )
-    print("Model loaded.")
+    print(_("Model loaded."))
 
     demo = build_demo(model, checkpoint)
 

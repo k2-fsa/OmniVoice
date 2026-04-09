@@ -45,7 +45,7 @@ def load_audio(audio_path: str, sampling_rate: int):
         waveform, prompt_sampling_rate = torchaudio.load(
             audio_path, backend="soundfile"
         )
-    except (RuntimeError, OSError):
+    except (RuntimeError, OSError, ImportError):
         # Fallback via pydub+ffmpeg for formats torchaudio can't handle
         aseg = AudioSegment.from_file(audio_path)
         audio_data = np.array(aseg.get_array_of_samples()).astype(np.float32) / 32768.0
@@ -65,6 +65,24 @@ def load_audio(audio_path: str, sampling_rate: int):
         waveform = torch.mean(waveform, dim=0, keepdim=True)
 
     return waveform
+
+
+def save_audio(audio: torch.Tensor, sampling_rate: int, save_path: any, **kwargs):
+    """
+    Save the audio tensor to a file or buffer with fallback logic.
+
+    If torchaudio.save fails (common due to missing FFmpeg dynamic libraries),
+    fall back to soundfile.
+    """
+    try:
+        torchaudio.save(save_path, audio, sampling_rate, **kwargs)
+    except (RuntimeError, OSError, ImportError):
+        # Fallback to soundfile
+        import soundfile as sf
+
+        audio_np = audio.squeeze(0).cpu().numpy()
+        # soundfile's write supports file paths and file-like objects
+        sf.write(save_path, audio_np, sampling_rate)
 
 
 def remove_silence(
