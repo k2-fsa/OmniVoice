@@ -58,6 +58,7 @@ def read_test_list(path):
                 "language_name": obj.get("language_name"),
                 "duration": obj.get("duration"),
                 "speed": obj.get("speed"),
+                "instruct": obj.get("instruct"),
             }
             samples.append(sample)
     return samples
