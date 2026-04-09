@@ -375,6 +375,7 @@ class OmniVoice(PreTrainedModel):
         attention_mask: Optional[torch.Tensor] = None,
         document_ids: Optional[torch.Tensor] = None,
         position_ids: Optional[torch.LongTensor] = None,
+        **kwargs,
     ):
 
         inputs_embeds = self._prepare_embed_inputs(input_ids, audio_mask)
@@ -397,6 +398,7 @@ class OmniVoice(PreTrainedModel):
             attention_mask=attention_mask,
             return_dict=True,
             position_ids=position_ids,
+            **kwargs,
         )
         hidden_states = llm_outputs[0]
 
@@ -1169,9 +1171,18 @@ class OmniVoice(PreTrainedModel):
         batch_audio_mask = torch.zeros(
             (2 * B, max_c_len), dtype=torch.bool, device=self.device
         )
-        batch_attention_mask = torch.zeros(
-            (2 * B, 1, max_c_len, max_c_len), dtype=torch.bool, device=self.device
-        )
+        use_flash = getattr(self.llm.config, "_attn_implementation", None) == "flash_attention_2"
+
+        if use_flash:
+            # 2D padding mask — flash_attention_2 internally handles unpad + varlen
+            batch_attention_mask = torch.zeros(
+                (2 * B, max_c_len), dtype=torch.bool, device=self.device
+            )
+        else:
+            # 4D bidirectional mask — for SDPA/eager fallback
+            batch_attention_mask = torch.zeros(
+                (2 * B, 1, max_c_len, max_c_len), dtype=torch.bool, device=self.device
+            )
 
         for i, inp in enumerate(inputs_list):
             c_len, u_len = c_lens[i], task.target_lens[i]
@@ -1179,15 +1190,18 @@ class OmniVoice(PreTrainedModel):
             # Cond (0 ~ B-1)
             batch_input_ids[i, :, :c_len] = inp["input_ids"]
             batch_audio_mask[i, :c_len] = inp["audio_mask"]
-            batch_attention_mask[i, :, :c_len, :c_len] = True
+            if use_flash:
+                batch_attention_mask[i, :c_len] = True
+            else:
+                batch_attention_mask[i, :, :c_len, :c_len] = True
 
             # Uncond (B ~ 2B-1)
             batch_input_ids[B + i, :, :u_len] = inp["input_ids"][..., -u_len:]
             batch_audio_mask[B + i, :u_len] = inp["audio_mask"][..., -u_len:]
-            batch_attention_mask[B + i, :, :u_len, :u_len] = True
-            if max_c_len > u_len:
-                pad_diag = torch.arange(u_len, max_c_len, device=self.device)
-                batch_attention_mask[B + i, :, pad_diag, pad_diag] = True
+            if use_flash:
+                batch_attention_mask[B + i, :u_len] = True
+            else:
+                batch_attention_mask[B + i, :, :u_len, :u_len] = True
 
         tokens = torch.full(
             (B, self.config.num_audio_codebook, max(task.target_lens)),
@@ -1224,11 +1238,16 @@ class OmniVoice(PreTrainedModel):
             self.config.num_audio_codebook, device=self.device
         ).view(1, -1, 1)
 
+        forward_kwargs = {}
+        if use_flash:
+            forward_kwargs["is_causal"] = False
+
         for step in range(gen_config.num_step):
             batch_logits = self(
                 input_ids=batch_input_ids,
                 audio_mask=batch_audio_mask,
                 attention_mask=batch_attention_mask,
+                **forward_kwargs,
             ).logits.to(torch.float32)
 
             for i in range(B):

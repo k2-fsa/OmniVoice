@@ -115,6 +115,13 @@ def get_parser() -> argparse.ArgumentParser:
         default=None,
         help="Device to use for inference. Auto-detected if not specified.",
     )
+    parser.add_argument(
+        "--use-flash-attn",
+        action="store_true",
+        default=False,
+        help='Use FlashAttention-2 for faster inference. '
+        'Requires flash-attn to be installed.',
+    )
     return parser
 
 
@@ -126,8 +133,13 @@ def main():
 
     device = args.device or get_best_device()
     logging.info(f"Loading model from {args.model} on {device} ...")
+
+    extra_kwargs = {}
+    if args.use_flash_attn:
+        extra_kwargs["attn_implementation"] = "flash_attention_2"
+
     model = OmniVoice.from_pretrained(
-        args.model, device_map=device, dtype=torch.float16
+        args.model, device_map=device, dtype=torch.float16, **extra_kwargs
     )
 
     logging.info(f"Generating audio for: {args.text[:80]}...")
