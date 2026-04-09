@@ -59,6 +59,11 @@ from omnivoice.utils.audio import (
     remove_silence,
     trim_long_audio,
 )
+from omnivoice.utils.common import (
+    configure_cuda_inference,
+    resolve_device_string,
+    resolve_inference_dtype,
+)
 from omnivoice.utils.duration import RuleDurationEstimator
 from omnivoice.utils.lang_map import LANG_IDS, LANG_NAMES
 from omnivoice.utils.text import add_punctuation, chunk_text_punctuation
@@ -216,6 +221,16 @@ class OmniVoice(PreTrainedModel):
             w / sum(config.audio_codebook_weights)
             for w in config.audio_codebook_weights
         ]
+        self.register_buffer(
+            "normalized_codebook_weight_tensor",
+            torch.tensor(self.normalized_audio_codebook_weights, dtype=torch.float32),
+            persistent=False,
+        )
+        self.register_buffer(
+            "inference_layer_ids",
+            torch.arange(config.num_audio_codebook, dtype=torch.float32).view(1, -1, 1),
+            persistent=False,
+        )
 
         self.post_init()
 
@@ -231,6 +246,29 @@ class OmniVoice(PreTrainedModel):
         train_mode = kwargs.pop("train", False)
         load_asr = kwargs.pop("load_asr", False)
         asr_model_name = kwargs.pop("asr_model_name", "openai/whisper-large-v3-turbo")
+        requested_dtype = kwargs.pop("dtype", None)
+        requested_torch_dtype = kwargs.pop("torch_dtype", None)
+        if requested_dtype is not None and requested_torch_dtype is not None:
+            if requested_dtype != requested_torch_dtype:
+                raise ValueError(
+                    "dtype and torch_dtype must match when both are provided."
+                )
+
+        load_device = kwargs.get("device_map")
+        resolved_device = resolve_device_string(load_device)
+        resolved_dtype = (
+            requested_dtype if requested_dtype is not None else requested_torch_dtype
+        )
+
+        if not train_mode:
+            kwargs["dtype"] = resolve_inference_dtype(
+                load_device, "auto" if resolved_dtype is None else resolved_dtype
+            )
+            if resolved_device.startswith("cuda"):
+                configure_cuda_inference(load_device)
+                kwargs.setdefault("attn_implementation", "flex_attention")
+        elif resolved_dtype is not None:
+            kwargs["dtype"] = resolved_dtype
 
         # Suppress noisy INFO logs from transformers/huggingface_hub during loading
         _prev_disable = logging.root.manager.disable
@@ -296,9 +334,7 @@ class OmniVoice(PreTrainedModel):
         from transformers import pipeline as hf_pipeline
 
         logger.info("Loading ASR model %s ...", model_name)
-        asr_dtype = (
-            torch.float16 if str(self.device).startswith("cuda") else torch.float32
-        )
+        asr_dtype = resolve_inference_dtype(self.device)
         self._asr_pipe = hf_pipeline(
             "automatic-speech-recognition",
             model=model_name,
@@ -432,10 +468,7 @@ class OmniVoice(PreTrainedModel):
                 dim=(0, 2)
             ) / valid_mask.sum(dim=(0, 2)).clamp(min=1.0)
 
-            weights = torch.tensor(
-                self.normalized_audio_codebook_weights, device=audio_logits.device
-            )
-            loss = (layer_means * weights).sum()
+            loss = (layer_means * self.normalized_codebook_weight_tensor).sum()
 
         return OmniVoiceModelOutput(
             loss=loss,
@@ -537,7 +570,8 @@ class OmniVoice(PreTrainedModel):
             else OmniVoiceGenerationConfig.from_dict(kwargs)
         )
 
-        self.eval()
+        if self.training:
+            self.eval()
 
         full_task = self._preprocess_all(
             text=text,
@@ -1169,8 +1203,19 @@ class OmniVoice(PreTrainedModel):
         batch_audio_mask = torch.zeros(
             (2 * B, max_c_len), dtype=torch.bool, device=self.device
         )
-        batch_attention_mask = torch.zeros(
-            (2 * B, 1, max_c_len, max_c_len), dtype=torch.bool, device=self.device
+        batch_document_ids = _build_block_mask_document_ids(
+            c_lens + task.target_lens,
+            max_seq_len=max_c_len,
+            device=self.device,
+        )
+        batch_attention_mask = create_block_mask(
+            partial(_mask_mod_packed, batch_document_ids),
+            B=2 * B,
+            H=None,
+            Q_LEN=max_c_len,
+            KV_LEN=max_c_len,
+            _compile=True,
+            device=self.device,
         )
 
         for i, inp in enumerate(inputs_list):
@@ -1179,15 +1224,10 @@ class OmniVoice(PreTrainedModel):
             # Cond (0 ~ B-1)
             batch_input_ids[i, :, :c_len] = inp["input_ids"]
             batch_audio_mask[i, :c_len] = inp["audio_mask"]
-            batch_attention_mask[i, :, :c_len, :c_len] = True
 
             # Uncond (B ~ 2B-1)
             batch_input_ids[B + i, :, :u_len] = inp["input_ids"][..., -u_len:]
             batch_audio_mask[B + i, :u_len] = inp["audio_mask"][..., -u_len:]
-            batch_attention_mask[B + i, :, :u_len, :u_len] = True
-            if max_c_len > u_len:
-                pad_diag = torch.arange(u_len, max_c_len, device=self.device)
-                batch_attention_mask[B + i, :, pad_diag, pad_diag] = True
 
         tokens = torch.full(
             (B, self.config.num_audio_codebook, max(task.target_lens)),
@@ -1220,16 +1260,12 @@ class OmniVoice(PreTrainedModel):
                 rem -= int(num)
             schedules.append(sched)
 
-        layer_ids = torch.arange(
-            self.config.num_audio_codebook, device=self.device
-        ).view(1, -1, 1)
-
         for step in range(gen_config.num_step):
             batch_logits = self(
                 input_ids=batch_input_ids,
                 audio_mask=batch_audio_mask,
                 attention_mask=batch_attention_mask,
-            ).logits.to(torch.float32)
+            ).logits
 
             for i in range(B):
                 k = schedules[i][step]
@@ -1247,7 +1283,9 @@ class OmniVoice(PreTrainedModel):
                     c_logits, u_logits, gen_config
                 )
 
-                scores = scores - (layer_ids * gen_config.layer_penalty_factor)
+                scores = scores - (
+                    self.inference_layer_ids * gen_config.layer_penalty_factor
+                )
 
                 if gen_config.position_temperature > 0.0:
                     scores = _gumbel_sample(scores, gen_config.position_temperature)
@@ -1270,15 +1308,21 @@ class OmniVoice(PreTrainedModel):
         return [tokens[i, :, : task.target_lens[i]] for i in range(B)]
 
     def _predict_tokens_with_scoring(self, c_logits, u_logits, gen_config):
+        log_prob_dtype = (
+            torch.float32
+            if c_logits.dtype in (torch.float16, torch.bfloat16)
+            else c_logits.dtype
+        )
         if gen_config.guidance_scale != 0:
-            c_log_probs = F.log_softmax(c_logits, dim=-1)
-            u_log_probs = F.log_softmax(u_logits, dim=-1)
-            log_probs = torch.log_softmax(
+            c_log_probs = F.log_softmax(c_logits, dim=-1, dtype=log_prob_dtype)
+            u_log_probs = F.log_softmax(u_logits, dim=-1, dtype=log_prob_dtype)
+            log_probs = F.log_softmax(
                 c_log_probs + gen_config.guidance_scale * (c_log_probs - u_log_probs),
                 dim=-1,
+                dtype=log_prob_dtype,
             )
         else:
-            log_probs = F.log_softmax(c_logits, dim=-1)
+            log_probs = F.log_softmax(c_logits, dim=-1, dtype=log_prob_dtype)
 
         log_probs[..., self.config.audio_mask_id] = -float("inf")
 
@@ -1308,8 +1352,35 @@ def _mask_mod_packed(document_ids, b, h, q_idx, kv_idx):
     # 1. Sequence Packing Logic: Tokens must belong to the same document.
     # Note: The doc_id for padding tokens is -1, which will automatically not match
     # (if handled correctly) or be ignored.
-    same_doc = document_ids[q_idx] == document_ids[kv_idx]
+    if document_ids.dim() == 1:
+        same_doc = document_ids[q_idx] == document_ids[kv_idx]
+    else:
+        same_doc = document_ids[b, q_idx] == document_ids[b, kv_idx]
     return same_doc
+
+
+def _build_block_mask_document_ids(
+    lengths: List[int], max_seq_len: int, device: torch.device
+) -> torch.Tensor:
+    """Build per-sequence document ids for non-causal block masks.
+
+    Real tokens share document id 0. Padding tokens receive unique negative ids
+    so they only attend to themselves, matching the old diagonal-only padding
+    behavior without materializing a dense quadratic mask.
+    """
+    document_ids = torch.empty(
+        (len(lengths), max_seq_len), dtype=torch.int32, device=device
+    )
+    for row, seq_len in enumerate(lengths):
+        document_ids[row, :seq_len] = 0
+        if seq_len < max_seq_len:
+            document_ids[row, seq_len:] = -torch.arange(
+                1,
+                max_seq_len - seq_len + 1,
+                dtype=torch.int32,
+                device=device,
+            )
+    return document_ids
 
 
 def _resolve_language(language: Optional[str]) -> Union[str, None]:

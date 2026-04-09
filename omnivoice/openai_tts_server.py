@@ -28,6 +28,7 @@ from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from omnivoice import OmniVoice, OmniVoiceGenerationConfig
+from omnivoice.utils.common import get_best_device
 from omnivoice.utils.text import add_punctuation, chunk_text_punctuation
 
 
@@ -797,15 +798,7 @@ def _configure_logging() -> None:
     _configure_logging._configured = True
 
 
-def _get_best_device() -> str:
-    if torch.cuda.is_available():
-        return "cuda"
-    if hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
-        return "mps"
-    return "cpu"
-
-
-DEFAULT_DEVICE = _get_best_device()
+DEFAULT_DEVICE = get_best_device()
 
 
 class TextSanitizationOptions(BaseModel):
@@ -957,12 +950,6 @@ class OmniVoiceService:
             torch.cuda.empty_cache()
 
     def _load_model_sync(self) -> OmniVoice:
-        dtype = torch.float16 if self.device.startswith("cuda") else torch.float32
-
-        if self.device.startswith("cuda"):
-            torch.backends.cuda.matmul.allow_tf32 = True
-            torch.backends.cudnn.allow_tf32 = True
-
         LOG.info("Loading OmniVoice model %s on %s", self.model_id, self.device)
         if self.device.startswith("cuda"):
             from transformers import modeling_utils
@@ -977,7 +964,6 @@ class OmniVoiceService:
                 model = OmniVoice.from_pretrained(
                     self.model_id,
                     device_map=self.device,
-                    dtype=dtype,
                 )
             finally:
                 modeling_utils.caching_allocator_warmup = original_allocator_warmup
@@ -985,7 +971,6 @@ class OmniVoiceService:
             model = OmniVoice.from_pretrained(
                 self.model_id,
                 device_map=self.device,
-                dtype=dtype,
             )
         model.eval()
         LOG.info(

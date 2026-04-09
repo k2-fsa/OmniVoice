@@ -47,18 +47,9 @@ from tqdm import tqdm
 
 from omnivoice.models.omnivoice import OmniVoice
 from omnivoice.utils.audio import load_audio
-from omnivoice.utils.common import str2bool
+from omnivoice.utils.common import get_best_device_and_count, str2bool
 from omnivoice.utils.data_utils import read_test_list
 from omnivoice.utils.duration import RuleDurationEstimator
-
-
-def get_best_device():
-    """Auto-detect the best available device: CUDA > MPS > CPU."""
-    if torch.cuda.is_available():
-        return "cuda", torch.cuda.device_count()
-    if torch.backends.mps.is_available():
-        return "mps", 1
-    return "cpu", 1
 
 
 worker_model = None
@@ -231,7 +222,6 @@ def process_init(rank_queue, model_checkpoint, warmup=0):
     worker_model = OmniVoice.from_pretrained(
         model_checkpoint,
         device_map=worker_device,
-        dtype=torch.float16,
     )
 
     if warmup > 0:
@@ -407,10 +397,17 @@ def main():
     args = get_parser().parse_args()
     os.makedirs(args.res_dir, exist_ok=True)
 
-    device_type, num_devices = get_best_device()
+    device_type, num_devices = get_best_device_and_count()
     if device_type == "cpu":
         logging.warning(
             "No GPU found. Falling back to CPU inference. This might be slow."
+        )
+    elif device_type.startswith("cuda") and args.nj_per_gpu > 1:
+        logging.warning(
+            "nj_per_gpu=%d will load the full model %d time(s) per GPU. "
+            "For large checkpoints this usually hurts VRAM efficiency and latency.",
+            args.nj_per_gpu,
+            args.nj_per_gpu,
         )
 
     num_processes = num_devices * args.nj_per_gpu

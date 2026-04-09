@@ -116,13 +116,11 @@ Clone a voice from a short reference audio. Provide `ref_audio` and `ref_text`:
 
 ```python
 from omnivoice import OmniVoice
-import torch
 import torchaudio
 
 model = OmniVoice.from_pretrained(
     "k2-fsa/OmniVoice",
     device_map="cuda:0",
-    dtype=torch.float16
 )
 # Apple Silicon users: use device_map="mps" instead
 
@@ -141,6 +139,7 @@ torchaudio.save("out.wav", audio[0], 24000)
 > **Tips**
 >
 > - Use a 3–10 seconds reference audio clip. Longer audio slows down inference and may degrade cloning quality.
+> - On CUDA, OmniVoice now auto-selects an inference-friendly dtype (bf16 on Ampere-or-newer GPUs when available, otherwise fp16) and enables TF32 matmul fast paths.
 > - For better results with Arabic numerals, normalize them to words first (e.g., "123" → "one hundred twenty-three") with text normalization tools (e.g., [WeTextProcessing](https://github.com/wenet-e2e/WeTextProcessing)).
 
 ### Voice Design

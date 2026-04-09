@@ -22,20 +22,10 @@ Usage:
 import argparse
 import logging
 
-import torch
 import torchaudio
 
 from omnivoice.models.omnivoice import OmniVoice
-from omnivoice.utils.common import str2bool
-
-
-def get_best_device():
-    """Auto-detect the best available device: CUDA > MPS > CPU."""
-    if torch.cuda.is_available():
-        return "cuda"
-    if torch.backends.mps.is_available():
-        return "mps"
-    return "cpu"
+from omnivoice.utils.common import get_best_device, str2bool
 
 
 def get_parser() -> argparse.ArgumentParser:
@@ -126,9 +116,7 @@ def main():
 
     device = args.device or get_best_device()
     logging.info(f"Loading model from {args.model} on {device} ...")
-    model = OmniVoice.from_pretrained(
-        args.model, device_map=device, dtype=torch.float16
-    )
+    model = OmniVoice.from_pretrained(args.model, device_map=device)
 
     logging.info(f"Generating audio for: {args.text[:80]}...")
     audios = model.generate(
