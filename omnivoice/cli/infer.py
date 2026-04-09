@@ -116,7 +116,7 @@ def get_parser() -> argparse.ArgumentParser:
         help="Device to use for inference. Auto-detected if not specified.",
     )
     parser.add_argument(
-        "--use-flash-attn",
+        "--use_flash_attn",
         action="store_true",
         default=False,
         help='Use FlashAttention-2 for faster inference. '

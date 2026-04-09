@@ -198,7 +198,7 @@ def get_parser():
         "language_name will be set to this value.",
     )
     parser.add_argument(
-        "--use-flash-attn",
+        "--use_flash_attn",
         action="store_true",
         default=False,
         help='Use FlashAttention-2 for faster inference. '
