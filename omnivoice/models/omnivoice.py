@@ -34,7 +34,7 @@ import os
 import re
 from dataclasses import dataclass, fields
 from functools import partial
-from typing import Any, List, Optional, Union
+from typing import Any, List, Optional, Tuple, Union
 
 import torch
 import torch.nn as nn
@@ -580,6 +580,81 @@ class OmniVoice(PreTrainedModel):
 
         return generated_audios
 
+    @torch.inference_mode()
+    def edit(
+        self,
+        text: str,
+        edit_token_range: Tuple[int, int],
+        ref_text: str,
+        ref_audio: Union[str, tuple[torch.Tensor, int]],
+        language: Optional[str] = None,
+        instruct: Optional[str] = None,
+        generation_config: Optional[OmniVoiceGenerationConfig] = None,
+        **kwargs,
+    ) -> torch.Tensor:
+        """Edit a contiguous span of reference audio tokens in-place.
+
+        Unlike :meth:`generate`, this method does not infer text/audio alignment.
+        The caller must pass ``edit_token_range=(start, end)`` in reference-audio
+        token coordinates. Tokens outside that half-open interval are kept from
+        the reference audio, and only the specified span is regenerated.
+
+        Args:
+            text: Full target text after editing.
+            edit_token_range: Half-open token interval ``(start, end)`` over the
+                tokenized reference audio.
+            ref_text: Transcript of the reference audio before editing. It is
+                required for API symmetry and future alignment use, but this
+                method does not derive ``edit_token_range`` from it.
+            ref_audio: File path or ``(waveform, sample_rate)`` tuple for the
+                reference audio to edit.
+            language: Optional language name/code.
+            instruct: Optional style instruction.
+            generation_config: Explicit config object. If provided, takes
+                precedence over ``**kwargs``.
+            **kwargs: Fields of :class:`OmniVoiceGenerationConfig`.
+
+        Returns:
+            Edited waveform tensor of shape ``(1, T)``.
+        """
+        if self.audio_tokenizer is None or self.text_tokenizer is None:
+            raise RuntimeError(
+                "Model is not loaded with audio/text tokenizers. Make sure you "
+                "loaded the model with OmniVoice.from_pretrained()."
+            )
+
+        gen_config = (
+            generation_config
+            if generation_config is not None
+            else OmniVoiceGenerationConfig.from_dict(kwargs)
+        )
+        lang = _resolve_language(language)
+        instruct = _resolve_instruct(instruct, use_zh=bool(text and _ZH_RE.search(text)))
+
+        self.eval()
+
+        prompt = self.create_voice_clone_prompt(
+            ref_audio=ref_audio,
+            ref_text=ref_text,
+            preprocess_prompt=False,
+        )
+        ref_audio_tokens = prompt.ref_audio_tokens
+        edit_start, edit_end = edit_token_range
+        _validate_edit_token_range(edit_start, edit_end, ref_audio_tokens.size(-1))
+
+        inputs = self._prepare_edit_inference_inputs(
+            text=text,
+            ref_audio_tokens=ref_audio_tokens,
+            edit_start=edit_start,
+            edit_end=edit_end,
+            lang=lang,
+            instruct=instruct,
+            denoise=gen_config.denoise,
+        )
+        edited_tokens = self._generate_iterative_masked([inputs], gen_config)[0]
+
+        return self._decode_and_post_process(edited_tokens, prompt.ref_rms, gen_config)
+
     def create_voice_clone_prompt(
         self,
         ref_audio: Union[str, tuple[torch.Tensor, int]],
@@ -1115,6 +1190,77 @@ class OmniVoice(PreTrainedModel):
             "audio_mask": cond_audio_mask,
         }
 
+    def _prepare_edit_inference_inputs(
+        self,
+        text: str,
+        ref_audio_tokens: torch.Tensor,
+        edit_start: int,
+        edit_end: int,
+        lang: Optional[str] = None,
+        instruct: Optional[str] = None,
+        denoise: bool = True,
+    ):
+        """Prepare masked in-place editing inputs for inference."""
+
+        style_text = ""
+        if denoise:
+            style_text += "<|denoise|>"
+        lang_str = lang if lang else "None"
+        instruct_str = instruct if instruct else "None"
+        style_text += f"<|lang_start|>{lang_str}<|lang_end|>"
+        style_text += f"<|instruct_start|>{instruct_str}<|instruct_end|>"
+
+        style_tokens = (
+            self.text_tokenizer(style_text, return_tensors="pt")
+            .input_ids.repeat(self.config.num_audio_codebook, 1)
+            .unsqueeze(0)
+        ).to(self.device)
+
+        wrapped_text = f"<|text_start|>{_combine_text(text=text)}<|text_end|>"
+        text_tokens = (
+            _tokenize_with_nonverbal_tags(wrapped_text, self.text_tokenizer)
+            .repeat(self.config.num_audio_codebook, 1)
+            .unsqueeze(0)
+        ).to(self.device)
+
+        edit_len = edit_end - edit_start
+        masked_ref_audio_tokens = ref_audio_tokens.clone().to(self.device)
+        masked_ref_audio_tokens[:, edit_start:edit_end] = self.config.audio_mask_id
+        masked_ref_audio_tokens = masked_ref_audio_tokens.unsqueeze(0)
+
+        cond_input_ids = torch.cat(
+            [style_tokens, text_tokens, masked_ref_audio_tokens], dim=2
+        )
+
+        cond_audio_start_idx = style_tokens.size(2) + text_tokens.size(2)
+        cond_edit_start_idx = cond_audio_start_idx + edit_start
+
+        cond_audio_mask = torch.zeros(
+            1, cond_input_ids.size(2), dtype=torch.bool, device=self.device
+        )
+        cond_audio_mask[0, cond_audio_start_idx:] = True
+
+        uncond_input_ids = torch.full(
+            (1, self.config.num_audio_codebook, edit_len),
+            self.config.audio_mask_id,
+            dtype=torch.long,
+            device=self.device,
+        )
+        uncond_audio_mask = torch.ones(
+            1, edit_len, dtype=torch.bool, device=self.device
+        )
+
+        return {
+            "input_ids": cond_input_ids,
+            "audio_mask": cond_audio_mask,
+            "uncond_input_ids": uncond_input_ids,
+            "uncond_audio_mask": uncond_audio_mask,
+            "cond_edit_start_idx": cond_edit_start_idx,
+            "edit_start": edit_start,
+            "edit_end": edit_end,
+            "ref_audio_tokens": ref_audio_tokens.to(self.device),
+        }
+
     def _generate_iterative(
         self, task: GenerationTask, gen_config: OmniVoiceGenerationConfig
     ) -> List[torch.Tensor]:
@@ -1269,6 +1415,136 @@ class OmniVoice(PreTrainedModel):
 
         return [tokens[i, :, : task.target_lens[i]] for i in range(B)]
 
+    def _generate_iterative_masked(
+        self, inputs_list: List[dict[str, Any]], gen_config: OmniVoiceGenerationConfig
+    ) -> List[torch.Tensor]:
+        """Iteratively fill masked audio spans while keeping other tokens fixed."""
+
+        B = len(inputs_list)
+        c_lens = [inp["input_ids"].size(2) for inp in inputs_list]
+        u_lens = [inp["uncond_input_ids"].size(2) for inp in inputs_list]
+        max_c_len = max(c_lens)
+        pad_id = self.config.audio_mask_id
+
+        batch_input_ids = torch.full(
+            (2 * B, self.config.num_audio_codebook, max_c_len),
+            pad_id,
+            dtype=torch.long,
+            device=self.device,
+        )
+        batch_audio_mask = torch.zeros(
+            (2 * B, max_c_len), dtype=torch.bool, device=self.device
+        )
+        batch_attention_mask = torch.zeros(
+            (2 * B, 1, max_c_len, max_c_len), dtype=torch.bool, device=self.device
+        )
+
+        for i, inp in enumerate(inputs_list):
+            c_len, u_len = c_lens[i], u_lens[i]
+
+            batch_input_ids[i, :, :c_len] = inp["input_ids"]
+            batch_audio_mask[i, :c_len] = inp["audio_mask"]
+            batch_attention_mask[i, :, :c_len, :c_len] = True
+
+            batch_input_ids[B + i, :, :u_len] = inp["uncond_input_ids"]
+            batch_audio_mask[B + i, :u_len] = inp["uncond_audio_mask"]
+            batch_attention_mask[B + i, :, :u_len, :u_len] = True
+            if max_c_len > u_len:
+                pad_diag = torch.arange(u_len, max_c_len, device=self.device)
+                batch_attention_mask[B + i, :, pad_diag, pad_diag] = True
+
+        tokens = torch.full(
+            (B, self.config.num_audio_codebook, max(u_lens)),
+            self.config.audio_mask_id,
+            dtype=torch.long,
+            device=self.device,
+        )
+
+        timesteps = _get_time_steps(
+            t_start=0.0,
+            t_end=1.0,
+            num_step=gen_config.num_step + 1,
+            t_shift=gen_config.t_shift,
+        ).tolist()
+        schedules = []
+        for u_len in u_lens:
+            total_mask = u_len * self.config.num_audio_codebook
+            rem = total_mask
+            sched = []
+            for step in range(gen_config.num_step):
+                num = (
+                    rem
+                    if step == gen_config.num_step - 1
+                    else min(
+                        math.ceil(total_mask * (timesteps[step + 1] - timesteps[step])),
+                        rem,
+                    )
+                )
+                sched.append(int(num))
+                rem -= int(num)
+            schedules.append(sched)
+
+        layer_ids = torch.arange(
+            self.config.num_audio_codebook, device=self.device
+        ).view(1, -1, 1)
+
+        for step in range(gen_config.num_step):
+            batch_logits = self(
+                input_ids=batch_input_ids,
+                audio_mask=batch_audio_mask,
+                attention_mask=batch_attention_mask,
+            ).logits.to(torch.float32)
+
+            for i in range(B):
+                k = schedules[i][step]
+                if k <= 0:
+                    continue
+
+                u_len = u_lens[i]
+                cond_edit_start_idx = inputs_list[i]["cond_edit_start_idx"]
+
+                c_logits = batch_logits[
+                    i : i + 1,
+                    :,
+                    cond_edit_start_idx : cond_edit_start_idx + u_len,
+                    :,
+                ]
+                u_logits = batch_logits[B + i : B + i + 1, :, :u_len, :]
+
+                pred_tokens, scores = self._predict_tokens_with_scoring(
+                    c_logits, u_logits, gen_config
+                )
+
+                scores = scores - (layer_ids * gen_config.layer_penalty_factor)
+                if gen_config.position_temperature > 0.0:
+                    scores = _gumbel_sample(scores, gen_config.position_temperature)
+
+                sample_tokens = tokens[i : i + 1, :, :u_len]
+                scores.masked_fill_(
+                    sample_tokens != self.config.audio_mask_id, -float("inf")
+                )
+
+                _, topk_idx = torch.topk(scores.flatten(), k)
+                flat_tokens = sample_tokens.flatten()
+                flat_tokens[topk_idx] = pred_tokens.flatten()[topk_idx]
+                sample_tokens.copy_(flat_tokens.view_as(sample_tokens))
+
+                tokens[i : i + 1, :, :u_len] = sample_tokens
+                batch_input_ids[
+                    i : i + 1,
+                    :,
+                    cond_edit_start_idx : cond_edit_start_idx + u_len,
+                ] = sample_tokens
+                batch_input_ids[B + i : B + i + 1, :, :u_len] = sample_tokens
+
+        results = []
+        for i, inp in enumerate(inputs_list):
+            edited = inp["ref_audio_tokens"].clone()
+            edited[:, inp["edit_start"] : inp["edit_end"]] = tokens[i, :, : u_lens[i]]
+            results.append(edited)
+
+        return results
+
     def _predict_tokens_with_scoring(self, c_logits, u_logits, gen_config):
         if gen_config.guidance_scale != 0:
             c_log_probs = F.log_softmax(c_logits, dim=-1)
@@ -1302,6 +1578,19 @@ class OmniVoice(PreTrainedModel):
 
 def _get_packed_mask(document_ids):
     return partial(_mask_mod_packed, document_ids)
+
+
+def _validate_edit_token_range(start: int, end: int, total_tokens: int) -> None:
+    if not isinstance(start, int) or not isinstance(end, int):
+        raise TypeError("edit_token_range must contain integer token indices")
+    if start < 0 or end < 0:
+        raise ValueError("edit_token_range indices must be non-negative")
+    if start >= end:
+        raise ValueError("edit_token_range must satisfy start < end")
+    if end > total_tokens:
+        raise ValueError(
+            f"edit_token_range end={end} exceeds reference token length {total_tokens}"
+        )
 
 
 def _mask_mod_packed(document_ids, b, h, q_idx, kv_idx):
