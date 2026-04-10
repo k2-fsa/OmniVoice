@@ -289,6 +289,15 @@ You can also scan the QR code to join our wechat group or follow our wechat offi
 
 ---
 
+## Community Projects
+
+- **[omnivoice-server](https://github.com/maemreyo/omnivoice-server)** —
+  OpenAI-compatible HTTP server for serving OmniVoice via `/v1/audio/speech`.
+  Supports voice profiles for persistent cloning, sentence-level streaming,
+  and optional Bearer auth.
+
+---
+
 ## Citation
 
 ```bibtex
