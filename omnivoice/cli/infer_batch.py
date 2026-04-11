@@ -265,16 +265,24 @@ def estimate_sample_total_duration(
     the reference duration is treated as 0 and only the estimated generated
     duration contributes to the total.
     """
-    if ref_audio_path is not None:
-        ref_wav = load_audio(ref_audio_path, SAMPLING_RATE)
-        ref_duration = ref_wav.shape[-1] / SAMPLING_RATE
-    else:
-        ref_duration = 25
-
     if gen_duration is None:
-        gen_duration = duration_estimator.estimate_duration(
-            text, ref_text or "Nice to meet you.", ref_duration, low_threshold=2.0
-        )
+        if ref_audio_path is not None:
+            ref_wav = load_audio(ref_audio_path, SAMPLING_RATE)
+            ref_duration = ref_wav.shape[-1] / SAMPLING_RATE
+            gen_duration = duration_estimator.estimate_duration(
+                text, ref_text, ref_duration, low_threshold=2.0
+            )
+        else:
+            ref_duration = 0
+            gen_duration = duration_estimator.estimate_duration(
+                text, "Nice to meet you.", 0.5, low_threshold=2.0
+            )
+    else:
+        if ref_audio_path is not None:
+            ref_wav = load_audio(ref_audio_path, SAMPLING_RATE)
+            ref_duration = ref_wav.shape[-1] / SAMPLING_RATE
+        else:
+            ref_duration = 0
 
     total_duration = ref_duration + gen_duration
     return total_duration
