@@ -269,11 +269,11 @@ def estimate_sample_total_duration(
         ref_wav = load_audio(ref_audio_path, SAMPLING_RATE)
         ref_duration = ref_wav.shape[-1] / SAMPLING_RATE
     else:
-        ref_duration = 0.0
+        ref_duration = 25
 
     if gen_duration is None:
         gen_duration = duration_estimator.estimate_duration(
-            text, ref_text or "", ref_duration, low_threshold=2.0
+            text, ref_text or "Nice to meet you.", ref_duration, low_threshold=2.0
         )
 
     total_duration = ref_duration + gen_duration
