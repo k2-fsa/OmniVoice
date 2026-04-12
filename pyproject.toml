@@ -68,12 +68,28 @@ Repository = "https://github.com/k2-fsa/OmniVoice"
 # Install PyTorch with CUDA support on Linux/Windows (CUDA doesn't exist for Mac).
 # NOTE: We must explicitly request them as `dependencies` above. These improved
 # versions will not be selected if they're only third-party dependencies.
+
+# =========================================================
+# IMPORTANT: Select the correct graphics card here!
+# Comment out the block for your current card 
+# and uncomment the other one.
+# =========================================================
+
+# FOR NVIDIA:
 torch = [
   { index = "pytorch-cuda", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
 ]
 torchaudio = [
   { index = "pytorch-cuda", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
 ]
+
+# FOR AMD:
+#torch = [
+#  { index = "pytorch-rocm", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+#]
+#torchaudio = [
+#  { index = "pytorch-rocm", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+#]
 
 [[tool.uv.index]]
 name = "pytorch-cuda"
@@ -89,30 +105,8 @@ name = "pytorch-rocm"
 url = "https://rocm.nightlies.amd.com/v2/gfx110X-all/"
 explicit = true
 
-[tool.uv]
-constraint-dependencies = [
-    "torch",
-    "torchaudio",
-]
-
 [tool.hatch.build.targets.sdist]
 include = ["omnivoice"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["omnivoice"]
-
-# =========================================================
-# IMPORTANT: Select the correct graphics card here!
-# Comment out the block for your current card 
-# and uncomment the other one.
-# =========================================================
-
-# FOR NVIDIA:
-[tool.uv.sources]
-torch = { index = "pytorch-cuda" }
-torchaudio = { index = "pytorch-cuda" }
-
-# FOR AMD:
-# [tool.uv.sources]
-# torch = { index = "pytorch-rocm" }
-# torchaudio = { index = "pytorch-rocm" }
