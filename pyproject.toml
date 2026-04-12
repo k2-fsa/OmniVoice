@@ -83,10 +83,16 @@ url = "https://download.pytorch.org/whl/cu128"
 # Only use this index when explicitly requested by `tool.uv.sources`.
 explicit = true
 
+[[tool.uv.index]]
+name = "pytorch-rocm"
+# For AMD (e.g., RX 7900 series / GFX 1100 architecture)
+url = "https://rocm.nightlies.amd.com/v2/gfx110X-all/"
+explicit = true
+
 [tool.uv]
 constraint-dependencies = [
-    "torch==2.8.0",
-    "torchaudio==2.8.0",
+    "torch",
+    "torchaudio",
 ]
 
 [tool.hatch.build.targets.sdist]
@@ -94,3 +100,19 @@ include = ["omnivoice"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["omnivoice"]
+
+# =========================================================
+# IMPORTANT: Select the correct graphics card here!
+# Comment out the block for your current card 
+# and uncomment the other one.
+# =========================================================
+
+# FOR NVIDIA:
+[tool.uv.sources]
+torch = { index = "pytorch-cuda" }
+torchaudio = { index = "pytorch-cuda" }
+
+# FOR AMD:
+# [tool.uv.sources]
+# torch = { index = "pytorch-rocm" }
+# torchaudio = { index = "pytorch-rocm" }
