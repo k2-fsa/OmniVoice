@@ -25,6 +25,7 @@ inference post-processing.
 import numpy as np
 import torch
 import torchaudio
+import soundfile as sf
 from pydub import AudioSegment
 from pydub.silence import detect_leading_silence, detect_nonsilent, split_on_silence
 
@@ -42,9 +43,8 @@ def load_audio(audio_path: str, sampling_rate: int):
         PyTorch tensor of shape (1, T)
     """
     try:
-        waveform, prompt_sampling_rate = torchaudio.load(
-            audio_path, backend="soundfile"
-        )
+        data, prompt_sampling_rate = sf.read(audio_path, dtype="float32")
+        waveform = torch.from_numpy(data.T if data.ndim > 1 else data.reshape(1, -1))
     except (RuntimeError, OSError):
         # Fallback via pydub+ffmpeg for formats torchaudio can't handle
         aseg = AudioSegment.from_file(audio_path)
