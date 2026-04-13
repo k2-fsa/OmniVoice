@@ -584,36 +584,42 @@ class OmniVoice(PreTrainedModel):
     def edit(
         self,
         text: Union[str, list[str]],
-        edit_token_range: Union[Tuple[int, int], list[Tuple[int, int]]],
-        ref_text: Union[str, list[str]],
+        ref_text: Union[str, list[str], None] = None,
         ref_audio: Union[
             str,
             list[str],
             tuple[torch.Tensor, int],
             list[tuple[torch.Tensor, int]],
-        ],
+            None,
+        ] = None,
+        edit_time_range: Union[Tuple[float, float], list[Tuple[float, float]], None] = None,
+        duration: Union[float, list[Optional[float]], None] = None,
         language: Union[str, list[str], None] = None,
         instruct: Union[str, list[str], None] = None,
         generation_config: Optional[OmniVoiceGenerationConfig] = None,
         **kwargs,
     ) -> list[torch.Tensor]:
-        """Edit a contiguous span of reference audio tokens in-place.
+        """Edit a contiguous span of reference audio in-place.
 
         Unlike :meth:`generate`, this method does not infer text/audio alignment.
-        The caller must pass ``edit_token_range=(start, end)`` in reference-audio
-        token coordinates. Tokens outside that half-open interval are kept from
-        the reference audio, and only the specified span is regenerated. Supports
+        The caller must pass ``edit_time_range=(start, end)`` in seconds. Audio
+        outside that half-open interval is kept from the reference audio, and
+        only the specified span is regenerated. Supports
         either a single sample or a batch of samples passed as lists.
 
         Args:
             text: Full target text after editing. Can be a single string or a
                 list of strings for batch editing.
-            edit_token_range: Half-open token interval ``(start, end)`` over the
-                tokenized reference audio. Can be a single tuple applied to all
+            edit_time_range: Half-open time interval ``(start, end)`` in seconds
+                over the reference audio. Can be a single tuple applied to all
                 items, or a list with one tuple per item.
             ref_text: Transcript of the reference audio before editing.
             ref_audio: File path or ``(waveform, sample_rate)`` tuple for the
                 reference audio to edit. Can also be a list for batch editing.
+            duration: Optional target duration in seconds for the edited span.
+                If omitted or ``None``, reuse the original duration implied by
+                ``edit_time_range`` after discretization to audio tokens. Can be
+                a scalar or a per-item list.
             language: Optional language name/code, scalar or list.
             instruct: Optional style instruction, scalar or list.
             generation_config: Explicit config object. If provided, takes
@@ -630,6 +636,13 @@ class OmniVoice(PreTrainedModel):
                 "loaded the model with OmniVoice.from_pretrained()."
             )
 
+        if edit_time_range is None:
+            raise TypeError("edit_time_range is required")
+        if ref_text is None:
+            raise TypeError("ref_text is required")
+        if ref_audio is None:
+            raise TypeError("ref_audio is required")
+
         gen_config = (
             generation_config
             if generation_config is not None
@@ -645,21 +658,38 @@ class OmniVoice(PreTrainedModel):
         language_list = [_resolve_language(lang) for lang in language_list]
         ref_text_list = self._ensure_list(ref_text, batch_size)
         ref_audio_list = self._ensure_list(ref_audio, batch_size)
-        if isinstance(edit_token_range, tuple):
-            edit_token_range_list = [edit_token_range] * batch_size
+        if duration is not None:
+            if isinstance(duration, (int, float)):
+                duration_list = [float(duration)] * batch_size
+            else:
+                duration_list = list(duration)
+            if len(duration_list) not in (1, batch_size):
+                raise ValueError(
+                    "duration should be either the number of the text or 1, "
+                    f"but got {len(duration_list)}"
+                )
+            duration_list = (
+                duration_list * batch_size
+                if len(duration_list) == 1
+                else duration_list
+            )
+        else:
+            duration_list = None
+        if isinstance(edit_time_range, tuple):
+            edit_time_range_list = [edit_time_range] * batch_size
         else:
             assert isinstance(
-                edit_token_range, list
-            ), "edit_token_range should be a tuple or a list of tuples"
-            if len(edit_token_range) not in (1, batch_size):
+                edit_time_range, list
+            ), "edit_time_range should be a tuple or a list of tuples"
+            if len(edit_time_range) not in (1, batch_size):
                 raise ValueError(
-                    "edit_token_range should be either the number of the text or 1, "
-                    f"but got {len(edit_token_range)}"
+                    "edit_time_range should be either the number of the text or 1, "
+                    f"but got {len(edit_time_range)}"
                 )
-            edit_token_range_list = (
-                edit_token_range * batch_size
-                if len(edit_token_range) == 1
-                else edit_token_range
+            edit_time_range_list = (
+                edit_time_range * batch_size
+                if len(edit_time_range) == 1
+                else edit_time_range
             )
         instruct_list = self._ensure_list(instruct, batch_size)
         for i, s in enumerate(instruct_list):
@@ -679,20 +709,36 @@ class OmniVoice(PreTrainedModel):
 
         inputs_list = []
         for i in range(batch_size):
-            edit_range = edit_token_range_list[i]
+            edit_range = edit_time_range_list[i]
             if not isinstance(edit_range, (tuple, list)) or len(edit_range) != 2:
                 raise TypeError(
-                    "edit_token_range must be a (start, end) tuple or a list of such tuples"
+                    "edit_time_range must be a (start, end) tuple or a list of such tuples"
                 )
-            edit_start, edit_end = edit_range
+            edit_start_sec, edit_end_sec = edit_range
             ref_audio_tokens = prompts[i].ref_audio_tokens
-            _validate_edit_token_range(edit_start, edit_end, ref_audio_tokens.size(-1))
+            edit_start, edit_end = _edit_time_range_to_token_range(
+                edit_start_sec,
+                edit_end_sec,
+                self.audio_tokenizer.config.frame_rate,
+                ref_audio_tokens.size(-1),
+            )
+            if duration_list is None or duration_list[i] is None:
+                target_edit_len = edit_end - edit_start
+            else:
+                target_duration = float(duration_list[i])
+                if target_duration <= 0:
+                    raise ValueError("duration must be positive when specified")
+                target_edit_len = max(
+                    1,
+                    int(target_duration * self.audio_tokenizer.config.frame_rate),
+                )
             inputs_list.append(
                 self._prepare_edit_inference_inputs(
                     text=text_list[i],
                     ref_audio_tokens=ref_audio_tokens,
                     edit_start=edit_start,
                     edit_end=edit_end,
+                    target_edit_len=target_edit_len,
                     lang=language_list[i],
                     instruct=instruct_list[i],
                     denoise=gen_config.denoise,
@@ -1247,6 +1293,7 @@ class OmniVoice(PreTrainedModel):
         ref_audio_tokens: torch.Tensor,
         edit_start: int,
         edit_end: int,
+        target_edit_len: int,
         lang: Optional[str] = None,
         instruct: Optional[str] = None,
         denoise: bool = True,
@@ -1274,10 +1321,17 @@ class OmniVoice(PreTrainedModel):
             .unsqueeze(0)
         ).to(self.device)
 
-        edit_len = edit_end - edit_start
-        masked_ref_audio_tokens = ref_audio_tokens.clone().to(self.device)
-        masked_ref_audio_tokens[:, edit_start:edit_end] = self.config.audio_mask_id
-        masked_ref_audio_tokens = masked_ref_audio_tokens.unsqueeze(0)
+        prefix_tokens = ref_audio_tokens[:, :edit_start].to(self.device)
+        suffix_tokens = ref_audio_tokens[:, edit_end:].to(self.device)
+        masked_edit_tokens = torch.full(
+            (self.config.num_audio_codebook, target_edit_len),
+            self.config.audio_mask_id,
+            dtype=torch.long,
+            device=self.device,
+        )
+        masked_ref_audio_tokens = torch.cat(
+            [prefix_tokens, masked_edit_tokens, suffix_tokens], dim=1
+        ).unsqueeze(0)
 
         cond_input_ids = torch.cat(
             [style_tokens, text_tokens, masked_ref_audio_tokens], dim=2
@@ -1292,13 +1346,13 @@ class OmniVoice(PreTrainedModel):
         cond_audio_mask[0, cond_audio_start_idx:] = True
 
         uncond_input_ids = torch.full(
-            (1, self.config.num_audio_codebook, edit_len),
+            (1, self.config.num_audio_codebook, target_edit_len),
             self.config.audio_mask_id,
             dtype=torch.long,
             device=self.device,
         )
         uncond_audio_mask = torch.ones(
-            1, edit_len, dtype=torch.bool, device=self.device
+            1, target_edit_len, dtype=torch.bool, device=self.device
         )
 
         return {
@@ -1590,8 +1644,14 @@ class OmniVoice(PreTrainedModel):
 
         results = []
         for i, inp in enumerate(inputs_list):
-            edited = inp["ref_audio_tokens"].clone()
-            edited[:, inp["edit_start"] : inp["edit_end"]] = tokens[i, :, : u_lens[i]]
+            edited = torch.cat(
+                [
+                    inp["ref_audio_tokens"][:, : inp["edit_start"]],
+                    tokens[i, :, : u_lens[i]],
+                    inp["ref_audio_tokens"][:, inp["edit_end"] :],
+                ],
+                dim=1,
+            )
             results.append(edited)
 
         return results
@@ -1631,17 +1691,37 @@ def _get_packed_mask(document_ids):
     return partial(_mask_mod_packed, document_ids)
 
 
-def _validate_edit_token_range(start: int, end: int, total_tokens: int) -> None:
-    if not isinstance(start, int) or not isinstance(end, int):
-        raise TypeError("edit_token_range must contain integer token indices")
+def _validate_edit_time_range(start: float, end: float, total_duration: float) -> None:
+    if (
+        not isinstance(start, (int, float))
+        or not isinstance(end, (int, float))
+        or isinstance(start, bool)
+        or isinstance(end, bool)
+    ):
+        raise TypeError("edit_time_range must contain numeric timestamps in seconds")
+    if not math.isfinite(start) or not math.isfinite(end):
+        raise ValueError("edit_time_range must contain finite timestamps")
     if start < 0 or end < 0:
-        raise ValueError("edit_token_range indices must be non-negative")
+        raise ValueError("edit_time_range timestamps must be non-negative")
     if start >= end:
-        raise ValueError("edit_token_range must satisfy start < end")
-    if end > total_tokens:
+        raise ValueError("edit_time_range must satisfy start < end")
+    if end > total_duration:
         raise ValueError(
-            f"edit_token_range end={end} exceeds reference token length {total_tokens}"
+            f"edit_time_range end={end} exceeds reference audio duration {total_duration}"
         )
+
+
+def _edit_time_range_to_token_range(
+    start: float, end: float, frame_rate: float, total_tokens: int
+) -> tuple[int, int]:
+    _validate_edit_time_range(start, end, total_tokens / frame_rate)
+
+    token_start = int(math.floor(float(start) * frame_rate))
+    token_end = int(math.ceil(float(end) * frame_rate))
+
+    token_start = max(0, min(token_start, total_tokens - 1))
+    token_end = max(token_start + 1, min(token_end, total_tokens))
+    return token_start, token_end
 
 
 def _mask_mod_packed(document_ids, b, h, q_idx, kv_idx):
