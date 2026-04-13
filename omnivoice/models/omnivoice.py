@@ -645,7 +645,22 @@ class OmniVoice(PreTrainedModel):
         language_list = [_resolve_language(lang) for lang in language_list]
         ref_text_list = self._ensure_list(ref_text, batch_size)
         ref_audio_list = self._ensure_list(ref_audio, batch_size)
-        edit_token_range_list = self._ensure_list(edit_token_range, batch_size)
+        if isinstance(edit_token_range, tuple):
+            edit_token_range_list = [edit_token_range] * batch_size
+        else:
+            assert isinstance(
+                edit_token_range, list
+            ), "edit_token_range should be a tuple or a list of tuples"
+            if len(edit_token_range) not in (1, batch_size):
+                raise ValueError(
+                    "edit_token_range should be either the number of the text or 1, "
+                    f"but got {len(edit_token_range)}"
+                )
+            edit_token_range_list = (
+                edit_token_range * batch_size
+                if len(edit_token_range) == 1
+                else edit_token_range
+            )
         instruct_list = self._ensure_list(instruct, batch_size)
         for i, s in enumerate(instruct_list):
             if s is None:
