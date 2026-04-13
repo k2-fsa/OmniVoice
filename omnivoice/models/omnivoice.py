@@ -583,39 +583,46 @@ class OmniVoice(PreTrainedModel):
     @torch.inference_mode()
     def edit(
         self,
-        text: str,
-        edit_token_range: Tuple[int, int],
-        ref_text: str,
-        ref_audio: Union[str, tuple[torch.Tensor, int]],
-        language: Optional[str] = None,
-        instruct: Optional[str] = None,
+        text: Union[str, list[str]],
+        edit_token_range: Union[Tuple[int, int], list[Tuple[int, int]]],
+        ref_text: Union[str, list[str]],
+        ref_audio: Union[
+            str,
+            list[str],
+            tuple[torch.Tensor, int],
+            list[tuple[torch.Tensor, int]],
+        ],
+        language: Union[str, list[str], None] = None,
+        instruct: Union[str, list[str], None] = None,
         generation_config: Optional[OmniVoiceGenerationConfig] = None,
         **kwargs,
-    ) -> torch.Tensor:
+    ) -> list[torch.Tensor]:
         """Edit a contiguous span of reference audio tokens in-place.
 
         Unlike :meth:`generate`, this method does not infer text/audio alignment.
         The caller must pass ``edit_token_range=(start, end)`` in reference-audio
         token coordinates. Tokens outside that half-open interval are kept from
-        the reference audio, and only the specified span is regenerated.
+        the reference audio, and only the specified span is regenerated. Supports
+        either a single sample or a batch of samples passed as lists.
 
         Args:
-            text: Full target text after editing.
+            text: Full target text after editing. Can be a single string or a
+                list of strings for batch editing.
             edit_token_range: Half-open token interval ``(start, end)`` over the
-                tokenized reference audio.
-            ref_text: Transcript of the reference audio before editing. It is
-                required for API symmetry and future alignment use, but this
-                method does not derive ``edit_token_range`` from it.
+                tokenized reference audio. Can be a single tuple applied to all
+                items, or a list with one tuple per item.
+            ref_text: Transcript of the reference audio before editing.
             ref_audio: File path or ``(waveform, sample_rate)`` tuple for the
-                reference audio to edit.
-            language: Optional language name/code.
-            instruct: Optional style instruction.
+                reference audio to edit. Can also be a list for batch editing.
+            language: Optional language name/code, scalar or list.
+            instruct: Optional style instruction, scalar or list.
             generation_config: Explicit config object. If provided, takes
                 precedence over ``**kwargs``.
             **kwargs: Fields of :class:`OmniVoiceGenerationConfig`.
 
         Returns:
-            Edited waveform tensor of shape ``(1, T)``.
+            A list of edited waveform tensors of shape ``(1, T)``, one per input
+            item.
         """
         if self.audio_tokenizer is None or self.text_tokenizer is None:
             raise RuntimeError(
@@ -628,32 +635,61 @@ class OmniVoice(PreTrainedModel):
             if generation_config is not None
             else OmniVoiceGenerationConfig.from_dict(kwargs)
         )
-        lang = _resolve_language(language)
-        instruct = _resolve_instruct(instruct, use_zh=bool(text and _ZH_RE.search(text)))
 
         self.eval()
 
-        prompt = self.create_voice_clone_prompt(
-            ref_audio=ref_audio,
-            ref_text=ref_text,
-            preprocess_prompt=False,
-        )
-        ref_audio_tokens = prompt.ref_audio_tokens
-        edit_start, edit_end = edit_token_range
-        _validate_edit_token_range(edit_start, edit_end, ref_audio_tokens.size(-1))
+        text_list = [text] if isinstance(text, str) else text
+        batch_size = len(text_list)
 
-        inputs = self._prepare_edit_inference_inputs(
-            text=text,
-            ref_audio_tokens=ref_audio_tokens,
-            edit_start=edit_start,
-            edit_end=edit_end,
-            lang=lang,
-            instruct=instruct,
-            denoise=gen_config.denoise,
-        )
-        edited_tokens = self._generate_iterative_masked([inputs], gen_config)[0]
+        language_list = self._ensure_list(language, batch_size)
+        language_list = [_resolve_language(lang) for lang in language_list]
+        ref_text_list = self._ensure_list(ref_text, batch_size)
+        ref_audio_list = self._ensure_list(ref_audio, batch_size)
+        edit_token_range_list = self._ensure_list(edit_token_range, batch_size)
+        instruct_list = self._ensure_list(instruct, batch_size)
+        for i, s in enumerate(instruct_list):
+            if s is None:
+                continue
+            use_zh = bool(text_list[i] and _ZH_RE.search(text_list[i]))
+            instruct_list[i] = _resolve_instruct(s, use_zh=use_zh)
 
-        return self._decode_and_post_process(edited_tokens, prompt.ref_rms, gen_config)
+        prompts = [
+            self.create_voice_clone_prompt(
+                ref_audio=ref_audio_list[i],
+                ref_text=ref_text_list[i],
+                preprocess_prompt=False,
+            )
+            for i in range(batch_size)
+        ]
+
+        inputs_list = []
+        for i in range(batch_size):
+            edit_range = edit_token_range_list[i]
+            if not isinstance(edit_range, (tuple, list)) or len(edit_range) != 2:
+                raise TypeError(
+                    "edit_token_range must be a (start, end) tuple or a list of such tuples"
+                )
+            edit_start, edit_end = edit_range
+            ref_audio_tokens = prompts[i].ref_audio_tokens
+            _validate_edit_token_range(edit_start, edit_end, ref_audio_tokens.size(-1))
+            inputs_list.append(
+                self._prepare_edit_inference_inputs(
+                    text=text_list[i],
+                    ref_audio_tokens=ref_audio_tokens,
+                    edit_start=edit_start,
+                    edit_end=edit_end,
+                    lang=language_list[i],
+                    instruct=instruct_list[i],
+                    denoise=gen_config.denoise,
+                )
+            )
+
+        edited_tokens_list = self._generate_iterative_masked(inputs_list, gen_config)
+        edited_audios = [
+            self._decode_and_post_process(edited_tokens, prompts[i].ref_rms, gen_config)
+            for i, edited_tokens in enumerate(edited_tokens_list)
+        ]
+        return edited_audios
 
     def create_voice_clone_prompt(
         self,
