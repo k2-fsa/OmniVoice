@@ -296,6 +296,10 @@ You can also scan the QR code to join our wechat group or follow our wechat offi
   Supports voice profiles for persistent cloning, sentence-level streaming,
   and optional Bearer auth.
 
+- **[omnivoice-rs](https://github.com/FerrisMind/omnivoice-rs)** —
+  GPU-first Rust workspace for OmniVoice inference, parity validation, CLI
+  execution, and an OpenAI-compatible HTTP server built with Candle.
+
 ---
 
 ## Citation
