@@ -39,7 +39,10 @@ dependencies = [
     "tensorboardX",
     "webdataset",
     "numpy",
-    "soundfile"
+    "soundfile",
+    "fastapi>=0.135.2",
+    "uvicorn>=0.42.0",
+    "inflect>=7.5.0",
 ]
 
 [project.optional-dependencies]
@@ -58,6 +61,7 @@ eval = [
 omnivoice-infer = "omnivoice.cli.infer:main"
 omnivoice-infer-batch = "omnivoice.cli.infer_batch:main"
 omnivoice-demo = "omnivoice.cli.demo:main"
+omnivoice-openai-tts-server = "omnivoice.openai_tts_server:main"
 
 [project.urls]
 Homepage = "https://github.com/k2-fsa/OmniVoice"

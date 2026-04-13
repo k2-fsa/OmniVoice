@@ -29,19 +29,10 @@ from typing import Any, Dict
 
 import gradio as gr
 import numpy as np
-import torch
 
 from omnivoice import OmniVoice, OmniVoiceGenerationConfig
+from omnivoice.utils.common import get_best_device
 from omnivoice.utils.lang_map import LANG_NAMES, lang_display_name
-
-
-def get_best_device():
-    """Auto-detect the best available device: CUDA > MPS > CPU."""
-    if torch.cuda.is_available():
-        return "cuda"
-    if torch.backends.mps.is_available():
-        return "mps"
-    return "cpu"
 
 
 # ---------------------------------------------------------------------------
@@ -522,7 +513,6 @@ def main(argv=None) -> int:
     model = OmniVoice.from_pretrained(
         checkpoint,
         device_map=device,
-        dtype=torch.float16,
         load_asr=not args.no_asr,
     )
     print("Model loaded.")

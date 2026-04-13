@@ -94,6 +94,9 @@ Try OmniVoice without coding:
 
 - Launch the local web UI: `omnivoice-demo --ip 0.0.0.0 --port 8001`
 
+- Launch the OpenAI-compatible TTS server: `omnivoice-openai-tts-server --host 0.0.0.0 --port 6655`
+
+- Open the browser UI: `http://127.0.0.1:6655/ui`
 
 - Or try it directly on [HuggingFace Space](https://huggingface.co/spaces/k2-fsa/OmniVoice)
 
@@ -113,13 +116,11 @@ Clone a voice from a short reference audio. Provide `ref_audio` and `ref_text`:
 
 ```python
 from omnivoice import OmniVoice
-import torch
 import torchaudio
 
 model = OmniVoice.from_pretrained(
     "k2-fsa/OmniVoice",
     device_map="cuda:0",
-    dtype=torch.float16
 )
 # Apple Silicon users: use device_map="mps" instead
 
@@ -138,6 +139,7 @@ torchaudio.save("out.wav", audio[0], 24000)
 > **Tips**
 >
 > - Use a 3–10 seconds reference audio clip. Longer audio slows down inference and may degrade cloning quality.
+> - On CUDA, OmniVoice now auto-selects an inference-friendly dtype (bf16 on Ampere-or-newer GPUs when available, otherwise fp16) and enables TF32 matmul fast paths.
 > - For better results with Arabic numerals, normalize them to words first (e.g., "123" → "one hundred twenty-three") with text normalization tools (e.g., [WeTextProcessing](https://github.com/wenet-e2e/WeTextProcessing)).
 
 ### Voice Design
@@ -216,6 +218,7 @@ Three CLI entry points are provided. The CLI tools support all features availabl
 | `omnivoice-demo` | Interactive Gradio web demo | [omnivoice/cli/demo.py](omnivoice/cli/demo.py) |
 | `omnivoice-infer` | Single-item inference | [omnivoice/cli/infer.py](omnivoice/cli/infer.py) |
 | `omnivoice-infer-batch` | Batch inference across multiple GPUs | [omnivoice/cli/infer_batch.py](omnivoice/cli/infer_batch.py) |
+| `omnivoice-openai-tts-server` | OpenAI-compatible FastAPI TTS server with request sanitization and sentence-aware chunking | [omnivoice/openai_tts_server.py](omnivoice/openai_tts_server.py) |
 
 ### Demo
 
@@ -268,6 +271,28 @@ The test list is a JSONL file where each line is a JSON object:
 Only `id` and `text` are mandatory fields. `ref_audio` and `ref_text` are used in voice cloning mode. `instruct` is used in voice design mode. If no reference audio or instruct are provided, the model will generate text in a random voice.
 
 `language_id`, `language_name`, `duration`, and `speed` are optional. `duration` (in seconds) fixes the output length; `speed` controls the speaking rate. If `duration` and `speed` are both provided, `speed` will be ignored.
+
+### OpenAI-Compatible TTS Server
+
+```bash
+omnivoice-openai-tts-server --host 0.0.0.0 --port 6655
+```
+
+The server exposes `/v1/audio/speech`, `/v1/audio/voices`, `/v1/audio/models`, and `/health` endpoints. Incoming text is sanitized before synthesis (control-token stripping, whitespace cleanup, optional URL/email/phone normalization), and longer inputs are chunked on sentence punctuation before the final audio is returned as one response.
+
+The `/ui` page provides a small browser-friendly credits and voice summary view.
+
+```bash
+curl -X POST http://127.0.0.1:6655/v1/audio/speech \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "omnivoice",
+    "voice": "nova",
+    "input": "Hello world. This sentence-aware request will be sanitized and synthesized.",
+    "response_format": "mp3"
+  }' \
+  --output speech.mp3
+```
 
 ---
 
