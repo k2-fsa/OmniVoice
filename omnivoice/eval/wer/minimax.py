@@ -34,7 +34,7 @@ import torch
 import zhconv
 from tqdm import tqdm
 
-from omnivoice.eval.utils import load_waveform
+from omnivoice.eval.utils import load_eval_waveform
 from omnivoice.eval.wer.common import log_metrics, process_one
 from omnivoice.eval.wer.text_norm_omni import text_normalize
 from omnivoice.utils.data_utils import read_test_list
@@ -275,7 +275,7 @@ class SpeechEvalDataset(torch.utils.data.Dataset):
 
     def __getitem__(self, index):
         item = self.data_list[index]
-        waveform = load_waveform(item["wav_path"], sample_rate=16000, return_numpy=True)
+        waveform = load_eval_waveform(item["wav_path"], sample_rate=16000, return_numpy=True)
         return {
             "array": waveform,
             "sampling_rate": 16000,

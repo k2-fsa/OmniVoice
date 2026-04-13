@@ -66,13 +66,13 @@ from typing import Any
 import numpy as np
 import torch
 import torch.nn.functional as F
-import torchaudio
 import webdataset as wds
 from torch.utils.data import DataLoader, IterableDataset
 from tqdm.auto import tqdm
 from transformers import AutoFeatureExtractor, HiggsAudioV2TokenizerModel
 
 from omnivoice.data.dataset import JsonlDatasetReader, WebDatasetReader
+from omnivoice.utils.audio import load_audio_bytes
 from omnivoice.utils.common import str2bool
 
 warnings.filterwarnings(
@@ -207,13 +207,7 @@ def serialise_numpy(key: str, tokens: np.ndarray) -> dict:
 
 def _load_aug_audio(data, sample_rate=24000):
     """Simple audio loader for augmentation files."""
-    with io.BytesIO(data) as b:
-        wav, sr = torchaudio.load(b)
-    if wav.shape[0] > 1:
-        wav = wav.mean(dim=0, keepdim=True)
-    if sr != sample_rate:
-        wav = torchaudio.functional.resample(wav, sr, sample_rate)
-    return wav
+    return torch.from_numpy(load_audio_bytes(data, sample_rate))
 
 
 class SimpleWorkerSampler:

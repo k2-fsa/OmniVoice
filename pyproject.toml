@@ -39,14 +39,14 @@ dependencies = [
     "tensorboardX",
     "webdataset",
     "numpy",
-    "soundfile"
+    "soundfile",
+    "librosa",
 ]
 
 [project.optional-dependencies]
 
 eval = [
     "jiwer==3.1.0",       # WER
-    "librosa",             # Audio processing
     "s3prl",               # Speech representation (HuBERT etc.)
     "funasr",              # ASR models
     "zhconv",              # Chinese character normalization

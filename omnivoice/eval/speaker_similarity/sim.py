@@ -33,7 +33,7 @@ import torch
 from tqdm import tqdm
 
 from omnivoice.eval.models.ecapa_tdnn_wavlm import ECAPA_TDNN_WAVLM
-from omnivoice.eval.utils import load_waveform
+from omnivoice.eval.utils import load_eval_waveform
 from omnivoice.utils.data_utils import read_test_list
 
 warnings.filterwarnings("ignore")
@@ -144,7 +144,7 @@ def worker_init(
 @torch.no_grad()
 def get_embedding(wav_path: str) -> torch.Tensor:
     """Extract embedding for a single file."""
-    speech = load_waveform(wav_path, worker_sr, device=worker_device, max_seconds=120)
+    speech = load_eval_waveform(wav_path, worker_sr, device=worker_device, max_seconds=120)
     return worker_model([speech])
 
 

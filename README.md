@@ -113,8 +113,8 @@ Clone a voice from a short reference audio. Provide `ref_audio` and `ref_text`:
 
 ```python
 from omnivoice import OmniVoice
+import soundfile as sf
 import torch
-import torchaudio
 
 model = OmniVoice.from_pretrained(
     "k2-fsa/OmniVoice",
@@ -127,12 +127,12 @@ audio = model.generate(
     text="Hello, this is a test of zero-shot voice cloning.",
     ref_audio="ref.wav",
     ref_text="Transcription of the reference audio.",
-) # audio is a list of `torch.Tensor` with shape (1, T) at 24 kHz.
+) # audio is a list of `np.ndarray` with shape (T,) at 24 kHz.
 
 # If you don't want to input `ref_text` manually, you can directly omit the `ref_text`.
 # The model will use Whisper ASR to auto-transcribe it.
 
-torchaudio.save("out.wav", audio[0], 24000)
+sf.write("out.wav", audio[0], 24000)
 ```
 
 > **Tips**
@@ -286,15 +286,6 @@ You can also scan the QR code to join our wechat group or follow our wechat offi
 | Wechat Group | Wechat Official Account |
 | ------------ | ----------------------- |
 |![wechat](https://k2-fsa.org/zh-CN/assets/pic/wechat_group.jpg) |![wechat](https://k2-fsa.org/zh-CN/assets/pic/wechat_account.jpg) |
-
----
-
-## Community Projects
-
-- **[omnivoice-server](https://github.com/maemreyo/omnivoice-server)** —
-  OpenAI-compatible HTTP server for serving OmniVoice via `/v1/audio/speech`.
-  Supports voice profiles for persistent cloning, sentence-level streaming,
-  and optional Bearer auth.
 
 ---
 

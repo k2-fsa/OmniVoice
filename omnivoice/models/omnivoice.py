@@ -36,10 +36,11 @@ from dataclasses import dataclass, fields
 from functools import partial
 from typing import Any, List, Optional, Union
 
+import librosa
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import torchaudio
 from torch.nn.attention.flex_attention import create_block_mask
 from transformers import (
     AutoFeatureExtractor,
@@ -310,12 +311,14 @@ class OmniVoice(PreTrainedModel):
     @torch.inference_mode()
     def transcribe(
         self,
-        audio: Union[str, tuple[torch.Tensor, int]],
+        audio: Union[str, tuple],
     ) -> str:
         """Transcribe audio using the loaded Whisper ASR model.
 
         Args:
-            audio: File path or (waveform, sample_rate) tuple.
+            audio: File path or ``(waveform, sample_rate)`` tuple.
+                Waveform can be a numpy array or torch.Tensor of shape
+                ``(1, T)`` or ``(T,)``.
 
         Returns:
             Transcribed text.
@@ -329,12 +332,11 @@ class OmniVoice(PreTrainedModel):
             return self._asr_pipe(audio)["text"].strip()
         else:
             waveform, sr = audio
-            if waveform.dim() == 1:
-                waveform = waveform.unsqueeze(0)
-            if waveform.size(0) > 1:
-                waveform = torch.mean(waveform, dim=0, keepdim=True)
+            if isinstance(waveform, torch.Tensor):
+                waveform = waveform.cpu().numpy()
+            waveform = np.squeeze(waveform)  # (1, T) or (T,) → (T,)
             audio_input = {
-                "array": waveform.squeeze(0).cpu().numpy(),
+                "array": waveform,
                 "sampling_rate": sr,
             }
             return self._asr_pipe(audio_input)["text"].strip()
@@ -475,7 +477,7 @@ class OmniVoice(PreTrainedModel):
         speed: Union[float, list[Optional[float]], None] = None,
         generation_config: Optional[OmniVoiceGenerationConfig] = None,
         **kwargs,
-    ) -> list[torch.Tensor]:
+    ) -> list[np.ndarray]:
         """Generate speech audio given text in various modes.
 
         Supports three modes:
@@ -522,8 +524,10 @@ class OmniVoice(PreTrainedModel):
                 audio_chunk_threshold: Only apply chunking if estimated audio
                     duration exceeds this threshold (seconds).
         Returns:
-            ``audios`` a list of 2-D ``torch.Tensor``, with the shape (1, T) and sampling rate
-            consistent with the model's audio tokenizer (usually 24000 Hz).
+            ``audios`` a list of 1-D ``np.ndarray`` with shape ``(T,)`` and
+            sampling rate consistent with the model's audio tokenizer
+            (usually 24 000 Hz).  Can be saved directly with
+            ``soundfile.write("out.wav", audios[0], model.sampling_rate)``.
         """
 
         if self.audio_tokenizer is None or self.text_tokenizer is None:
@@ -611,17 +615,19 @@ class OmniVoice(PreTrainedModel):
             ref_wav = load_audio(ref_audio, self.sampling_rate)
         else:
             waveform, sr = ref_audio
-            if waveform.dim() == 1:
-                waveform = waveform.unsqueeze(0)
-            if waveform.size(0) > 1:
-                waveform = torch.mean(waveform, dim=0, keepdim=True)
+            if isinstance(waveform, torch.Tensor):
+                waveform = waveform.cpu().numpy()
+            if waveform.ndim == 1:
+                waveform = waveform[np.newaxis, :]
+            if waveform.shape[0] > 1:
+                waveform = np.mean(waveform, axis=0, keepdims=True)
             if sr != self.sampling_rate:
-                waveform = torchaudio.functional.resample(
-                    waveform, sr, self.sampling_rate
+                waveform = librosa.resample(
+                    waveform, orig_sr=sr, target_sr=self.sampling_rate,
                 )
             ref_wav = waveform
 
-        ref_rms = torch.sqrt(torch.mean(torch.square(ref_wav))).item()
+        ref_rms = float(np.sqrt(np.mean(ref_wav ** 2)))
         if 0 < ref_rms < 0.1:
             ref_wav = ref_wav * 0.1 / ref_rms
 
@@ -640,13 +646,13 @@ class OmniVoice(PreTrainedModel):
                 lead_sil=100,
                 trail_sil=200,
             )
-            if ref_wav.size(-1) == 0:
+            if ref_wav.shape[-1] == 0:
                 raise ValueError(
                     "Reference audio is empty after silence removal. "
                     "Try setting preprocess_prompt=False."
                 )
 
-        ref_duration = ref_wav.size(-1) / self.sampling_rate
+        ref_duration = ref_wav.shape[-1] / self.sampling_rate
         if ref_duration > 20.0:
             logger.warning(
                 "Reference audio is %.1fs long (>20s). This may cause slower "
@@ -664,10 +670,14 @@ class OmniVoice(PreTrainedModel):
             logger.debug("Auto-transcribed ref_text: %s", ref_text)
 
         chunk_size = self.audio_tokenizer.config.hop_length
-        clip_size = int(ref_wav.size(-1) % chunk_size)
+        clip_size = int(ref_wav.shape[-1] % chunk_size)
         ref_wav = ref_wav[:, :-clip_size] if clip_size > 0 else ref_wav
+        # numpy → torch at tokenizer boundary
+        ref_wav_tensor = torch.from_numpy(ref_wav).to(
+            self.audio_tokenizer.device
+        )
         ref_audio_tokens = self.audio_tokenizer.encode(
-            ref_wav.unsqueeze(0).to(self.audio_tokenizer.device),
+            ref_wav_tensor.unsqueeze(0),
         ).audio_codes.squeeze(
             0
         )  # (C, T)
@@ -686,7 +696,7 @@ class OmniVoice(PreTrainedModel):
         tokens: Union[torch.Tensor, List[torch.Tensor]],
         rms: Union[float, None],
         gen_config: OmniVoiceGenerationConfig,
-    ) -> torch.Tensor:
+    ) -> np.ndarray:
         """
         Args:
             tokens: Audio tokens — either a single tensor of shape
@@ -694,7 +704,7 @@ class OmniVoice(PreTrainedModel):
             rms: RMS of the reference audio for volume adjustment.
             gen_config: Generation config for post-processing options.
         Returns:
-            Decoded and post-processed audio tensor of shape (1, T).
+            Decoded and post-processed audio array of shape (T,).
         """
         tokenizer_device = self.audio_tokenizer.device
         if isinstance(tokens, list):
@@ -702,6 +712,7 @@ class OmniVoice(PreTrainedModel):
                 self.audio_tokenizer.decode(t.to(tokenizer_device).unsqueeze(0))
                 .audio_values[0]
                 .cpu()
+                .numpy()
                 for t in tokens
             ]
             audio_waveform = cross_fade_chunks(chunk_audios, self.sampling_rate)
@@ -710,28 +721,30 @@ class OmniVoice(PreTrainedModel):
                 self.audio_tokenizer.decode(tokens.to(tokenizer_device).unsqueeze(0))
                 .audio_values[0]
                 .cpu()
+                .numpy()
             )
 
-        return self._post_process_audio(
+        audio_waveform = self._post_process_audio(
             audio_waveform,
             postprocess_output=gen_config.postprocess_output,
             ref_rms=rms,
         )
+        return audio_waveform.squeeze(0)
 
     def _post_process_audio(
         self,
-        generated_audio: torch.Tensor,
+        generated_audio: np.ndarray,
         postprocess_output: bool,
         ref_rms: Union[float, None],
-    ) -> torch.Tensor:
+    ) -> np.ndarray:
         """Optionally remove long silences, adjust volume, and add edge padding.
 
         Args:
-            generated_audio: Audio tensor of shape (1, T).
+            generated_audio: Numpy array of shape (1, T).
             postprocess_output: If True, remove long silences and apply fade/pad.
             ref_rms: RMS of the reference audio for volume normalisation.
         Returns:
-            Processed audio tensor of shape (1, T).
+            Processed numpy array of shape (1, T).
         """
         if postprocess_output:
             generated_audio = remove_silence(
@@ -745,9 +758,7 @@ class OmniVoice(PreTrainedModel):
         if ref_rms is not None and ref_rms < 0.1:
             generated_audio = generated_audio * ref_rms / 0.1
         elif ref_rms is None:
-            # No reference audio (voice design): peak-normalize to 0.5
-            # to avoid clipping while keeping a comfortable volume level.
-            peak = generated_audio.abs().max()
+            peak = np.abs(generated_audio).max()
             if peak > 1e-6:
                 generated_audio = generated_audio / peak * 0.5
 

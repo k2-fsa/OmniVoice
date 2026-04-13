@@ -1558,6 +1558,7 @@ source = { editable = "." }
 dependencies = [
     { name = "accelerate" },
     { name = "gradio" },
+    { name = "librosa" },
     { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple/" }, marker = "python_full_version < '3.11'" },
     { name = "numpy", version = "2.4.3", source = { registry = "https://pypi.org/simple/" }, marker = "python_full_version >= '3.11'" },
     { name = "pydub" },
@@ -1575,7 +1576,6 @@ dependencies = [
 eval = [
     { name = "funasr" },
     { name = "jiwer" },
-    { name = "librosa" },
     { name = "s3prl" },
     { name = "unidecode" },
     { name = "zhconv" },
@@ -1588,7 +1588,7 @@ requires-dist = [
     { name = "funasr", marker = "extra == 'eval'" },
     { name = "gradio" },
     { name = "jiwer", marker = "extra == 'eval'", specifier = "==3.1.0" },
-    { name = "librosa", marker = "extra == 'eval'" },
+    { name = "librosa" },
     { name = "numpy" },
     { name = "pydub" },
     { name = "s3prl", marker = "extra == 'eval'" },

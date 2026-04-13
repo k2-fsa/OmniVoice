@@ -44,8 +44,9 @@ from typing import Any, Dict, Iterator, List, Optional, Tuple
 
 import torch
 import torch.distributed as dist
-import torchaudio
 import webdataset as wds
+
+from omnivoice.utils.audio import load_audio, load_audio_bytes
 from torch.utils.data import IterableDataset
 
 
@@ -54,12 +55,8 @@ def load_audio_webdataset(data, sample_rate: int = 24000, device="cpu"):
     Load audio from bytes data and resample to the target sample rate if needed.
     Return a tensor of shape (1, num_samples)
     """
-    audio, sr = torchaudio.load(io.BytesIO(data))
+    audio = torch.from_numpy(load_audio_bytes(data, sample_rate))
     audio = audio.to(device)
-    if audio.size(dim=0) > 1:
-        audio = torch.mean(audio, dim=0)
-    if sr != sample_rate:
-        audio = torchaudio.functional.resample(audio, sr, sample_rate)
     return audio
 
 
@@ -433,13 +430,9 @@ class JsonlDatasetReader(IterableDataReader):
                 )
                 continue
             try:
-                waveform, sr = torchaudio.load(audio_path)
-                if waveform.shape[0] > 1:
-                    waveform = waveform.mean(dim=0, keepdim=True)
-                if sr != self.sample_rate:
-                    waveform = torchaudio.functional.resample(
-                        waveform, sr, self.sample_rate
-                    )
+                waveform = torch.from_numpy(
+                    load_audio(audio_path, self.sample_rate)
+                )
                 if self.normalize_audio:
                     waveform = (waveform / (waveform.abs().max() + 1e-7)) * 0.9
                 meta["audio_duration"] = waveform.shape[1] / self.sample_rate

@@ -23,7 +23,7 @@ import soundfile as sf
 import torch
 
 
-def load_waveform(
+def load_eval_waveform(
     fname: str,
     sample_rate: int,
     dtype: str = "float32",

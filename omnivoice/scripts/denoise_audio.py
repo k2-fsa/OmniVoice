@@ -73,6 +73,7 @@ from tqdm.auto import tqdm
 
 from omnivoice.data.batching import StreamLengthGroupDataset
 from omnivoice.data.dataset import JsonlDatasetReader, WebDatasetReader
+import soundfile as sf
 from omnivoice.utils.common import str2bool
 
 SIDON_INPUT_SAMPLE_RATE = 16_000
@@ -367,10 +368,10 @@ def extract_seamless_m4t_features(
 
 def serialise_flac(key: str, waveform: torch.Tensor, sample_rate: int) -> dict:
     buffer = io.BytesIO()
-    audio = waveform.to(dtype=torch.float32).cpu()
-    if audio.ndim == 1:
-        audio = audio.unsqueeze(0)
-    torchaudio.save(buffer, audio, sample_rate, format="flac", bits_per_sample=16)
+    audio = waveform.to(dtype=torch.float32).cpu().numpy()
+    if audio.ndim == 2:
+        audio = audio.T  # (C, T) → (T, C) for soundfile
+    sf.write(buffer, audio, sample_rate, format="FLAC")
     return {"__key__": key, "flac": buffer.getvalue()}
 
 

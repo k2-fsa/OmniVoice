@@ -34,7 +34,7 @@ import zhconv
 from tqdm import tqdm
 from zhon.hanzi import punctuation
 
-from omnivoice.eval.utils import load_waveform
+from omnivoice.eval.utils import load_eval_waveform
 from omnivoice.eval.wer.common import process_one
 from omnivoice.utils.data_utils import read_test_list
 
@@ -228,7 +228,7 @@ def run_eval_worker(data_chunk, lang, batch_size):
             # Load waveforms as arrays, truncating to 30s
             dataset = [
                 {
-                    "array": load_waveform(
+                    "array": load_eval_waveform(
                         item["wav_path"], sample_rate=16000, return_numpy=True
                     )[: 16000 * 30],
                     "sampling_rate": 16000,

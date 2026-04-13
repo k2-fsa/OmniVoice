@@ -31,7 +31,7 @@ import numpy as np
 import torch
 from tqdm import tqdm
 
-from omnivoice.eval.utils import load_waveform
+from omnivoice.eval.utils import load_eval_waveform
 from omnivoice.eval.wer.common import process_one
 from omnivoice.utils.data_utils import read_test_list
 
@@ -166,7 +166,7 @@ def run_eval_worker(data_chunk, batch_size):
     try:
         dataset = [
             {
-                "array": load_waveform(
+                "array": load_eval_waveform(
                     item["wav_path"], sample_rate=16000, return_numpy=True
                 ),
                 "sampling_rate": 16000,
