@@ -584,15 +584,14 @@ class OmniVoice(PreTrainedModel):
     def edit(
         self,
         text: Union[str, list[str]],
-        ref_text: Union[str, list[str], None] = None,
+        ref_text: Union[str, list[str]],
         ref_audio: Union[
             str,
             list[str],
             tuple[torch.Tensor, int],
             list[tuple[torch.Tensor, int]],
-            None,
-        ] = None,
-        edit_time_range: Union[Tuple[float, float], list[Tuple[float, float]], None] = None,
+        ],
+        edit_time_range: Union[Tuple[float, float], list[Tuple[float, float]]],
         duration: Union[float, list[Optional[float]], None] = None,
         language: Union[str, list[str], None] = None,
         instruct: Union[str, list[str], None] = None,
@@ -636,13 +635,6 @@ class OmniVoice(PreTrainedModel):
                 "loaded the model with OmniVoice.from_pretrained()."
             )
 
-        if edit_time_range is None:
-            raise TypeError("edit_time_range is required")
-        if ref_text is None:
-            raise TypeError("ref_text is required")
-        if ref_audio is None:
-            raise TypeError("ref_audio is required")
-
         gen_config = (
             generation_config
             if generation_config is not None
@@ -675,6 +667,7 @@ class OmniVoice(PreTrainedModel):
             )
         else:
             duration_list = None
+
         if isinstance(edit_time_range, tuple):
             edit_time_range_list = [edit_time_range] * batch_size
         else:
