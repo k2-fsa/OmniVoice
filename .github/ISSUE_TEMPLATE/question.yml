@@ -1,0 +1,26 @@
+name: "Question"
+description: |
+  Research question or pure inquiry about the project, usage issue goes with "help wanted".
+labels:
+  - question
+body:
+  - type: checkboxes
+    attributes:
+      label: Checks
+      description: "To help us grasp quickly, please confirm the following:"
+      options:
+        - label: This template is only for research question, not usage problems, feature requests or bug reports.
+          required: true
+        - label: I have thoroughly reviewed the project documentation and read the related paper(s).
+          required: true
+        - label: I have searched for existing issues, including closed ones, no similar questions.
+          required: true
+        - label: I am using English to submit this issue to facilitate community communication.
+          required: true
+  - type: textarea
+    attributes:
+      label: Question details
+      description: |
+        Question details, clearly stated using proper markdown syntax.
+    validations:
+      required: true

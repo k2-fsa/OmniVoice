@@ -1,0 +1,50 @@
+name: "Bug Report"
+description: |
+  Please provide as much details to help address the issue more efficiently, including input, output, logs and screenshots.
+labels:
+  - bug
+body:
+  - type: checkboxes
+    attributes:
+      label: Checks
+      description: "To ensure timely help, please confirm the following:"
+      options:
+        - label: This template is only for bug reports, usage problems go with 'Help Wanted'.
+          required: true
+        - label: I have thoroughly reviewed the project documentation but couldn't find information to solve my problem.
+          required: true
+        - label: I have searched for existing issues, including closed ones, and couldn't find a solution.
+          required: true
+        - label: I am using English to submit this issue to facilitate community communication.
+          required: true
+  - type: textarea
+    attributes:
+      label: Environment Details
+      description: "Provide details including OS, GPU info, Python version, any relevant software or dependencies, and training/finetuning configuration (if applicable)."
+      placeholder: e.g., Ubuntu 20.04.6 LTS, 4 * H20, Python 3.13, torch==2.8.0+cu128, cuda 12.8
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Steps to Reproduce
+      description: |
+        Include detailed steps, screenshots, and logs. Use the correct markdown syntax for code blocks.
+      placeholder: |
+        1. Clone the repo and install omnivoice with `uv sync`.
+        2. Run the command: `omnivoice-infer --text "This is a test." --ref_audio ref.wav --ref_text "Transcription." --output output.wav`
+        3. Got the following error message... (attach full logs).
+        4. Upload relevant audio files (e.g., ref.wav, output.wav) as .wav or packed in .zip.
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: ✔️ Expected Behavior
+      placeholder: Describe in detail what you expected to happen.
+    validations:
+      required: false
+  - type: textarea
+    attributes:
+      label: ❌ Actual Behavior
+      placeholder: Describe in detail what actually happened.
+    validations:
+      required: false
