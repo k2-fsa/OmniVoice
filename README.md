@@ -94,7 +94,7 @@ uv sync
 
 Try OmniVoice without coding:
 
-- Launch the local web UI: `omnivoice-demo --ip 0.0.0.0 --port 8001`
+- Launch the local web UI: `omnivoice-demo --ip 0.0.0.0 --port 8001` or if you used `uv`, run `uv run omnivoice-demo --ip 0.0.0.0 --port 8001` and open `http://localhost:8001` in your browser.
 
 - Or try it directly on [HuggingFace Space](https://huggingface.co/spaces/k2-fsa/OmniVoice)
 
