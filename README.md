@@ -308,6 +308,10 @@ You can also scan the QR code to join our wechat group or follow our wechat offi
   GPU-first Rust workspace for OmniVoice inference, parity validation, CLI
   execution, and an OpenAI-compatible HTTP server built with Candle.
 
+- **[omnivoice-trtllm](https://github.com/tlitech/omnivoice-trtllm)** —
+  Deploy OmniVoice TTS model using TensorRT-LLM and Triton Inference Server
+  on Modal, faster than PyTorch.
+
 ---
 
 ## Citation
