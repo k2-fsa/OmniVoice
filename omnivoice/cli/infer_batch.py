@@ -201,10 +201,17 @@ def get_parser():
         help="Language id to use when test_list JSONL entries do not contain "
         "a language_id field.",
     )
+    parser.add_argument(
+        "--use_flash_attn",
+        action="store_true",
+        default=False,
+        help='Use FlashAttention-2 for faster inference. '
+        'Requires flash-attn to be installed.',
+    )
     return parser
 
 
-def process_init(rank_queue, model_checkpoint, warmup=0):
+def process_init(rank_queue, model_checkpoint, warmup=0, attn_implementation=None):
     """Initializer for each worker process.
 
     Loads model (with tokenizers and duration estimator) onto a specific GPU
@@ -232,10 +239,15 @@ def process_init(rank_queue, model_checkpoint, warmup=0):
 
     logging.info(f"Initializing worker on device: {worker_device}")
 
+    extra_kwargs = {}
+    if attn_implementation is not None:
+        extra_kwargs["attn_implementation"] = attn_implementation
+
     worker_model = OmniVoice.from_pretrained(
         model_checkpoint,
         device_map=worker_device,
         dtype=torch.float16,
+        **extra_kwargs,
     )
 
     if warmup > 0:
@@ -461,7 +473,8 @@ def main():
         with ProcessPoolExecutor(
             max_workers=num_processes,
             initializer=process_init,
-            initargs=(rank_queue, args.model, args.warmup),
+            initargs=(rank_queue, args.model, args.warmup,
+                      "flash_attention_2" if args.use_flash_attn else None),
         ) as executor:
             futures = []
 
