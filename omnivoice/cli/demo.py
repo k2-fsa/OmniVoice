@@ -25,10 +25,12 @@ Usage:
 
 import argparse
 import logging
+import subprocess
 from typing import Any, Dict
 
 import gradio as gr
 import numpy as np
+import pandas as pd
 import torch
 
 from omnivoice import OmniVoice, OmniVoiceGenerationConfig
@@ -48,6 +50,115 @@ def get_best_device():
 # Language list — all 600+ supported languages
 # ---------------------------------------------------------------------------
 _ALL_LANGUAGES = ["Auto"] + sorted(lang_display_name(n) for n in LANG_NAMES)
+
+_GPU_HISTORY = []
+
+
+def _read_gpu_stats():
+    try:
+        result = subprocess.run(
+            [
+                "nvidia-smi",
+                "--query-gpu=utilization.gpu,memory.used,memory.total,temperature.gpu,power.draw",
+                "--format=csv,noheader,nounits",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=2,
+            check=False,
+        )
+    except (FileNotFoundError, subprocess.SubprocessError):
+        return None
+
+    if result.returncode != 0 or not result.stdout.strip():
+        return None
+
+    parts = [p.strip() for p in result.stdout.splitlines()[0].split(",")]
+    if len(parts) < 5:
+        return None
+
+    try:
+        return {
+            "gpu": int(float(parts[0])),
+            "mem_used": int(float(parts[1])),
+            "mem_total": int(float(parts[2])),
+            "temp": int(float(parts[3])),
+            "power": float(parts[4]),
+        }
+    except ValueError:
+        return None
+
+
+def _gpu_monitor_html():
+    stats = _read_gpu_stats()
+    if not stats:
+        return """
+<div class="gpu-monitor">
+  <div class="gpu-title">GPU</div>
+  <div class="gpu-muted">nvidia-smi unavailable</div>
+</div>
+"""
+
+
+def _gpu_monitor_html_pair():
+    html = _gpu_monitor_html()
+    return html, html
+
+
+def _gpu_monitor_payload():
+    stats = _read_gpu_stats()
+    if stats:
+        _GPU_HISTORY.append(stats["gpu"])
+        del _GPU_HISTORY[:-60]
+        mem_used_gb = stats["mem_used"] / 1024
+        mem_total_gb = stats["mem_total"] / 1024
+        text = (
+            f"**GPU {stats['gpu']}%** | "
+            f"VRAM {mem_used_gb:.1f} / {mem_total_gb:.1f} GB | "
+            f"{stats['temp']} C | {stats['power']:.0f} W"
+        )
+    else:
+        text = "**GPU** | nvidia-smi unavailable"
+
+    values = _GPU_HISTORY or [0]
+    frame = pd.DataFrame(
+        {"sample": list(range(len(values))), "gpu_usage": values}
+    )
+    return text, frame
+
+
+def _gpu_monitor_payload_pair():
+    text, frame = _gpu_monitor_payload()
+    return text, frame, text, frame
+
+    _GPU_HISTORY.append(stats["gpu"])
+    del _GPU_HISTORY[:-60]
+
+    width, height = 360, 72
+    values = _GPU_HISTORY or [0]
+    if len(values) == 1:
+        points = f"0,{height - (values[0] / 100 * height):.1f} {width},{height - (values[0] / 100 * height):.1f}"
+    else:
+        points = " ".join(
+            f"{i * width / (len(values) - 1):.1f},{height - (v / 100 * height):.1f}"
+            for i, v in enumerate(values)
+        )
+
+    mem_used_gb = stats["mem_used"] / 1024
+    mem_total_gb = stats["mem_total"] / 1024
+    return f"""
+<div class="gpu-monitor">
+  <div class="gpu-head">
+    <strong>GPU {stats["gpu"]}%</strong>
+    <span>VRAM {mem_used_gb:.1f} / {mem_total_gb:.1f} GB</span>
+    <span>{stats["temp"]} C</span>
+    <span>{stats["power"]:.0f} W</span>
+  </div>
+  <svg class="gpu-chart" viewBox="0 0 {width} {height}" preserveAspectRatio="none">
+    <polyline points="{points}" fill="none" stroke="#22c55e" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" />
+  </svg>
+</div>
+"""
 
 
 # ---------------------------------------------------------------------------
@@ -179,6 +290,7 @@ def build_demo(
         preprocess_prompt,
         postprocess_output,
         mode,
+        output_format="wav",
         ref_text=None,
     ):
         if not text or not text.strip():
@@ -220,6 +332,20 @@ def build_demo(
             return None, f"Error: {type(e).__name__}: {e}"
 
         waveform = (audio[0] * 32767).astype(np.int16)
+        
+        if output_format == "mp3":
+            import tempfile
+            from pydub import AudioSegment
+            with tempfile.NamedTemporaryFile(suffix=".mp3", delete=False) as tmp:
+                audio_segment = AudioSegment(
+                    waveform.tobytes(),
+                    frame_rate=sampling_rate,
+                    sample_width=2,
+                    channels=1
+                )
+                audio_segment.export(tmp.name, format="mp3", bitrate="192k")
+                return tmp.name, "Done (MP3 Generated)."
+        
         return (sampling_rate, waveform), "Done."
 
     # Allow external wrappers (e.g. spaces.GPU for ZeroGPU Spaces)
@@ -237,6 +363,31 @@ def build_demo(
     .gradio-container .prose {font-size: 1.1em !important;}
     .compact-audio audio {height: 60px !important;}
     .compact-audio .waveform {min-height: 80px !important;}
+    .gpu-monitor {
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        padding: 10px 12px;
+        background: #0f172a;
+        color: #f8fafc;
+        font-size: 14px;
+    }
+    .gpu-title {font-weight: 700; margin-bottom: 4px;}
+    .gpu-muted {color: #cbd5e1;}
+    .gpu-head {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-bottom: 8px;
+    }
+    .gpu-head span {color: #cbd5e1;}
+    .gpu-chart {
+        width: 100%;
+        height: 72px;
+        display: block;
+        background: linear-gradient(to bottom, rgba(255,255,255,0.08), rgba(255,255,255,0.02));
+        border-radius: 6px;
+    }
     """
 
     # Reusable: language dropdown component
@@ -301,7 +452,13 @@ def build_demo(
                 value=True,
                 info="Remove long silences from generated audio.",
             )
-        return ns, gs, dn, sp, du, pp, po
+            fmt = gr.Dropdown(
+                label="Output Format",
+                choices=["wav", "mp3"],
+                value="wav",
+                info="Select the format for the generated audio.",
+            )
+        return ns, gs, dn, sp, du, pp, po, fmt
 
     with gr.Blocks(theme=theme, css=css, title="OmniVoice Demo") as demo:
         gr.Markdown(
@@ -357,17 +514,29 @@ by Xiaomi AI Lab Next-gen Kaldi team.
                             vc_du,
                             vc_pp,
                             vc_po,
+                            vc_fmt,
                         ) = _gen_settings()
                         vc_btn = gr.Button("Generate / 生成", variant="primary")
                     with gr.Column(scale=1):
                         vc_audio = gr.Audio(
                             label="Output Audio / 合成结果",
-                            type="numpy",
                         )
                         vc_status = gr.Textbox(label="Status / 状态", lines=2)
+                        vc_gpu_text, vc_gpu_frame = _gpu_monitor_payload()
+                        vc_gpu_status = gr.Markdown(value=vc_gpu_text)
+                        vc_gpu_plot = gr.LinePlot(
+                            value=vc_gpu_frame,
+                            x="sample",
+                            y="gpu_usage",
+                            title="GPU usage",
+                            y_title="%",
+                            y_lim=[0, 100],
+                            x_axis_labels_visible="hidden",
+                            height=180,
+                        )
 
                 def _clone_fn(
-                    text, lang, ref_aud, ref_text, instruct, ns, gs, dn, sp, du, pp, po
+                    text, lang, ref_aud, ref_text, instruct, ns, gs, dn, sp, du, pp, po, fmt
                 ):
                     return _gen(
                         text,
@@ -382,6 +551,7 @@ by Xiaomi AI Lab Next-gen Kaldi team.
                         pp,
                         po,
                         mode="clone",
+                        output_format=fmt,
                         ref_text=ref_text or None,
                     )
 
@@ -400,6 +570,7 @@ by Xiaomi AI Lab Next-gen Kaldi team.
                         vc_du,
                         vc_pp,
                         vc_po,
+                        vc_fmt,
                     ],
                     outputs=[vc_audio, vc_status],
                 )
@@ -437,14 +608,26 @@ by Xiaomi AI Lab Next-gen Kaldi team.
                             vd_du,
                             vd_pp,
                             vd_po,
+                            vd_fmt,
                         ) = _gen_settings()
                         vd_btn = gr.Button("Generate / 生成", variant="primary")
                     with gr.Column(scale=1):
                         vd_audio = gr.Audio(
                             label="Output Audio / 合成结果",
-                            type="numpy",
                         )
                         vd_status = gr.Textbox(label="Status / 状态", lines=2)
+                        vd_gpu_text, vd_gpu_frame = _gpu_monitor_payload()
+                        vd_gpu_status = gr.Markdown(value=vd_gpu_text)
+                        vd_gpu_plot = gr.LinePlot(
+                            value=vd_gpu_frame,
+                            x="sample",
+                            y="gpu_usage",
+                            title="GPU usage",
+                            y_title="%",
+                            y_lim=[0, 100],
+                            x_axis_labels_visible="hidden",
+                            height=180,
+                        )
 
                 def _build_instruct(groups):
                     """Extract instruct text from UI dropdowns.
@@ -468,7 +651,7 @@ by Xiaomi AI Lab Next-gen Kaldi team.
                             parts.append(v)
                     return ", ".join(parts)
 
-                def _design_fn(text, lang, ns, gs, dn, sp, du, pp, po, *groups):
+                def _design_fn(text, lang, ns, gs, dn, sp, du, pp, po, fmt, *groups):
                     return _gen(
                         text,
                         lang,
@@ -482,6 +665,7 @@ by Xiaomi AI Lab Next-gen Kaldi team.
                         pp,
                         po,
                         mode="design",
+                        output_format=fmt,
                     )
 
                 vd_btn.click(
@@ -496,10 +680,17 @@ by Xiaomi AI Lab Next-gen Kaldi team.
                         vd_du,
                         vd_pp,
                         vd_po,
+                        vd_fmt,
                     ]
                     + vd_groups,
                     outputs=[vd_audio, vd_status],
                 )
+
+        gpu_timer = gr.Timer(value=1.0)
+        gpu_timer.tick(
+            _gpu_monitor_payload_pair,
+            outputs=[vc_gpu_status, vc_gpu_plot, vd_gpu_status, vd_gpu_plot],
+        )
 
     return demo
 
