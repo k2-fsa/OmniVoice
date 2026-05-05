@@ -25,11 +25,16 @@ Usage:
 
 import argparse
 import logging
+import os
+import re
+import subprocess
+import time
 from typing import Any, Dict
 
 import gradio as gr
 import numpy as np
 import torch
+import torchaudio
 
 from omnivoice import OmniVoice, OmniVoiceGenerationConfig
 from omnivoice.utils.lang_map import LANG_NAMES, lang_display_name
@@ -57,14 +62,14 @@ _ALL_LANGUAGES = ["Auto"] + sorted(lang_display_name(n) for n in LANG_NAMES)
 # The model expects English for accents and Chinese for dialects.
 _CATEGORIES = {
     "Gender / 性别": ["Male / 男", "Female / 女"],
-    "Age / 年龄": [
+    "Age / 年龄":[
         "Child / 儿童",
         "Teenager / 少年",
         "Young Adult / 青年",
         "Middle-aged / 中年",
         "Elderly / 老年",
     ],
-    "Pitch / 音调": [
+    "Pitch / 音调":[
         "Very Low Pitch / 极低音调",
         "Low Pitch / 低音调",
         "Moderate Pitch / 中音调",
@@ -72,7 +77,7 @@ _CATEGORIES = {
         "Very High Pitch / 极高音调",
     ],
     "Style / 风格": ["Whisper / 耳语"],
-    "English Accent / 英文口音": [
+    "English Accent / 英文口音":[
         "American Accent / 美式口音",
         "Australian Accent / 澳大利亚口音",
         "British Accent / 英国口音",
@@ -84,7 +89,7 @@ _CATEGORIES = {
         "Russian Accent / 俄罗斯口音",
         "Japanese Accent / 日本口音",
     ],
-    "Chinese Dialect / 中文方言": [
+    "Chinese Dialect / 中文方言":[
         "Henan Dialect / 河南话",
         "Shaanxi Dialect / 陕西话",
         "Sichuan Dialect / 四川话",
@@ -149,6 +154,23 @@ def build_parser() -> argparse.ArgumentParser:
         help="ASR model path or HuggingFace repo id"
         " (default: openai/whisper-large-v3-turbo).",
     )
+    parser.add_argument(
+        "--inbrowser",
+        action="store_true",
+        default=False,
+        help="Automatically open the Gradio app in the default web browser.",
+    )
+    parser.add_argument(
+        "--output-dir",
+        default=None,
+        help="Directory to automatically save generated audio files.",
+    )
+    parser.add_argument(
+        "--output-format",
+        default="wav",
+        choices=["wav", "mp3"],
+        help="Format to save the generated audio (default: wav).",
+    )
     return parser
 
 
@@ -161,6 +183,9 @@ def build_demo(
     model: OmniVoice,
     checkpoint: str,
     generate_fn=None,
+    no_asr: bool = False,
+    output_dir: str = None,
+    output_format: str = "wav",
 ) -> gr.Blocks:
 
     sampling_rate = model.sampling_rate
@@ -206,6 +231,11 @@ def build_demo(
         if mode == "clone":
             if not ref_audio:
                 return None, "Please upload a reference audio."
+            
+            # Prevent Whisper lazy-load during generation
+            if no_asr and not ref_text:
+                return None, "Error: Auto-transcription is disabled (--no-asr). Please type the Reference Text manually."
+
             kw["voice_clone_prompt"] = model.create_voice_clone_prompt(
                 ref_audio=ref_audio,
                 ref_text=ref_text,
@@ -215,12 +245,56 @@ def build_demo(
             kw["instruct"] = instruct.strip()
 
         try:
+            start_time = time.perf_counter()
             audio = model.generate(**kw)
+            elapsed_time = time.perf_counter() - start_time
         except Exception as e:
             return None, f"Error: {type(e).__name__}: {e}"
 
-        waveform = (audio[0] * 32767).astype(np.int16)
-        return (sampling_rate, waveform), "Done."
+        # audio[0] is a np.ndarray with shape (T,) at 24 kHz
+        waveform_np = audio[0]
+        waveform_int16 = (waveform_np * 32767).astype(np.int16)
+        
+        # Duplicate mono channel to create stereo (T, 2) for Gradio UI
+        waveform_stereo = np.column_stack((waveform_int16, waveform_int16))
+        
+        msg = f"Done. (Took {elapsed_time:.2f}s)"
+
+        # Auto-save functionality (only if output_dir is passed via CLI)
+        if output_dir:
+            os.makedirs(output_dir, exist_ok=True)
+            safe_text = re.sub(r'[^\w\s]', '', text.strip())
+            words = safe_text.split()[:3]
+            prefix = "_".join(words) if words else "output"
+            ts = time.strftime("%H%M%S")
+            
+            temp_wav = os.path.join(output_dir, f"{prefix}_{ts}.wav")
+            
+            # Format as (Channels, Time) and make memory contiguous for Torchaudio
+            tensor_stereo = torch.from_numpy(waveform_stereo).transpose(0, 1).contiguous()
+            
+            # Save exact int16 PCM format to a wav file
+            torchaudio.save(
+                temp_wav, 
+                tensor_stereo, 
+                sampling_rate, 
+                format="wav"
+            )
+            
+            out_path = temp_wav
+            if output_format == "mp3":
+                out_path = os.path.join(output_dir, f"{prefix}_{ts}.mp3")
+                try:
+                    # Let FFmpeg crunch the wav file into an mp3
+                    subprocess.run(["ffmpeg", "-y", "-i", temp_wav, out_path], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
+                    os.remove(temp_wav)
+                except Exception as e:
+                    logging.warning(f"FFmpeg MP3 conversion failed. Saved as WAV instead. Error: {e}")
+                    out_path = temp_wav
+
+            msg = f"Done. Saved to {out_path} (Took {elapsed_time:.2f}s)"
+
+        return (sampling_rate, waveform_stereo), msg
 
     # Allow external wrappers (e.g. spaces.GPU for ZeroGPU Spaces)
     _gen = generate_fn if generate_fn is not None else _gen_core
@@ -341,10 +415,9 @@ by Xiaomi AI Lab Next-gen Kaldi team.
                             "</span>"
                         )
                         vc_ref_text = gr.Textbox(
-                            label=("Reference Text (optional)" " / 参考音频文本（可选）"),
+                            label=("Reference Text (optional) / 参考音频文本（可选）") if not no_asr else ("Reference Text (Required) / 参考音频文本（必填）"),
                             lines=2,
-                            placeholder="Transcript of the reference audio. Leave empty"
-                            " to auto-transcribe via ASR models.",
+                            placeholder="Transcript of the reference audio. Leave empty to auto-transcribe via ASR models." if not no_asr else "ASR is disabled (--no-asr). You MUST type the transcript of the reference audio here.",
                         )
                         vc_lang = _lang_dropdown("Language (optional) / 语种 (可选)")
                         with gr.Accordion("Instruct (optional)", open=False):
@@ -358,13 +431,13 @@ by Xiaomi AI Lab Next-gen Kaldi team.
                             vc_pp,
                             vc_po,
                         ) = _gen_settings()
-                        vc_btn = gr.Button("Generate / 生成", variant="primary")
                     with gr.Column(scale=1):
                         vc_audio = gr.Audio(
                             label="Output Audio / 合成结果",
                             type="numpy",
                         )
                         vc_status = gr.Textbox(label="Status / 状态", lines=2)
+                        vc_btn = gr.Button("Generate / 生成", variant="primary")
 
                 def _clone_fn(
                     text, lang, ref_aud, ref_text, instruct, ns, gs, dn, sp, du, pp, po
@@ -418,7 +491,7 @@ by Xiaomi AI Lab Next-gen Kaldi team.
                         vd_lang = _lang_dropdown()
 
                         _AUTO = "Auto"
-                        vd_groups = []
+                        vd_groups =[]
                         for _cat, _choices in _CATEGORIES.items():
                             vd_groups.append(
                                 gr.Dropdown(
@@ -438,13 +511,13 @@ by Xiaomi AI Lab Next-gen Kaldi team.
                             vd_pp,
                             vd_po,
                         ) = _gen_settings()
-                        vd_btn = gr.Button("Generate / 生成", variant="primary")
                     with gr.Column(scale=1):
                         vd_audio = gr.Audio(
                             label="Output Audio / 合成结果",
                             type="numpy",
                         )
                         vd_status = gr.Textbox(label="Status / 状态", lines=2)
+                        vd_btn = gr.Button("Generate / 生成", variant="primary")
 
                 def _build_instruct(groups):
                     """Extract instruct text from UI dropdowns.
@@ -452,10 +525,10 @@ by Xiaomi AI Lab Next-gen Kaldi team.
                     Language unification and validation is handled by
                     _resolve_instruct inside _preprocess_all.
                     """
-                    selected = [g for g in groups if g and g != "Auto"]
+                    selected =[g for g in groups if g and g != "Auto"]
                     if not selected:
                         return None
-                    parts = []
+                    parts =[]
                     for v in selected:
                         if " / " in v:
                             en, zh = v.split(" / ", 1)
@@ -533,13 +606,20 @@ def main(argv=None) -> int:
     )
     print("Model loaded.")
 
-    demo = build_demo(model, checkpoint)
+    demo = build_demo(
+        model, 
+        checkpoint, 
+        no_asr=args.no_asr,
+        output_dir=args.output_dir,
+        output_format=args.output_format
+    )
 
     demo.queue().launch(
         server_name=args.ip,
         server_port=args.port,
         share=args.share,
         root_path=args.root_path,
+        inbrowser=args.inbrowser,
     )
     return 0
 
