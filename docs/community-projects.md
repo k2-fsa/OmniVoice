@@ -40,3 +40,7 @@ If you have a project you'd like to add, please open a PR.
 - **[omnivoice-trtllm](https://github.com/tlitech/omnivoice-trtllm)** —
   Deploy OmniVoice TTS model using TensorRT-LLM and Triton Inference Server
   on Modal, faster than PyTorch.
+
+  - **[Auris](https://github.com/nikhilprasanth/Auris)** —
+  Offline audiobook reader for EPUB, PDF, and TXT with local OmniVoice TTS, character-aware voices, and per-book narrator control.
+
