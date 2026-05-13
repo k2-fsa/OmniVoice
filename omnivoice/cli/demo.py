@@ -25,6 +25,7 @@ Usage:
 
 import argparse
 import logging
+import random
 from typing import Any, Dict
 
 import gradio as gr
@@ -32,6 +33,7 @@ import numpy as np
 import torch
 
 from omnivoice import OmniVoice, OmniVoiceGenerationConfig
+from omnivoice.utils.common import fix_random_seed
 from omnivoice.utils.lang_map import LANG_NAMES, lang_display_name
 
 
@@ -176,6 +178,8 @@ def build_demo(
         denoise,
         speed,
         duration,
+        seed,
+        is_random_seed,
         preprocess_prompt,
         postprocess_output,
         mode,
@@ -183,6 +187,13 @@ def build_demo(
     ):
         if not text or not text.strip():
             return None, "Please enter the text to synthesize."
+
+        if is_random_seed:
+            seed = random.randint(0, 2 ** 32 - 1)
+        else:
+            seed = int(seed or 42)
+
+        fix_random_seed(seed)
 
         gen_config = OmniVoiceGenerationConfig(
             num_step=int(num_step or 32),
@@ -220,7 +231,7 @@ def build_demo(
             return None, f"Error: {type(e).__name__}: {e}"
 
         waveform = (audio[0] * 32767).astype(np.int16)
-        return (sampling_rate, waveform), "Done."
+        return (sampling_rate, waveform), "Done.", seed
 
     # Allow external wrappers (e.g. spaces.GPU for ZeroGPU Spaces)
     _gen = generate_fn if generate_fn is not None else _gen_core
@@ -290,6 +301,20 @@ def build_demo(
                 label="Guidance Scale (CFG)",
                 info="Default: 2.0.",
             )
+            sd = gr.Number(
+                minimum=0,
+                maximum=4294967295,
+                precision=0,
+                value=42,
+                label="Seed",
+                info="Default: 42",
+
+            )
+            sd_rnd = gr.Checkbox(
+                label="Randomize Seed",
+                value=True,
+                info="Randomize seed after every generation.",
+            )
             pp = gr.Checkbox(
                 label="Preprocess Prompt",
                 value=True,
@@ -301,7 +326,7 @@ def build_demo(
                 value=True,
                 info="Remove long silences from generated audio.",
             )
-        return ns, gs, dn, sp, du, pp, po
+        return ns, gs, dn, sp, du, sd, sd_rnd, pp, po
 
     with gr.Blocks(theme=theme, css=css, title="OmniVoice Demo") as demo:
         gr.Markdown(
@@ -355,6 +380,8 @@ by Xiaomi AI Lab Next-gen Kaldi team.
                             vc_dn,
                             vc_sp,
                             vc_du,
+                            vc_sd,
+                            vc_sd_rnd,
                             vc_pp,
                             vc_po,
                         ) = _gen_settings()
@@ -367,7 +394,7 @@ by Xiaomi AI Lab Next-gen Kaldi team.
                         vc_status = gr.Textbox(label="Status / 状态", lines=2)
 
                 def _clone_fn(
-                    text, lang, ref_aud, ref_text, instruct, ns, gs, dn, sp, du, pp, po
+                    text, lang, ref_aud, ref_text, instruct, ns, gs, dn, sp, du, sd, sd_rnd, pp, po
                 ):
                     return _gen(
                         text,
@@ -379,6 +406,8 @@ by Xiaomi AI Lab Next-gen Kaldi team.
                         dn,
                         sp,
                         du,
+                        sd,
+                        sd_rnd,
                         pp,
                         po,
                         mode="clone",
@@ -398,10 +427,12 @@ by Xiaomi AI Lab Next-gen Kaldi team.
                         vc_dn,
                         vc_sp,
                         vc_du,
+                        vc_sd,
+                        vc_sd_rnd,
                         vc_pp,
                         vc_po,
                     ],
-                    outputs=[vc_audio, vc_status],
+                    outputs=[vc_audio, vc_status, vc_sd],
                 )
 
             # ==============================================================
@@ -435,6 +466,8 @@ by Xiaomi AI Lab Next-gen Kaldi team.
                             vd_dn,
                             vd_sp,
                             vd_du,
+                            vd_sd,
+                            vd_sd_rnd,
                             vd_pp,
                             vd_po,
                         ) = _gen_settings()
@@ -468,7 +501,7 @@ by Xiaomi AI Lab Next-gen Kaldi team.
                             parts.append(v)
                     return ", ".join(parts)
 
-                def _design_fn(text, lang, ns, gs, dn, sp, du, pp, po, *groups):
+                def _design_fn(text, lang, ns, gs, dn, sp, du, sd, sd_rnd, pp, po, *groups):
                     return _gen(
                         text,
                         lang,
@@ -479,6 +512,8 @@ by Xiaomi AI Lab Next-gen Kaldi team.
                         dn,
                         sp,
                         du,
+                        sd,
+                        sd_rnd,
                         pp,
                         po,
                         mode="design",
@@ -494,11 +529,13 @@ by Xiaomi AI Lab Next-gen Kaldi team.
                         vd_dn,
                         vd_sp,
                         vd_du,
+                        vd_sd,
+                        vd_sd_rnd,
                         vd_pp,
                         vd_po,
                     ]
                     + vd_groups,
-                    outputs=[vd_audio, vd_status],
+                    outputs=[vd_audio, vd_status, vd_sd],
                 )
 
     return demo
