@@ -296,15 +296,15 @@ future Hugging Face uploads:
 
 ```bash
 # Build five local staging directories:
-# OmniVoice-MLX, OmniVoice-MLX-fp32, OmniVoice-MLX-bf16,
-# OmniVoice-MLX-8bit, OmniVoice-MLX-4bit
+# OmniVoice, OmniVoice-fp32, OmniVoice-bf16,
+# OmniVoice-8bit, OmniVoice-4bit
 python scripts/stage_mlx_repos.py \
     --source /path/to/OmniVoice-official \
     --output-root /path/to/huggingface
 
 # Validate one staged directory.
 python scripts/validate_mlx.py \
-    --model /path/to/huggingface/OmniVoice-MLX \
+    --model /path/to/huggingface/OmniVoice \
     --output smoke.wav
 ```
 

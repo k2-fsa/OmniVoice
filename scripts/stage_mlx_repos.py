@@ -10,11 +10,11 @@ from pathlib import Path
 
 
 REPOS = {
-    "OmniVoice-MLX": ("float32", None),
-    "OmniVoice-MLX-fp32": ("float32", None),
-    "OmniVoice-MLX-bf16": ("bfloat16", None),
-    "OmniVoice-MLX-8bit": ("int8", 8),
-    "OmniVoice-MLX-4bit": ("int4", 4),
+    "OmniVoice": ("float32", None),
+    "OmniVoice-fp32": ("float32", None),
+    "OmniVoice-bf16": ("bfloat16", None),
+    "OmniVoice-8bit": ("int8", 8),
+    "OmniVoice-4bit": ("int4", 4),
 }
 
 
@@ -49,7 +49,7 @@ def main() -> None:
         if args.skip_existing and (out / "model.safetensors").exists():
             print(f"skip existing {out}")
             continue
-        repo_id = f"mlx-community/{name}"
+            repo_id = f"mlx-community/{name}"
         if bits is None:
             run(
                 [
@@ -68,7 +68,7 @@ def main() -> None:
                 ]
             )
         else:
-            dense_source = root / "OmniVoice-MLX-fp32"
+            dense_source = root / "OmniVoice-fp32"
             if not (dense_source / "model.safetensors").exists():
                 run(
                     [
@@ -81,7 +81,7 @@ def main() -> None:
                         "--dtype",
                         "float32",
                         "--repo-id",
-                        "mlx-community/OmniVoice-MLX-fp32",
+                        "mlx-community/OmniVoice-fp32",
                         "--variant",
                         "float32",
                     ]
