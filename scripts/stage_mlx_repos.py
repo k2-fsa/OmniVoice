@@ -12,7 +12,7 @@ from pathlib import Path
 REPOS = {
     "OmniVoice": ("float32", None),
     "OmniVoice-fp32": ("float32", None),
-    "OmniVoice-bf16": ("bfloat16", None),
+    "OmniVoice-bfloat16": ("bfloat16", None),
     "OmniVoice-8bit": ("int8", 8),
     "OmniVoice-4bit": ("int4", 4),
 }
