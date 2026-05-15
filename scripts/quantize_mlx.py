@@ -203,7 +203,8 @@ def inject_mlx_note(readme: str, variant: str, repo: str, bits: int) -> str:
 ## MLX Usage
 
 ```bash
-pip install omnivoice mlx
+pip install "git+https://github.com/ailuntx/OmniVoice-MLX.git"
+pip install mlx
 
 omnivoice-infer-mlx \\
   --model . \\
