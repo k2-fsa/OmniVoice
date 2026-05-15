@@ -217,13 +217,14 @@ audio = model.generate(text="He plays the [B EY1 S] guitar while catching a [B A
 
 ## Command-Line Tools
 
-Three CLI entry points are provided. The CLI tools support all features available in the Python API (voice cloning, voice design, auto voice, generation parameters, etc.) — all controlled via command-line arguments.
+Four CLI entry points are provided. The CLI tools support all features available in the Python API (voice cloning, voice design, auto voice, generation parameters, etc.) — all controlled via command-line arguments.
 
 | Command | Description | Source |
 |---|---|---|
 | `omnivoice-demo` | Interactive Gradio web demo | [omnivoice/cli/demo.py](omnivoice/cli/demo.py) |
 | `omnivoice-infer` | Single-item inference | [omnivoice/cli/infer.py](omnivoice/cli/infer.py) |
 | `omnivoice-infer-batch` | Batch inference across multiple GPUs | [omnivoice/cli/infer_batch.py](omnivoice/cli/infer_batch.py) |
+| `omnivoice-infer-mlx` | Single-item MLX inference on Apple Silicon | [omnivoice/cli/infer_mlx.py](omnivoice/cli/infer_mlx.py) |
 
 ### Demo
 
@@ -256,6 +257,55 @@ omnivoice-infer \
     --model k2-fsa/OmniVoice \
     --text "This is a test for text to speech."\
     --output hello.wav
+```
+
+### MLX Inference on Apple Silicon
+
+An experimental MLX backend is available for Apple Silicon. It runs the
+OmniVoice diffusion language model with MLX and keeps the Higgs audio tokenizer
+on Transformers/PyTorch.
+
+```bash
+pip install -e ".[mlx]"
+
+omnivoice-infer-mlx \
+    --model k2-fsa/OmniVoice \
+    --text "This is a test for MLX inference." \
+    --instruct "female, british accent" \
+    --output hello_mlx.wav
+```
+
+Python API:
+
+```python
+from omnivoice.mlx import OmniVoiceMLX
+import soundfile as sf
+
+model = OmniVoiceMLX.from_pretrained("k2-fsa/OmniVoice", dtype="float16")
+audio = model.generate(
+    text="Hello from the MLX backend.",
+    instruct="female, british accent",
+)
+sf.write("out.wav", audio[0], model.sampling_rate)
+```
+
+### MLX Conversion and Staging
+
+The repository includes helper scripts for reproducible local MLX exports and
+future Hugging Face uploads:
+
+```bash
+# Build five local staging directories:
+# OmniVoice-MLX, OmniVoice-MLX-fp32, OmniVoice-MLX-bf16,
+# OmniVoice-MLX-8bit, OmniVoice-MLX-4bit
+python scripts/stage_mlx_repos.py \
+    --source /path/to/OmniVoice-official \
+    --output-root /path/to/huggingface
+
+# Validate one staged directory.
+python scripts/validate_mlx.py \
+    --model /path/to/huggingface/OmniVoice-MLX \
+    --output smoke.wav
 ```
 
 ### Batch Inference

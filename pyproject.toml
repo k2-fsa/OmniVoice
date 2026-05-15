@@ -41,9 +41,14 @@ dependencies = [
     "numpy",
     "soundfile",
     "librosa",
+    "safetensors",
 ]
 
 [project.optional-dependencies]
+
+mlx = [
+    "mlx>=0.27.0",
+]
 
 eval = [
     "jiwer==3.1.0",       # WER
@@ -58,6 +63,7 @@ eval = [
 omnivoice-infer = "omnivoice.cli.infer:main"
 omnivoice-infer-batch = "omnivoice.cli.infer_batch:main"
 omnivoice-demo = "omnivoice.cli.demo:main"
+omnivoice-infer-mlx = "omnivoice.cli.infer_mlx:main"
 
 [project.urls]
 Homepage = "https://github.com/k2-fsa/OmniVoice"
