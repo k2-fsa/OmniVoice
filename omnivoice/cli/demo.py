@@ -32,16 +32,8 @@ import numpy as np
 import torch
 
 from omnivoice import OmniVoice, OmniVoiceGenerationConfig
+from omnivoice.utils.common import get_best_device
 from omnivoice.utils.lang_map import LANG_NAMES, lang_display_name
-
-
-def get_best_device():
-    """Auto-detect the best available device: CUDA > MPS > CPU."""
-    if torch.cuda.is_available():
-        return "cuda"
-    if torch.backends.mps.is_available():
-        return "mps"
-    return "cpu"
 
 
 # ---------------------------------------------------------------------------

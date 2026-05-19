@@ -61,6 +61,34 @@ pip install torch==2.8.0 torchaudio==2.8.0
 
 </details>
 
+<details>
+<summary>Intel Arc GPU (XPU)</summary>
+
+Intel Arc GPUs (Alchemist and Battlemage architectures) are supported via PyTorch's XPU backend.
+
+1. Install the [Intel GPU drivers](https://dgpu-docs.intel.com/driver/installation.html) for your OS.
+
+2. Install PyTorch with XPU support from Intel's wheel index:
+
+```bash
+pip install torch torchaudio --index-url https://pytorch-extension.intel.com/release-whl/stable/xpu/us/
+```
+
+> See [Intel's PyTorch XPU guide](https://intel.github.io/intel-extension-for-pytorch/xpu/latest/) for version-specific instructions.
+
+3. Verify the backend is working:
+
+```bash
+python -c "import torch; print(torch.xpu.is_available(), torch.xpu.device_count())"
+```
+
+**Notes**:
+- `flash_attn` is not available on XPU; the model automatically falls back to SDPA.
+- Training with packed sequences (`flex_attention`) has partial XPU support; single-GPU SDPA training should work.
+- Tested on Arc A310 (Alchemist, 4 GB) and Arc Pro B50 (Battlemage, 16 GB).
+
+</details>
+
 **Step 2**: Install OmniVoice (choose one)
 
 ```bash
@@ -125,6 +153,7 @@ model = OmniVoice.from_pretrained(
     dtype=torch.float16
 )
 # Apple Silicon users: use device_map="mps" instead
+# Intel Arc GPU users: use device_map="xpu" instead
 
 audio = model.generate(
     text="Hello, this is a test of zero-shot voice cloning.",

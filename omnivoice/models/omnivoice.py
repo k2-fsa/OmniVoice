@@ -305,7 +305,7 @@ class OmniVoice(PreTrainedModel):
 
         logger.info("Loading ASR model %s ...", model_name)
         asr_dtype = (
-            torch.float16 if str(self.device).startswith("cuda") else torch.float32
+            torch.float16 if str(self.device).startswith(("cuda", "xpu")) else torch.float32
         )
 
         model_name = _resolve_model_path(model_name)
