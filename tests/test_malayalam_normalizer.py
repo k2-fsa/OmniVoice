@@ -152,6 +152,21 @@ class TestNormalizeMalayalam:
         result = normalize_malayalam("₹250")
         assert result == "ഇരുനൂറ്റി അമ്പത് രൂപ"
 
+    def test_currency_global_prefix(self):
+        assert normalize_malayalam("$100") == "നൂറ് ഡോളർ"
+        assert normalize_malayalam("£50") == "അമ്പത് പൗണ്ട്"
+        assert normalize_malayalam("€200") == "ഇരുനൂറ് യൂറോ"
+        assert normalize_malayalam("¥1000") == "ആയിരം യെൻ"
+
+    def test_currency_global_suffix(self):
+        assert normalize_malayalam("100$") == "നൂറ് ഡോളർ"
+        assert normalize_malayalam("50 £") == "അമ്പത് പൗണ്ട്"
+
+    def test_currency_rs_variants(self):
+        assert normalize_malayalam("Rs 100") == "നൂറ് രൂപ"
+        assert normalize_malayalam("Rs. 100") == "നൂറ് രൂപ"
+        assert normalize_malayalam("100 Rs") == "നൂറ് രൂപ"
+
     # --- Percentages ---
 
     def test_percentage(self):

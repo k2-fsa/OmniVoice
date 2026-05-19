@@ -182,6 +182,16 @@ _ENGLISH_LETTERS = {
     "V": "വി", "W": "ഡബ്ല്യൂ", "X": "എക്സ്", "Y": "വൈ", "Z": "സെഡ്"
 }
 
+_CURRENCY_MAP = {
+    "₹": "രൂപ",
+    "Rs": "രൂപ",
+    "Rs.": "രൂപ",
+    "$": "ഡോളർ",
+    "£": "പൗണ്ട്",
+    "€": "യൂറോ",
+    "¥": "യെൻ",
+}
+
 
 # ---------------------------------------------------------------------------
 # Number to Malayalam word conversion
@@ -282,8 +292,12 @@ def _number_to_malayalam(n: int) -> Optional[str]:
 # Sub-normalizers
 # ---------------------------------------------------------------------------
 
-# Match ₹ followed by a number (with optional commas): ₹1,00,000 or ₹250
-_CURRENCY_RE = re.compile(r"₹\s*([\d,]+)")
+# Match currency symbols before or after the number
+_CURRENCY_KEYS_SORTED = sorted(_CURRENCY_MAP.keys(), key=len, reverse=True)
+_CURRENCY_PATTERN = "|".join(re.escape(k) for k in _CURRENCY_KEYS_SORTED)
+
+_CURRENCY_PRE_RE = re.compile(rf"({_CURRENCY_PATTERN})\s*(\d[\d,]*)")
+_CURRENCY_POST_RE = re.compile(rf"(\d[\d,]*)\s*({_CURRENCY_PATTERN})(?!\w)")
 
 # Match number followed by % sign
 _PERCENT_RE = re.compile(r"(\d[\d,]*)\s*%")
@@ -323,18 +337,33 @@ def _parse_number_str(s: str) -> Optional[int]:
 
 
 def _normalize_currency(text: str) -> str:
-    """Replace ₹{number} with Malayalam number + രൂപ."""
+    """Replace $100 or 100$ with Malayalam number + currency name."""
 
-    def _replace(m: re.Match) -> str:
-        n = _parse_number_str(m.group(1))
+    def _replace_pre(m: re.Match) -> str:
+        sym = m.group(1)
+        n = _parse_number_str(m.group(2))
         if n is None:
             return m.group(0)
         word = _number_to_malayalam(n)
         if word is None:
             return m.group(0)
-        return f"{word} രൂപ"
+        ml_currency = _CURRENCY_MAP.get(sym, sym)
+        return f"{word} {ml_currency}"
 
-    return _CURRENCY_RE.sub(_replace, text)
+    text = _CURRENCY_PRE_RE.sub(_replace_pre, text)
+
+    def _replace_post(m: re.Match) -> str:
+        n = _parse_number_str(m.group(1))
+        sym = m.group(2)
+        if n is None:
+            return m.group(0)
+        word = _number_to_malayalam(n)
+        if word is None:
+            return m.group(0)
+        ml_currency = _CURRENCY_MAP.get(sym, sym)
+        return f"{word} {ml_currency}"
+
+    return _CURRENCY_POST_RE.sub(_replace_post, text)
 
 
 def _normalize_percentages(text: str) -> str:
