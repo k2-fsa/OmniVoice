@@ -23,6 +23,14 @@ from omnivoice.models.omnivoice import (
     OmniVoice,
     OmniVoiceConfig,
     OmniVoiceGenerationConfig,
+    VoiceClonePrompt,
 )
+from omnivoice.utils.voice_library import VoiceLibrary
 
-__all__ = ["OmniVoice", "OmniVoiceConfig", "OmniVoiceGenerationConfig"]
+__all__ = [
+    "OmniVoice",
+    "OmniVoiceConfig",
+    "OmniVoiceGenerationConfig",
+    "VoiceClonePrompt",
+    "VoiceLibrary",
+]
