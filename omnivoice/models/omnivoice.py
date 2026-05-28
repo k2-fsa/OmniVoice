@@ -600,6 +600,171 @@ class OmniVoice(PreTrainedModel):
 
         return generated_audios
 
+    @torch.inference_mode()
+    def generate_streaming(
+        self,
+        text: str,
+        language: Optional[str] = None,
+        ref_text: Optional[str] = None,
+        ref_audio=None,
+        voice_clone_prompt: Optional["VoiceClonePrompt"] = None,
+        instruct: Optional[str] = None,
+        duration: Optional[float] = None,
+        speed: Optional[float] = None,
+        generation_config: Optional["OmniVoiceGenerationConfig"] = None,
+        **kwargs,
+    ):
+        """Streaming TTS generator for a single text input.
+
+        Yields ``(audio_1d_array, status_str)`` tuples as generation progresses:
+
+        - **Short texts** (below ``audio_chunk_threshold``): yields once with
+          the complete audio and status ``"Done."``.
+        - **Long texts**: yields after *each chunk* with cumulative audio,
+          enabling progressive playback in the UI.
+
+        Args:
+            text: A single string to synthesise (batch not supported here).
+            language: Language name or ID; ``None`` for auto-detection.
+            ref_text: Optional transcript of *ref_audio*.
+            ref_audio: Optional reference audio — file path or ``(waveform, sr)``.
+            voice_clone_prompt: Pre-computed prompt (overrides *ref_audio*).
+            instruct: Voice-design instruction string.
+            duration: Fixed output duration in seconds.
+            speed: Speaking speed factor (``>1`` faster, ``<1`` slower).
+            generation_config: Explicit config; overrides ``**kwargs``.
+            **kwargs: Fields forwarded to :class:`OmniVoiceGenerationConfig`.
+
+        Yields:
+            ``(np.ndarray, str)`` — 1-D float32 waveform at 24 kHz and a
+            human-readable status message.
+        """
+        if self.audio_tokenizer is None or self.text_tokenizer is None:
+            raise RuntimeError(
+                "Model not loaded with tokenizers. "
+                "Use OmniVoice.from_pretrained()."
+            )
+
+        gen_config = (
+            generation_config
+            if generation_config is not None
+            else OmniVoiceGenerationConfig.from_dict(kwargs)
+        )
+        self.eval()
+
+        full_task = self._preprocess_all(
+            text=text,
+            language=language,
+            ref_text=ref_text,
+            ref_audio=ref_audio,
+            voice_clone_prompt=voice_clone_prompt,
+            instruct=instruct,
+            preprocess_prompt=gen_config.preprocess_prompt,
+            speed=speed,
+            duration=duration,
+        )
+
+        ref_rms = full_task.ref_rms[0]
+        short_idx, long_idx = full_task.get_indices(
+            gen_config, self.audio_tokenizer.config.frame_rate
+        )
+
+        # ----------------------------------------------------------------
+        # SHORT TEXT — single iterative pass, yield once when done
+        # ----------------------------------------------------------------
+        if short_idx:
+            tokens = self._generate_iterative(full_task, gen_config)[0]
+            audio = self._decode_and_post_process(tokens, ref_rms, gen_config)
+            yield audio, "Done."
+            return
+
+        # ----------------------------------------------------------------
+        # LONG TEXT — chunk-by-chunk streaming
+        # ----------------------------------------------------------------
+        task = full_task
+        avg_tokens_per_char = task.target_lens[0] / max(1, len(task.texts[0]))
+        frame_rate = self.audio_tokenizer.config.frame_rate
+        text_chunk_len = int(
+            gen_config.audio_chunk_duration * frame_rate / avg_tokens_per_char
+        )
+        chunks = chunk_text_punctuation(
+            text=task.texts[0],
+            chunk_len=text_chunk_len,
+            min_chunk_len=3,
+        )
+        total = len(chunks)
+        has_ref = task.ref_audio_tokens[0] is not None
+        tokenizer_device = self.audio_tokenizer.device
+
+        collected_raw: list = []   # raw (1, T) chunk waveforms for cross-fade
+        first_chunk_tokens = None  # used as reference for no-ref subsequent chunks
+
+        for ci, chunk_text in enumerate(chunks):
+            # Determine reference audio/text for this chunk
+            if has_ref:
+                ref_audio_for_chunk = task.ref_audio_tokens[0]
+                ref_text_for_chunk = task.ref_texts[0]
+            else:
+                if ci == 0:
+                    ref_audio_for_chunk = None
+                    ref_text_for_chunk = None
+                else:
+                    # Use the first generated chunk as a consistent voice reference
+                    ref_audio_for_chunk = first_chunk_tokens
+                    ref_text_for_chunk = chunks[0]
+
+            chunk_target_len = self._estimate_target_tokens(
+                chunk_text,
+                ref_text_for_chunk,
+                ref_audio_for_chunk.size(-1) if ref_audio_for_chunk is not None else None,
+                speed=task.speed[0] if task.speed else 1.0,
+            )
+
+            sub_task = GenerationTask(
+                batch_size=1,
+                texts=[chunk_text],
+                target_lens=[chunk_target_len],
+                langs=[task.langs[0]],
+                instructs=[task.instructs[0]],
+                ref_texts=[ref_text_for_chunk],
+                ref_audio_tokens=[ref_audio_for_chunk],
+                ref_rms=[ref_rms],
+                speed=[task.speed[0]] if task.speed else None,
+            )
+
+            chunk_token = self._generate_iterative(sub_task, gen_config)[0]
+
+            # Store first chunk tokens for no-ref mode consistency
+            if ci == 0 and not has_ref:
+                first_chunk_tokens = chunk_token
+
+            # Decode chunk to raw waveform (shape: 1, T)
+            chunk_raw = (
+                self.audio_tokenizer.decode(
+                    chunk_token.to(tokenizer_device).unsqueeze(0)
+                )
+                .audio_values[0]
+                .cpu()
+                .numpy()
+            )
+            collected_raw.append(chunk_raw)
+
+            # Build cumulative audio: cross-fade on final chunk, concat otherwise
+            is_last = ci == total - 1
+            if is_last:
+                combined = cross_fade_chunks(collected_raw, self.sampling_rate)
+            else:
+                combined = np.concatenate(collected_raw, axis=-1)
+
+            processed = self._post_process_audio(
+                combined,
+                postprocess_output=gen_config.postprocess_output,
+                ref_rms=ref_rms,
+            ).squeeze(0)
+
+            status = "Done." if is_last else f"Generating... chunk {ci + 1}/{total}"
+            yield processed, status
+
     def create_voice_clone_prompt(
         self,
         ref_audio: Union[str, tuple[torch.Tensor, int]],

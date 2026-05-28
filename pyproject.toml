@@ -45,6 +45,12 @@ dependencies = [
 
 [project.optional-dependencies]
 
+api = [
+    "fastapi>=0.111.0",
+    "uvicorn[standard]>=0.29.0",
+    "python-multipart>=0.0.9",   # multipart/form-data for file uploads
+]
+
 eval = [
     "jiwer==3.1.0",       # WER
     "s3prl",               # Speech representation (HuBERT etc.)
@@ -58,6 +64,7 @@ eval = [
 omnivoice-infer = "omnivoice.cli.infer:main"
 omnivoice-infer-batch = "omnivoice.cli.infer_batch:main"
 omnivoice-demo = "omnivoice.cli.demo:main"
+omnivoice-api = "omnivoice.api.server:main"
 
 [project.urls]
 Homepage = "https://github.com/k2-fsa/OmniVoice"
