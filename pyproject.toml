@@ -10,7 +10,7 @@ readme = "README.md"
 license = "Apache-2.0"
 requires-python = ">=3.10"
 authors = [{name = "Han Zhu"}]
-keywords = [
+keywords =[
     "tts",
     "text-to-speech",
     "speech-synthesis",
@@ -19,17 +19,15 @@ keywords = [
     "diffusion",
     "voice-cloning",
 ]
-classifiers = [
+classifiers =[
     "Intended Audience :: Science/Research",
     "Intended Audience :: Developers",
-
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
     "Topic :: Multimedia :: Sound/Audio :: Speech",
-
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
 ]
-dependencies = [
+dependencies =[
     "torch>=2.4",
     "torchaudio>=2.4",
     "transformers>=5.3.0",
@@ -41,17 +39,26 @@ dependencies = [
     "numpy",
     "soundfile",
     "librosa",
+][project.optional-dependencies]
+eval =[
+    "jiwer==3.1.0",           # WER
+    "s3prl",                  # Speech representation (HuBERT etc.)
+    "funasr",                 # ASR models
+    "zhconv",                 # Chinese character normalization
+    "zhon",                   # Chinese punctuation
+    "unidecode",              # Unicode normalization
 ]
-
-[project.optional-dependencies]
-
-eval = [
-    "jiwer==3.1.0",       # WER
-    "s3prl",               # Speech representation (HuBERT etc.)
-    "funasr",              # ASR models
-    "zhconv",              # Chinese character normalization
-    "zhon",                # Chinese punctuation
-    "unidecode",            # Unicode normalization
+# ====================================================================
+# NEW: Optional GPU build dependencies
+# Allows users to install with: `uv pip install -e .[cu126]`
+# ====================================================================
+cu126 =[
+    "torch==2.6.0+cu126",
+    "torchaudio==2.6.0+cu126",
+]
+cu128 =[
+    "torch==2.8.0+cu128",
+    "torchaudio==2.8.0+cu128",
 ]
 
 [project.scripts]
@@ -65,28 +72,34 @@ Repository = "https://github.com/k2-fsa/OmniVoice"
 "Bug Tracker" = "https://github.com/k2-fsa/OmniVoice/issues"
 
 [tool.uv.sources]
-# Install PyTorch with CUDA support on Linux/Windows (CUDA doesn't exist for Mac).
-# NOTE: We must explicitly request them as `dependencies` above. These improved
-# versions will not be selected if they're only third-party dependencies.
-torch = [
-  { index = "pytorch-cuda", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+# Dynamically route Torch to the correct index URL based on the chosen extra.
+torch =[
+  { index = "pytorch-cu126", extra = "cu126", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+  { index = "pytorch-cu128", extra = "cu128", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+  { index = "pytorch-cu128", marker = "sys_platform == 'linux' or sys_platform == 'win32'" }, # Default fallback
 ]
-torchaudio = [
-  { index = "pytorch-cuda", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+torchaudio =[
+  { index = "pytorch-cu126", extra = "cu126", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+  { index = "pytorch-cu128", extra = "cu128", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+  { index = "pytorch-cu128", marker = "sys_platform == 'linux' or sys_platform == 'win32'" }, # Default fallback
 ]
 
 [[tool.uv.index]]
-name = "pytorch-cuda"
-# Use PyTorch built for NVIDIA Toolkit version 12.8.
-# Available versions: https://pytorch.org/get-started/locally/
+name = "pytorch-cu128"
 url = "https://download.pytorch.org/whl/cu128"
-# Only use this index when explicitly requested by `tool.uv.sources`.
+explicit = true
+
+[[tool.uv.index]]
+name = "pytorch-cu126"
+url = "https://download.pytorch.org/whl/cu126"
 explicit = true
 
 [tool.uv]
-constraint-dependencies = [
-    "torch==2.8.0",
-    "torchaudio==2.8.0",
+# Tells UV not to freak out during lock resolution, explicitly declaring these cannot be installed simultaneously
+conflicts = [[
+    { extra = "cu126" },
+    { extra = "cu128" },
+  ],
 ]
 
 [tool.hatch.build.targets.sdist]
