@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 # Copyright    2026  Xiaomi Corp.        (authors:  Han Zhu)
 #
 # See ../../LICENSE for clarification regarding multiple authors
@@ -216,10 +216,10 @@ def build_demo(
             return None, f"Error: {type(e).__name__}: {e}"
 
         if output_format == "mp3":
-            # Save to a temporary MP3 file and return the filepath.
-            # Gradio will serve the file and allow downloading as MP3.
+            # Save to a system temp file and return the filepath.
+            # Gradio serves files from the system temp directory.
             tmp = tempfile.NamedTemporaryFile(
-                suffix=".mp3", delete=False, dir=os.path.dirname(__file__)
+                suffix=".mp3", delete=False, dir=tempfile.gettempdir()
             )
             tmp.close()
             try:
@@ -317,7 +317,7 @@ def build_demo(
             )
         return ns, gs, dn, sp, du, pp, po
 
-    with gr.Blocks(theme=theme, css=css, title="OmniVoice Demo") as demo:
+    with gr.Blocks(title="OmniVoice Demo") as demo:
         gr.Markdown(
             """
 # OmniVoice Demo
@@ -529,7 +529,7 @@ by Xiaomi AI Lab Next-gen Kaldi team.
                     outputs=[vd_audio, vd_status],
                 )
 
-    return demo
+    return demo, theme, css
 
 
 # ---------------------------------------------------------------------------
@@ -561,9 +561,11 @@ def main(argv=None) -> int:
     )
     print("Model loaded.")
 
-    demo = build_demo(model, checkpoint)
+    demo, theme, css = build_demo(model, checkpoint)
 
     demo.queue().launch(
+        theme=theme,
+        css=css,
         server_name=args.ip,
         server_port=args.port,
         share=args.share,
