@@ -26,6 +26,7 @@ with shape ``(C, T)`` (channels-first).
 
 import io
 import logging
+from pathlib import Path
 
 import numpy as np
 import soundfile as sf
@@ -296,6 +297,45 @@ def trim_long_audio(
 
     trimmed = seg[:best_split]
     return audiosegment_to_numpy(trimmed)
+
+
+def save_audio(audio: np.ndarray, save_path: str, sample_rate: int) -> None:
+    """Save a waveform to disk as WAV or MP3.
+
+    Parameters:
+        audio: numpy array of shape (C, T) with dtype float32 in [-1, 1].
+        save_path: destination file path.  Extension determines the format:
+            ``.wav`` → WAV (16-bit PCM), ``.mp3`` → MP3 (128 kbps).
+        sample_rate: sample rate in Hz (e.g. 24000).
+
+    Raises:
+        ValueError: if the file extension is not recognised.
+    """
+    ext = Path(save_path).suffix.lower()
+
+    if ext == ".wav":
+        # soundfile natively supports WAV — fast, no ffmpeg dependency.
+        sf.write(save_path, audio, sample_rate)
+
+    elif ext == ".mp3":
+        # pydub (wraps ffmpeg) handles MP3 encoding with bitrate control.
+        from pydub import AudioSegment
+
+        audio_int = (audio * 32768.0).clip(-32768, 32767).astype(np.int16)
+        if audio_int.shape[0] > 1:
+            audio_int = audio_int.T.flatten()  # interleave channels
+        segment = AudioSegment(
+            data=audio_int.tobytes(),
+            sample_width=2,
+            frame_rate=sample_rate,
+            channels=audio_int.shape[0] if audio_int.ndim > 1 else 1,
+        )
+        segment.export(save_path, format="mp3", bitrate="128k")
+
+    else:
+        raise ValueError(
+            f"Unsupported output format '{ext}'. Use '.wav' or '.mp3'."
+        )
 
 
 def cross_fade_chunks(

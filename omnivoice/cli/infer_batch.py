@@ -29,6 +29,8 @@ Test list format (JSONL, one JSON object per line):
     Voice cloning:   "ref_audio", "ref_text"
     Voice design:    "instruct"
     Optional:        "language_id", "duration", "speed"
+
+Output format defaults to WAV; use --format mp3 for MP3 (128 kbps).
 """
 
 import argparse
@@ -45,9 +47,8 @@ import torch
 from tqdm import tqdm
 
 from omnivoice.models.omnivoice import OmniVoice
-import soundfile as sf
 
-from omnivoice.utils.audio import load_audio
+from omnivoice.utils.audio import load_audio, save_audio
 from omnivoice.utils.common import get_best_device_with_count, str2bool
 from omnivoice.utils.data_utils import read_test_list
 from omnivoice.utils.duration import RuleDurationEstimator
@@ -87,6 +88,13 @@ def get_parser():
         type=str,
         required=True,
         help="Directory to save the generated audio files.",
+    )
+    parser.add_argument(
+        "--format",
+        type=str,
+        default="wav",
+        choices=["wav", "mp3"],
+        help="Output format for generated audio files (default: wav).",
     )
     parser.add_argument(
         "--num_step",
@@ -387,9 +395,10 @@ def run_inference_batch(
     batch_synth_time = time.time() - start_time
 
     results = []
+    ext = f".{format}"
     for save_name, audio in zip(save_names, audios):
-        save_path = os.path.join(res_dir, save_name + ".wav")
-        sf.write(save_path, audio, worker_model.sampling_rate)
+        save_path = os.path.join(res_dir, save_name + ext)
+        save_audio(audio, save_path, worker_model.sampling_rate)
         audio_duration = audio.shape[-1] / worker_model.sampling_rate
         results.append(
             (
