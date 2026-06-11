@@ -1,0 +1,12 @@
+{
+  "id": "sqlite-project-isolation",
+  "category": "implementation-readiness",
+  "description": "SQLite project data must remain isolated by project and recover cleanly after interruption.",
+  "input": "Create two projects, fail one generation, restart the app, and resume only the failed project.",
+  "expectedSignals": [
+    "project ids isolate rows",
+    "failed project is retryable",
+    "other project remains unchanged"
+  ],
+  "gate": "validate SQLite project isolation"
+}
