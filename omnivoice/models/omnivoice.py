@@ -778,10 +778,11 @@ class OmniVoice(PreTrainedModel):
             if peak > 1e-6:
                 generated_audio = generated_audio / peak * 0.5
 
-        generated_audio = fade_and_pad_audio(
-            generated_audio,
-            sample_rate=self.sampling_rate,
-        )
+        if postprocess_output:
+            generated_audio = fade_and_pad_audio(
+                generated_audio,
+                sample_rate=self.sampling_rate,
+            )
         return generated_audio
 
     def _generate_chunked(
