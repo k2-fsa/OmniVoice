@@ -23,3 +23,5 @@ This contract applies only to the online alternative.
 - No silent fallback from offline to online.
 - No full manuscript logging.
 - Validate model support for structured outputs before use.
+- Use `provider.require_parameters=true`, `provider.data_collection=deny`, and `provider.zdr=true`.
+- Retry only transient provider/network failures with a bounded retry count.

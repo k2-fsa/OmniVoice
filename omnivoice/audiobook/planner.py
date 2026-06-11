@@ -163,6 +163,84 @@ def create_audiobook_plan_from_docx(path: str | Path, config: AudiobookPlanConfi
     return create_audiobook_plan(extract_docx_structure(path), config)
 
 
+def create_audiobook_plan_from_openrouter_results(
+    document: DocxDocument,
+    config: AudiobookPlanConfig,
+    results: Iterable[Dict[str, object]],
+    *,
+    model: str,
+) -> AudiobookPlan:
+    genre = config.genre if config.genre in {"technical", "fiction"} else "technical"
+    chapters: List[AudiobookChapter] = []
+    chapter_order = 0
+
+    for result in results:
+        for item in result.get("chapters", []):  # type: ignore[union-attr]
+            if not isinstance(item, dict):
+                continue
+            chapter_order += 1
+            chapter = AudiobookChapter(
+                id=_chapter_id(chapter_order),
+                title=str(item.get("title") or f"Chapter {chapter_order}"),
+                order=chapter_order,
+            )
+            segments = item.get("segments", [])
+            if not isinstance(segments, list):
+                segments = []
+            for segment_order, segment_data in enumerate(segments, start=1):
+                if not isinstance(segment_data, dict):
+                    continue
+                text = str(segment_data.get("text") or "").strip()
+                if not text:
+                    continue
+                chapter.segments.append(
+                    AudiobookSegment(
+                        id=_segment_id(chapter_order, segment_order),
+                        text=text,
+                        text_hash=_stable_hash(text),
+                        speaker=str(segment_data.get("speaker") or "narrator"),
+                        pause_after_ms=int(segment_data.get("pause_after_ms") or 750),
+                        speed=float(segment_data.get("speed") or config.speed),
+                        tone=str(segment_data.get("tone") or _tone_for_genre(genre)),
+                        chapter_id=chapter.id,
+                    )
+                )
+            chapters.append(chapter)
+
+    if not any(chapter.segments for chapter in chapters):
+        raise ValueError("OpenRouter results did not contain any valid audiobook segments")
+
+    return AudiobookPlan(
+        project=AudiobookProject(
+            title=config.title,
+            author=config.author,
+            language=config.language,
+            genre=genre,
+            source_docx_hash=document.sha256,
+            created_at=datetime.now(timezone.utc).isoformat(),
+        ),
+        voice_profile=VoiceProfile(
+            mode=config.voice_mode,
+            default_voice=config.default_voice,
+            speed=config.speed,
+            style=_style_for_genre(genre),
+        ),
+        chapters=chapters,
+        qc_targets=AudiobookQcTargets(
+            max_segment_chars=config.max_segment_chars,
+            target_words_per_minute=_wpm_for_genre(genre, config.target_words_per_minute),
+        ),
+        settings={
+            "source_docx_path": document.path,
+            "parser": "omnivoice.audiobook.openrouter.v1",
+            "preset": config.preset,
+            "offline_required": False,
+            "external_provider": "openrouter",
+            "openrouter_model": model,
+        },
+    )
+
+
 def plan_to_json(plan: AudiobookPlan) -> str:
     return json.dumps(plan.to_dict(), ensure_ascii=False, indent=2)
 
