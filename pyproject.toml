@@ -58,6 +58,7 @@ eval = [
 omnivoice-infer = "omnivoice.cli.infer:main"
 omnivoice-infer-batch = "omnivoice.cli.infer_batch:main"
 omnivoice-demo = "omnivoice.cli.demo:main"
+omnivoice-docx-audiobook-plan = "omnivoice.audiobook.cli:main"
 
 [project.urls]
 Homepage = "https://github.com/k2-fsa/OmniVoice"

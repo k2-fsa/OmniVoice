@@ -1,0 +1,51 @@
+{
+  "project": {
+    "title": "Livro Exemplo",
+    "author": "Autor Exemplo",
+    "language": "pt-BR",
+    "genre": "technical",
+    "source_docx_hash": "example",
+    "created_at": "2026-06-11T00:00:00+00:00"
+  },
+  "voice_profile": {
+    "mode": "design",
+    "default_voice": "narrator",
+    "speed": 0.92,
+    "style": "technical_clear",
+    "pronunciation_notes": []
+  },
+  "chapters": [
+    {
+      "id": "ch_001",
+      "title": "Introducao",
+      "order": 1,
+      "segments": [
+        {
+          "id": "seg_001_000001",
+          "text": "Este e um segmento de exemplo para demonstrar o plano de audiobook.",
+          "text_hash": "example",
+          "speaker": "narrator",
+          "pause_after_ms": 750,
+          "speed": 0.92,
+          "tone": "neutral",
+          "chapter_id": "ch_001",
+          "status": "pending",
+          "source_paragraph_index": null
+        }
+      ]
+    }
+  ],
+  "qc_targets": {
+    "sample_rate_hz": 44100,
+    "peak_dbfs_max": -3.0,
+    "target_loudness_lufs": -20.0,
+    "allowed_loudness_tolerance": 2.0,
+    "max_segment_chars": 900,
+    "target_words_per_minute": 150
+  },
+  "settings": {
+    "parser": "omnivoice.audiobook.v1",
+    "offline_required": true,
+    "external_provider": null
+  }
+}
