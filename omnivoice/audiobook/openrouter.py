@@ -9,6 +9,10 @@ from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Optional
 
 from omnivoice.audiobook.chunking import AudiobookChunk
+from omnivoice.audiobook.structured_result_contract import (
+    audiobook_chunk_schema,
+    validate_structured_chunk_content,
+)
 
 
 OPENROUTER_CHAT_COMPLETIONS_URL = "https://openrouter.ai/api/v1/chat/completions"
@@ -47,53 +51,6 @@ class OpenRouterChunkResult:
 
 
 Transport = Callable[[urllib.request.Request, int], bytes]
-
-
-def audiobook_chunk_schema() -> Dict[str, Any]:
-    return {
-        "type": "object",
-        "additionalProperties": False,
-        "required": ["chapters", "warnings"],
-        "properties": {
-            "chapters": {
-                "type": "array",
-                "items": {
-                    "type": "object",
-                    "additionalProperties": False,
-                    "required": ["title", "segments"],
-                    "properties": {
-                        "title": {"type": "string"},
-                        "segments": {
-                            "type": "array",
-                            "items": {
-                                "type": "object",
-                                "additionalProperties": False,
-                                "required": [
-                                    "text",
-                                    "speaker",
-                                    "pause_after_ms",
-                                    "speed",
-                                    "tone",
-                                ],
-                                "properties": {
-                                    "text": {"type": "string", "minLength": 1},
-                                    "speaker": {"type": "string"},
-                                    "pause_after_ms": {"type": "integer", "minimum": 0},
-                                    "speed": {"type": "number", "minimum": 0.5, "maximum": 1.5},
-                                    "tone": {"type": "string"},
-                                    "pronunciation_notes": {
-                                        "type": "array",
-                                        "items": {"type": "string"},
-                                    },
-                                },
-                            },
-                        },
-                    },
-                },
-            },
-            "warnings": {"type": "array", "items": {"type": "string"}},
-        },
-    }
 
 
 def build_openrouter_messages(chunk: AudiobookChunk, *, language: str, genre: str) -> List[Dict[str, str]]:
@@ -156,48 +113,6 @@ def build_openrouter_payload(
     return payload
 
 
-def validate_openrouter_chunk_content(content: Dict[str, Any]) -> None:
-    allowed_top = {"chapters", "warnings"}
-    extra_top = set(content) - allowed_top
-    if extra_top:
-        raise OpenRouterError(f"OpenRouter response has unexpected top-level fields: {sorted(extra_top)}")
-    chapters = content.get("chapters")
-    warnings = content.get("warnings")
-    if not isinstance(chapters, list) or not isinstance(warnings, list):
-        raise OpenRouterError("OpenRouter response must include list fields: chapters and warnings")
-    for chapter in chapters:
-        if not isinstance(chapter, dict):
-            raise OpenRouterError("Each chapter must be an object")
-        chapter_extra = set(chapter) - {"title", "segments"}
-        if chapter_extra:
-            raise OpenRouterError(f"Chapter has unexpected fields: {sorted(chapter_extra)}")
-        if not isinstance(chapter.get("title"), str):
-            raise OpenRouterError("Chapter title must be a string")
-        segments = chapter.get("segments")
-        if not isinstance(segments, list):
-            raise OpenRouterError("Chapter segments must be a list")
-        for segment in segments:
-            if not isinstance(segment, dict):
-                raise OpenRouterError("Each segment must be an object")
-            segment_extra = set(segment) - {
-                "text",
-                "speaker",
-                "pause_after_ms",
-                "speed",
-                "tone",
-                "pronunciation_notes",
-            }
-            if segment_extra:
-                raise OpenRouterError(f"Segment has unexpected fields: {sorted(segment_extra)}")
-            for key in ["text", "speaker", "tone"]:
-                if not isinstance(segment.get(key), str) or not segment.get(key):
-                    raise OpenRouterError(f"Segment {key} must be a non-empty string")
-            if not isinstance(segment.get("pause_after_ms"), int):
-                raise OpenRouterError("Segment pause_after_ms must be an integer")
-            if not isinstance(segment.get("speed"), (int, float)):
-                raise OpenRouterError("Segment speed must be numeric")
-
-
 def _default_transport(request: urllib.request.Request, timeout_seconds: int) -> bytes:
     with urllib.request.urlopen(request, timeout=timeout_seconds) as response:
         return response.read()
@@ -224,8 +139,7 @@ class OpenRouterAudiobookClient:
                 last_error = exc
                 should_retry = exc.code in retry_statuses and attempt < self.config.max_retries
                 if not should_retry:
-                    detail = exc.read().decode("utf-8", errors="replace")
-                    raise OpenRouterError(f"OpenRouter HTTP {exc.code}: {detail}") from exc
+                    raise OpenRouterError(f"OpenRouter HTTP {exc.code}: response body redacted") from exc
                 retry_after = exc.headers.get("Retry-After") if exc.headers else None
                 delay = float(retry_after) if retry_after and retry_after.isdigit() else 0.25 * (attempt + 1)
                 time.sleep(min(delay, 2.0))
@@ -303,7 +217,7 @@ class OpenRouterAudiobookClient:
                 content_data = content
             else:
                 raise TypeError("message.content must be JSON string or object")
-            validate_openrouter_chunk_content(content_data)
+            validate_structured_chunk_content(content_data)
         except Exception as exc:
             raise OpenRouterError(f"Invalid OpenRouter structured response: {exc}") from exc
 

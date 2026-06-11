@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Dict, Iterable, List, Optional
 
 from omnivoice.audiobook.docx import DocxDocument, DocxParagraph, extract_docx_structure
+from omnivoice.audiobook.structured_result_contract import validate_structured_chunk_content
 from omnivoice.audiobook.schema import (
     AudiobookChapter,
     AudiobookPlan,
@@ -175,33 +176,25 @@ def create_audiobook_plan_from_openrouter_results(
     chapter_order = 0
 
     for result in results:
+        validate_structured_chunk_content(result)
         for item in result.get("chapters", []):  # type: ignore[union-attr]
-            if not isinstance(item, dict):
-                continue
             chapter_order += 1
             chapter = AudiobookChapter(
                 id=_chapter_id(chapter_order),
-                title=str(item.get("title") or f"Chapter {chapter_order}"),
+                title=str(item["title"]),
                 order=chapter_order,
             )
-            segments = item.get("segments", [])
-            if not isinstance(segments, list):
-                segments = []
-            for segment_order, segment_data in enumerate(segments, start=1):
-                if not isinstance(segment_data, dict):
-                    continue
-                text = str(segment_data.get("text") or "").strip()
-                if not text:
-                    continue
+            for segment_order, segment_data in enumerate(item["segments"], start=1):
+                text = str(segment_data["text"]).strip()
                 chapter.segments.append(
                     AudiobookSegment(
                         id=_segment_id(chapter_order, segment_order),
                         text=text,
                         text_hash=_stable_hash(text),
-                        speaker=str(segment_data.get("speaker") or "narrator"),
-                        pause_after_ms=int(segment_data.get("pause_after_ms") or 750),
-                        speed=float(segment_data.get("speed") or config.speed),
-                        tone=str(segment_data.get("tone") or _tone_for_genre(genre)),
+                        speaker=str(segment_data["speaker"]),
+                        pause_after_ms=int(segment_data["pause_after_ms"]),
+                        speed=float(segment_data["speed"]),
+                        tone=str(segment_data["tone"]),
                         chapter_id=chapter.id,
                     )
                 )

@@ -37,7 +37,31 @@ def _build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Write the selected chunk metadata and text without calling OpenRouter.",
     )
+    parser.add_argument(
+        "--include-text",
+        action="store_true",
+        help="Include manuscript text in preview output. Preview metadata is redacted by default.",
+    )
     return parser
+
+
+def _chunk_preview(chunk, *, include_text: bool) -> dict[str, object]:
+    data: dict[str, object] = {
+        "id": chunk.id,
+        "index": chunk.index,
+        "title": chunk.title,
+        "word_count": chunk.word_count,
+        "paragraph_start": chunk.paragraph_start,
+        "paragraph_end": chunk.paragraph_end,
+        "warnings": chunk.warnings,
+    }
+    if include_text:
+        data["text"] = chunk.text
+        data["previous_summary"] = chunk.previous_summary
+    else:
+        data["text_redacted"] = True
+        data["previous_summary_redacted"] = chunk.previous_summary is not None
+    return data
 
 
 def main() -> None:
@@ -59,9 +83,10 @@ def main() -> None:
         output.write_text(
             json.dumps(
                 {
-                    "chunk": chunk.__dict__,
+                    "chunk": _chunk_preview(chunk, include_text=args.include_text),
                     "total_chunks": len(chunks),
                     "provider_call": False,
+                    "text_redacted": not args.include_text,
                 },
                 ensure_ascii=False,
                 indent=2,

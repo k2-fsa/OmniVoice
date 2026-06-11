@@ -26,6 +26,9 @@ class MasteringOptions:
     compressor: bool = False
     limiter: bool = True
     output_format: str = "wav"
+    sample_rate_hz: int = 44100
+    channels: int = 1
+    overwrite: bool = False
 
 
 @dataclass
@@ -33,6 +36,7 @@ class ConcatOptions:
     normalize_stream: bool = True
     sample_rate_hz: int = 44100
     channels: int = 1
+    overwrite: bool = False
 
 
 def require_binary(name: str) -> str:
@@ -65,6 +69,13 @@ def _concat_list(paths: Sequence[Path], list_path: Path) -> None:
     list_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
+def _ensure_output_is_not_source(output: Path, sources: Sequence[Path]) -> None:
+    output_resolved = output.resolve()
+    for source in sources:
+        if output_resolved == Path(source).resolve():
+            raise FFmpegError(f"Output path must not overwrite source audio: {output}")
+
+
 def concat_audio_files(
     inputs: Sequence[Path],
     output: Path,
@@ -75,15 +86,17 @@ def concat_audio_files(
 ) -> Path:
     if not inputs:
         raise FFmpegError("No audio inputs supplied for concatenation")
+    inputs = [Path(item) for item in inputs]
     ffmpeg = ffmpeg_path or require_binary("ffmpeg")
     options = options or ConcatOptions()
+    _ensure_output_is_not_source(output, inputs)
     output.parent.mkdir(parents=True, exist_ok=True)
     list_path = output.with_suffix(".concat.txt")
     _concat_list(inputs, list_path)
     try:
         command = [
             ffmpeg,
-            "-y",
+            "-y" if options.overwrite else "-n",
             "-f",
             "concat",
             "-safe",
@@ -147,15 +160,20 @@ def remaster_audio(
         raise FFmpegError(f"Input audio not found: {input_path}")
     options = options or MasteringOptions()
     ffmpeg = ffmpeg_path or require_binary("ffmpeg")
+    _ensure_output_is_not_source(output_path, [input_path])
     output_path.parent.mkdir(parents=True, exist_ok=True)
     _run(
         [
             ffmpeg,
-            "-y",
+            "-y" if options.overwrite else "-n",
             "-i",
             str(input_path),
             "-af",
             build_audio_filter(options),
+            "-ar",
+            str(options.sample_rate_hz),
+            "-ac",
+            str(options.channels),
             str(output_path),
         ],
         runner=runner,

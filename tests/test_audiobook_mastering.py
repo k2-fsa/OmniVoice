@@ -60,10 +60,11 @@ class AudiobookMasteringTest(unittest.TestCase):
 
             concat_audio_files([first, second], output, runner=runner, ffmpeg_path="ffmpeg")
 
-            command = runner.commands[0]
-            self.assertIn("-ar", command)
-            self.assertIn("44100", command)
-            self.assertIn("pcm_s16le", command)
+        command = runner.commands[0]
+        self.assertIn("-n", command)
+        self.assertIn("-ar", command)
+        self.assertIn("44100", command)
+        self.assertIn("pcm_s16le", command)
 
     def test_concat_copy_mode(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -90,6 +91,32 @@ class AudiobookMasteringTest(unittest.TestCase):
             with mock.patch("shutil.which", return_value=None):
                 with self.assertRaises(FFmpegError):
                     remaster_audio(source, Path(tmp) / "out.wav")
+
+    def test_remaster_forces_output_sample_rate_and_channels(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            source = Path(tmp) / "in.wav"
+            source.write_bytes(b"x")
+            runner = FakeRunner()
+
+            remaster_audio(source, Path(tmp) / "out.wav", runner=runner, ffmpeg_path="ffmpeg")
+
+            command = runner.commands[0]
+            self.assertIn("-n", command)
+            self.assertIn("-ar", command)
+            self.assertIn("44100", command)
+            self.assertIn("-ac", command)
+            self.assertIn("1", command)
+
+    def test_mastering_rejects_source_output_collision(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            source = Path(tmp) / "same.wav"
+            source.write_bytes(b"x")
+
+            with self.assertRaises(FFmpegError):
+                remaster_audio(source, source, runner=FakeRunner(), ffmpeg_path="ffmpeg")
+
+            with self.assertRaises(FFmpegError):
+                concat_audio_files([source], source, runner=FakeRunner(), ffmpeg_path="ffmpeg")
 
     def test_ffprobe_json_is_parsed(self):
         with tempfile.TemporaryDirectory() as tmp:

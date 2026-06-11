@@ -11,7 +11,9 @@ Break OpenRouter Audiobook Pipeline into executable SpecOps tasks.
 - [x] Implement OpenRouter JSON Schema request/response adapter with consent gate.
 - [x] Implement segment generation progress/checkpoint helpers.
 - [x] Implement FFmpeg concat/remaster helpers.
-- [x] Add or update tests/evals.
+- [x] Implement workflow CLI for OpenRouter result merge and checkpoint updates.
+- [x] Implement QC report CLI for generated plans.
+- [x] Add or update tests/evals, including E2E FFmpeg smoke when tooling exists.
 - [x] Run native quality gates.
 - [x] Record evidence and blockers.
 
@@ -22,13 +24,15 @@ Break OpenRouter Audiobook Pipeline into executable SpecOps tasks.
 
 ## Evidence
 
-- `py -3 -B -m pytest -p no:cacheprovider -q` -> `31 passed, 1 skipped`.
+- `py -3 -B -m pytest -p no:cacheprovider -q` -> `47 passed, 1 skipped`.
 - `py -3 -B -m compileall -q omnivoice\audiobook omnivoice\narration` -> passed.
 - Static secret/provider scan over audiobook code, tests, docs, and specs -> no matches.
-- FFmpeg smoke: generated two local sine WAVs, concatenated/remastered with `omnivoice.audiobook.mastering_cli`, `ffprobe` duration `0.300000`.
+- Offline provider boundary scan over offline entrypoints -> passed.
+- FFmpeg E2E smoke: synthetic DOCX, structured OpenRouter fixture, checkpoint, local sine WAV, `omnivoice.audiobook.mastering_cli`, `ffprobe`, and `omnivoice.audiobook.qc_cli` -> `1 passed`.
+- SpecOps wrapper report generated adoption findings; stable summary recorded in `specs/openrouter-audiobook-evidence.md`.
 
 ## Blockers / Adoption Debt
 
 - `specops validate` is blocked by repository-wide SpecOps adoption debt: required base docs and eval scenario categories are missing.
-- `specops eval` reports `0 passed, 0 failed` because no global eval scenarios exist yet.
+- `specops eval` exits non-zero with `0 passed, 0 failed` because no global eval scenarios exist yet.
 - These are not feature regressions from the OpenRouter Audiobook Pipeline slice.

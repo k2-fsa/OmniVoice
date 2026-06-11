@@ -2,6 +2,7 @@ import unittest
 
 from omnivoice.audiobook.chunking import ChunkingConfig, chunk_docx_document
 from omnivoice.audiobook.docx import DocxDocument, DocxParagraph
+from omnivoice.audiobook.openrouter import OpenRouterConfig, build_openrouter_payload
 
 
 class AudiobookChunkingTest(unittest.TestCase):
@@ -37,6 +38,33 @@ class AudiobookChunkingTest(unittest.TestCase):
 
         self.assertEqual(len(chunks), 3)
         self.assertIn("oversized_paragraph_split", chunks[0].warnings)
+
+    def test_large_docx_scale_has_deterministic_chunks_and_bounded_provider_payload(self):
+        paragraphs = [
+            DocxParagraph(index=i, text=" ".join([f"pagina{i:03d}"] * 120))
+            for i in range(500)
+        ]
+        document = DocxDocument(path="book-500-pages.docx", sha256="hash", paragraphs=paragraphs)
+        config = ChunkingConfig(max_words=2400, target_words=1800, overlap_summary_words=80)
+
+        chunks = chunk_docx_document(document, config)
+        repeated = chunk_docx_document(document, config)
+
+        self.assertGreater(len(chunks), 20)
+        self.assertEqual([chunk.id for chunk in chunks], [chunk.id for chunk in repeated])
+        self.assertTrue(all(chunk.word_count <= 2400 for chunk in chunks))
+        self.assertEqual(chunks[0].paragraph_start, 0)
+        self.assertLessEqual(len(chunks[1].previous_summary.split()), 80)
+
+        payload = build_openrouter_payload(
+            chunks[0],
+            OpenRouterConfig(model="test/model"),
+            language="pt-BR",
+            genre="technical",
+        )
+        user_message = payload["messages"][1]["content"]
+        self.assertIn("pagina000", user_message)
+        self.assertNotIn("pagina499", user_message)
 
 
 if __name__ == "__main__":

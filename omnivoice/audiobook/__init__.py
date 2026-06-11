@@ -5,7 +5,7 @@ from omnivoice.audiobook.chunking import AudiobookChunk, ChunkingConfig, chunk_d
 from omnivoice.audiobook.generation import AudiobookGenerationJob, SegmentWorkItem
 from omnivoice.audiobook.generation import load_generation_checkpoint, write_generation_checkpoint
 from omnivoice.audiobook.mastering import MasteringOptions, concat_audio_files, remaster_audio
-from omnivoice.audiobook.openrouter import OpenRouterAudiobookClient, OpenRouterConfig
+from omnivoice.audiobook.qc import QcReport, inspect_audiobook_plan_audio
 from omnivoice.audiobook.planner import (
     AudiobookPlanConfig,
     create_audiobook_plan,
@@ -35,8 +35,7 @@ __all__ = [
     "DocxDocument",
     "DocxParagraph",
     "MasteringOptions",
-    "OpenRouterAudiobookClient",
-    "OpenRouterConfig",
+    "QcReport",
     "SegmentWorkItem",
     "VoiceProfile",
     "chunk_docx_document",
@@ -47,6 +46,7 @@ __all__ = [
     "extract_docx_structure",
     "plan_to_json",
     "remaster_audio",
+    "inspect_audiobook_plan_audio",
     "load_generation_checkpoint",
     "write_generation_checkpoint",
 ]

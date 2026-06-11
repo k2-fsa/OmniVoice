@@ -49,7 +49,7 @@ class AudiobookOpenRouterPlanTest(unittest.TestCase):
         self.assertEqual(len(plan.chapters[0].segments[0].text_hash), 64)
         self.assertEqual(plan.chapters[0].segments[0].tone, "suspense")
 
-    def test_malformed_items_are_ignored_but_empty_plan_fails(self):
+    def test_malformed_items_fail_closed(self):
         with self.assertRaises(ValueError):
             create_audiobook_plan_from_openrouter_results(
                 self._document(),
@@ -58,19 +58,14 @@ class AudiobookOpenRouterPlanTest(unittest.TestCase):
                 model="test/model",
             )
 
-    def test_defaults_for_missing_segment_fields(self):
-        plan = create_audiobook_plan_from_openrouter_results(
-            self._document(),
-            AudiobookPlanConfig(title="Livro", speed=0.91),
-            [{"chapters": [{"title": "Capitulo", "segments": [{"text": "Texto limpo."}]}]}],
-            model="test/model",
-        )
-        segment = plan.chapters[0].segments[0]
-
-        self.assertEqual(segment.speaker, "narrator")
-        self.assertEqual(segment.pause_after_ms, 750)
-        self.assertAlmostEqual(segment.speed, 0.91)
-        self.assertEqual(segment.tone, "neutral")
+    def test_missing_segment_fields_fail_closed(self):
+        with self.assertRaises(ValueError):
+            create_audiobook_plan_from_openrouter_results(
+                self._document(),
+                AudiobookPlanConfig(title="Livro", speed=0.91),
+                [{"chapters": [{"title": "Capitulo", "segments": [{"text": "Texto limpo."}]}], "warnings": []}],
+                model="test/model",
+            )
 
 
 if __name__ == "__main__":

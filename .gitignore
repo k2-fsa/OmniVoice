@@ -28,3 +28,11 @@ examples/exp*
 .claude/
 *.wav
 *.jsonl
+/audiobook_outputs/
+/audiobook-artifacts/
+/outputs/audiobook/
+/preview.json
+/chunk-*.json
+/audiobook_plan.json
+/checkpoint.json
+/qc_report.json

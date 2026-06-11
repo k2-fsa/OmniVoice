@@ -3,6 +3,7 @@ import os
 import unittest
 import urllib.error
 import urllib.request
+from io import BytesIO
 
 from omnivoice.audiobook.chunking import AudiobookChunk
 from omnivoice.audiobook.openrouter import (
@@ -164,6 +165,31 @@ class OpenRouterAudiobookTest(unittest.TestCase):
 
         with self.assertRaises(OpenRouterError):
             client.structure_chunk(_chunk(), language="pt-BR", genre="technical", consent=True)
+
+    def test_http_error_body_is_redacted(self):
+        secret_body = b'{"error":"Texto do manuscrito nao pode vazar"}'
+        transport = FakeTransport(
+            [
+                urllib.error.HTTPError(
+                    "https://openrouter.ai/api/v1/chat/completions",
+                    400,
+                    "Bad Request",
+                    hdrs=None,
+                    fp=BytesIO(secret_body),
+                )
+            ]
+        )
+        client = OpenRouterAudiobookClient(
+            OpenRouterConfig(model="test/model", require_model_support=False, max_retries=0),
+            transport=transport,
+        )
+
+        with self.assertRaises(OpenRouterError) as ctx:
+            client.structure_chunk(_chunk(), language="pt-BR", genre="technical", consent=True)
+
+        message = str(ctx.exception)
+        self.assertIn("response body redacted", message)
+        self.assertNotIn("manuscrito", message.lower())
 
     def test_retries_transient_url_error(self):
         transport = FakeTransport(

@@ -19,6 +19,7 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--dynamic-normalize", action="store_true")
     parser.add_argument("--compressor", action="store_true")
     parser.add_argument("--no-limiter", action="store_true")
+    parser.add_argument("--overwrite", action="store_true", help="Allow replacing existing output files.")
     return parser
 
 
@@ -28,7 +29,11 @@ def main() -> None:
     output = Path(args.output)
     if len(inputs) > 1:
         concat_output = Path(args.concat_output) if args.concat_output else output.with_suffix(".concat.wav")
-        source = concat_audio_files(inputs, concat_output, options=ConcatOptions(normalize_stream=not args.concat_copy))
+        source = concat_audio_files(
+            inputs,
+            concat_output,
+            options=ConcatOptions(normalize_stream=not args.concat_copy, overwrite=args.overwrite),
+        )
     else:
         source = inputs[0]
 
@@ -43,6 +48,7 @@ def main() -> None:
             dynamic_normalize=args.dynamic_normalize,
             compressor=args.compressor,
             limiter=not args.no_limiter,
+            overwrite=args.overwrite,
         ),
     )
     print(f"Wrote remastered audiobook audio: {output}")

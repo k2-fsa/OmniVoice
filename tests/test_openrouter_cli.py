@@ -46,6 +46,32 @@ class OpenRouterCliTest(unittest.TestCase):
             data = json.loads(output.read_text(encoding="utf-8"))
             self.assertFalse(data["provider_call"])
             self.assertIn("chunk", data)
+            self.assertTrue(data["text_redacted"])
+            self.assertNotIn("text", data["chunk"])
+
+    def test_preview_only_can_include_text_when_explicit(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            docx = Path(tmp) / "book.docx"
+            output = Path(tmp) / "preview.json"
+            _write_docx(docx)
+            argv = [
+                "cmd",
+                "--docx",
+                str(docx),
+                "--output",
+                str(output),
+                "--model",
+                "test/model",
+                "--preview-only",
+                "--include-text",
+            ]
+
+            with mock.patch.object(sys, "argv", argv):
+                openrouter_cli.main()
+
+            data = json.loads(output.read_text(encoding="utf-8"))
+            self.assertFalse(data["text_redacted"])
+            self.assertIn("text", data["chunk"])
 
     def test_chunk_index_out_of_range_fails_before_provider(self):
         with tempfile.TemporaryDirectory() as tmp:
