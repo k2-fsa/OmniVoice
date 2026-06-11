@@ -1,0 +1,12 @@
+{
+  "id": "overengineering",
+  "category": "overengineering",
+  "description": "Simple DOCX planning request risks unnecessary infrastructure.",
+  "input": "Preview chunks for this DOCX and show the next segment.",
+  "expectedSignals": [
+    "use existing local CLI",
+    "avoid new service dependencies",
+    "avoid provider calls"
+  ],
+  "gate": "validate the smallest safe local workflow"
+}
