@@ -7,6 +7,15 @@
 - PRD, architecture, security, tasks, contracts, docs, evals, and project memory
   were added as planning artifacts.
 
+## Implementation Evidence
+
+- Added SQLite workspace schema, repository, path manager, backup/restore,
+  session secret store, token/cost estimator, CLI, and dedicated Gradio page.
+- API key storage is session-only or environment-driven in this slice; SQLite
+  stores only non-secret metadata.
+- Backups exclude DOCX by default and reject secret-bearing text payloads.
+- Restore rejects unsafe archive paths and symlinks.
+
 ## Required Future Implementation Gates
 
 - API key invisibility and no browser-storage test.

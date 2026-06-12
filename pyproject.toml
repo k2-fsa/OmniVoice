@@ -63,6 +63,8 @@ omnivoice-openrouter-audiobook-chunk = "omnivoice.audiobook.openrouter_cli:main"
 omnivoice-audiobook-master = "omnivoice.audiobook.mastering_cli:main"
 omnivoice-audiobook-workflow = "omnivoice.audiobook.workflow_cli:main"
 omnivoice-audiobook-qc = "omnivoice.audiobook.qc_cli:main"
+omnivoice-audiobook-workspace = "omnivoice.audiobook.workspace_cli:main"
+omnivoice-audiobook-workspace-ui = "omnivoice.audiobook.workspace_ui:main"
 
 [project.urls]
 Homepage = "https://github.com/k2-fsa/OmniVoice"

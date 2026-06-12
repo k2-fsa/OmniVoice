@@ -13,6 +13,8 @@ def test_offline_modules_do_not_import_openrouter_or_http_clients():
         root / "omnivoice" / "audiobook" / "workflow_cli.py",
         root / "omnivoice" / "audiobook" / "mastering_cli.py",
         root / "omnivoice" / "audiobook" / "qc_cli.py",
+        root / "omnivoice" / "audiobook" / "workspace_cli.py",
+        root / "omnivoice" / "audiobook" / "workspace_ui.py",
     ]
     banned = [
         "from omnivoice.audiobook.openrouter import",
@@ -40,6 +42,8 @@ def test_offline_entrypoints_do_not_load_provider_module_at_runtime():
         "omnivoice.audiobook.workflow_cli",
         "omnivoice.audiobook.mastering_cli",
         "omnivoice.audiobook.qc_cli",
+        "omnivoice.audiobook.workspace_cli",
+        "omnivoice.audiobook.workspace_ui",
         "omnivoice.audiobook.offline_audit",
     ]:
         importlib.import_module(module_name)

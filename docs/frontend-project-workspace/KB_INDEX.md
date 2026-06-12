@@ -43,6 +43,16 @@ default. Full manuscript inclusion should be an explicit opt-in mode.
 Restore must validate hashes and reject path traversal, zip-slip entries,
 symlinks, invalid schema, and unconfirmed project replacement.
 
+## Implemented Slice
+
+- `omnivoice-audiobook-workspace` initializes SQLite, creates projects, stores
+  session-only provider metadata, estimates tokens/costs, and exports/imports
+  safe project backups.
+- `omnivoice-audiobook-workspace-ui` launches the dedicated Gradio `API & Costs`
+  page when Gradio is installed in the runtime.
+- The current safe secret implementation is session-only or environment-driven.
+  Durable key persistence still requires a real OS keyring adapter.
+
 ## Acceptance Criteria
 
 - The user can understand where projects and audio are stored.
