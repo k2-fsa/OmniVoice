@@ -49,6 +49,9 @@ If you have a project you'd like to add, please open a PR.
 - **[Auris](https://github.com/nikhilprasanth/Auris)** —
   Offline audiobook reader for EPUB, PDF, and TXT with local OmniVoice TTS, character-aware voices, and per-book narrator control.
 
+- **[LA Studio](https://github.com/dduongtrandai/LA-Studio)** —
+  Offline desktop AI audio workstation for local TTS, voice cloning, and voice design workflows with OmniVoice support.
+
 - **[tts-audiobook-tool](https://github.com/zeropointnine/tts-audiobook-tool)** —
   Audiobook creation tool supporting a dozen different TTS models including OmniVoice, Qwen3-TTS, VibeVoice, etc.,
   focused on high-quality output
