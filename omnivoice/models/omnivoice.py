@@ -757,7 +757,8 @@ class OmniVoice(PreTrainedModel):
 
         Args:
             generated_audio: Numpy array of shape (1, T).
-            postprocess_output: If True, remove long silences and apply fade/pad.
+            postprocess_output: If True, apply all post-processing, including
+                silence removal, fade-in/out, and silence padding.
             ref_rms: RMS of the reference audio for volume normalisation.
         Returns:
             Processed numpy array of shape (1, T).
@@ -778,10 +779,11 @@ class OmniVoice(PreTrainedModel):
             if peak > 1e-6:
                 generated_audio = generated_audio / peak * 0.5
 
-        generated_audio = fade_and_pad_audio(
-            generated_audio,
-            sample_rate=self.sampling_rate,
-        )
+        if postprocess_output:
+            generated_audio = fade_and_pad_audio(
+                generated_audio,
+                sample_rate=self.sampling_rate,
+            )
         return generated_audio
 
     def _generate_chunked(
