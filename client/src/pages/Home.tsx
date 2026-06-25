@@ -1,7 +1,33 @@
+import axios from 'axios';
 import { Button } from "@/components/ui/button";
-import { Upload, Music, FileText } from "lucide-react";
 import React, { useRef, useState } from 'react';
 import { toast } from 'sonner';
+
+const Upload = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+    <polyline points="17 8 12 3 7 8" />
+    <line x1="12" y1="3" x2="12" y2="15" />
+  </svg>
+);
+
+const Music = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <path d="M9 18V5l12-2v13" />
+    <circle cx="6" cy="18" r="3" />
+    <circle cx="18" cy="16" r="3" />
+  </svg>
+);
+
+const FileText = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+    <polyline points="14 2 14 8 20 8" />
+    <line x1="16" y1="13" x2="8" y2="13" />
+    <line x1="16" y1="17" x2="8" y2="17" />
+    <line x1="10" y1="9" x2="8" y2="9" />
+  </svg>
+);
 
 /**
  * Hebrew Transcription App - File Upload Interface
@@ -12,6 +38,8 @@ export default function Home() {
   const [audioFile, setAudioFile] = useState<File | null>(null);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [transcriptionText, setTranscriptionText] = useState<string | null>(null);
+  const [sentenceList, setSentenceList] = useState('');
+  const [language, setLanguage] = useState<'en' | 'he'>('en');
   const [isLoading, setIsLoading] = useState(false);
   
   const audioInputRef = useRef<HTMLInputElement>(null);
@@ -180,6 +208,45 @@ export default function Home() {
     toast.info('Transcription file cleared');
   };
 
+  const handleSynthesize = async () => {
+    if (!sentenceList.trim()) {
+      toast.error('Enter one or more sentences to synthesize');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const form = new FormData();
+      form.append('texts', sentenceList.trim());
+      form.append('language', language);
+      if (audioFile) {
+        form.append('ref_audio', audioFile);
+      }
+      if (transcriptionText) {
+        form.append('ref_text', transcriptionText);
+      }
+
+      const resp = await axios.post('/api/synthesize', form, {
+        responseType: 'blob',
+      });
+
+      const url = window.URL.createObjectURL(new Blob([resp.data]));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'synth.zip';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+      toast.success('Synthesis complete — downloaded zip');
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err?.response?.data?.error || err.message || 'Synthesis failed');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
       <main className="flex-1 p-6 md:p-8">
@@ -344,6 +411,45 @@ export default function Home() {
               )}
             </div>
           )}
+
+          <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 p-6">
+            <h2 className="text-2xl font-semibold mb-4 text-slate-900 dark:text-slate-50">
+              Synthesize Sentences
+            </h2>
+            <div className="grid gap-4 sm:grid-cols-2 mb-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                  Language
+                </label>
+                <select
+                  value={language}
+                  onChange={(e) => setLanguage(e.target.value as 'en' | 'he')}
+                  className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 shadow-sm outline-none transition hover:border-slate-400 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                >
+                  <option value="en">English</option>
+                  <option value="he">Hebrew</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                  Sentence list
+                </label>
+                <textarea
+                  rows={6}
+                  value={sentenceList}
+                  onChange={(e) => setSentenceList(e.target.value)}
+                  placeholder="One sentence per line"
+                  className="min-h-[170px] w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 shadow-sm outline-none transition hover:border-slate-400 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                />
+              </div>
+            </div>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
+              Your transcription will be used as reference text if a transcription file is loaded. The selected reference audio and language are used to generate the sentences listed above.
+            </p>
+            <Button onClick={handleSynthesize} disabled={isLoading} className="w-full md:w-auto">
+              {isLoading ? 'Synthesizing...' : 'Generate voice for sentences'}
+            </Button>
+          </div>
 
           {/* Empty State */}
           {!audioUrl && !transcriptionText && (

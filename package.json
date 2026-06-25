@@ -12,6 +12,8 @@
     "format": "prettier --write ."
   },
   "dependencies": {
+    "archiver": "^5.3.1",
+    "multer": "^1.4.5-lts.1",
     "@hookform/resolvers": "^5.2.2",
     "@radix-ui/react-accordion": "^1.2.12",
     "@radix-ui/react-alert-dialog": "^1.1.15",
