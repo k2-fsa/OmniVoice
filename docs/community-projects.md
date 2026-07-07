@@ -12,6 +12,9 @@ If you have a project you'd like to add, please open a PR.
 - **[vLLM-Omni](https://github.com/vllm-project/vllm-omni)** —
   A framework for efficient model inference with omni-modality model. Supports OmniVoice serving.
 
+- **[audio.cpp](https://github.com/0xShug0/audio.cpp)** —
+  An all-in-one, pure C++ inference engine for audio models (TTS, ASR, music gen,etc), powered by GGML.
+  
 - **[pyVideoTrans](https://github.com/jianchang512/pyvideotrans)** —
   Video translation tool with dubbing & subtitles. Supports OmniVoice as a TTS engine.
 
