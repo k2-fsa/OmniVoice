@@ -170,7 +170,7 @@ class RuleDurationEstimator:
             return self.weights["latin"]
         if code == 32:
             return self.weights["space"]
-        
+
         # Ignore arabic Tatweel
         if code == 0x0640:
             return self.weights["mark"]

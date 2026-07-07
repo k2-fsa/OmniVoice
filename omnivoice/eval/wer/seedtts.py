@@ -19,6 +19,7 @@
 Computes word error rate (WER) with Whisper-large-v3 for English and
 Paraformer for Chinese. Intended to evaluate WERs on Seed-TTS test sets.
 """
+
 import argparse
 import logging
 import multiprocessing as mp
@@ -336,7 +337,6 @@ def main():
         initializer=process_init,
         initargs=(rank_queue, args.model_dir, args.lang),
     ) as executor:
-
         futures = []
         for chunk in tasks:
             futures.append(
@@ -381,9 +381,7 @@ def main():
 
     wer_avg = round(np.mean(wers) * 100, 2) if wers else float("nan")
     wer_weighted = (
-        round(
-            (np.sum(subses) + np.sum(deles) + np.sum(inses)) / word_nums * 100, 2
-        )
+        round((np.sum(subses) + np.sum(deles) + np.sum(inses)) / word_nums * 100, 2)
         if word_nums > 0
         else float("nan")
     )

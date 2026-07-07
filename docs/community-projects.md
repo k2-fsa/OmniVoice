@@ -19,6 +19,11 @@ If you have a project you'd like to add, please open a PR.
   TTS, STT, and STS library built on Apple's MLX framework. Supports
   OmniVoice among other models for efficient speech processing on Apple Silicon.
 
+- **[OmniVoice-MLX](https://github.com/ailuntx/OmniVoice-MLX)** —
+  MLX inference backend and conversion/staging tools for running OmniVoice on
+  Apple Silicon, with community model weights hosted under
+  [mlx-community](https://huggingface.co/collections/mlx-community/omnivoice-6a06f610945a0b1d85b3b839).
+
 - **[RealtimeTTS](https://github.com/KoljaB/RealtimeTTS)** —
   Converts text to speech in realtime. Supports OmniVoice as a TTS engine.
 
@@ -41,6 +46,12 @@ If you have a project you'd like to add, please open a PR.
   Deploy OmniVoice TTS model using TensorRT-LLM and Triton Inference Server
   on Modal, faster than PyTorch.
 
-  - **[Auris](https://github.com/nikhilprasanth/Auris)** —
+- **[Auris](https://github.com/nikhilprasanth/Auris)** —
   Offline audiobook reader for EPUB, PDF, and TXT with local OmniVoice TTS, character-aware voices, and per-book narrator control.
 
+- **[LA Studio](https://github.com/dduongtrandai/LA-Studio)** —
+  Offline desktop AI audio workstation for local TTS, voice cloning, and voice design workflows with OmniVoice support.
+
+- **[tts-audiobook-tool](https://github.com/zeropointnine/tts-audiobook-tool)** —
+  Audiobook creation tool supporting a dozen different TTS models including OmniVoice, Qwen3-TTS, VibeVoice, etc.,
+  focused on high-quality output

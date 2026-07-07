@@ -206,7 +206,6 @@ class TransformerEncoder(nn.Module):
         self.layers = nn.ModuleList([self.build_encoder_layer(feat) for _ in range(12)])
 
     def forward(self, x: Tensor) -> Tensor:
-
         x_conv = self.pos_conv(x.transpose(1, 2)).transpose(1, 2)
         x = x + x_conv
 

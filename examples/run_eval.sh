@@ -11,7 +11,7 @@
 
 set -euo pipefail
 
-# Specify the stages to run by setting the `stage` and `stop_stage` variables. 
+# Specify the stages to run by setting the `stage` and `stop_stage` variables.
 stage=1
 stop_stage=6
 

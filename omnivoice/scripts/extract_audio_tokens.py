@@ -327,14 +327,14 @@ def main() -> None:
     mp.set_start_method("spawn", force=True)
 
     # Validate input arguments
-    assert bool(args.input_manifest) != bool(
-        args.input_jsonl
-    ), "Exactly one of --input_manifest or --input_jsonl must be provided."
+    assert bool(args.input_manifest) != bool(args.input_jsonl), (
+        "Exactly one of --input_manifest or --input_jsonl must be provided."
+    )
 
     if args.num_machines > 1:
-        assert (
-            0 <= args.machine_index < args.num_machines
-        ), f"machine_index {args.machine_index} must be in [0, {args.num_machines})"
+        assert 0 <= args.machine_index < args.num_machines, (
+            f"machine_index {args.machine_index} must be in [0, {args.num_machines})"
+        )
 
     # Build base dataset and count total samples based on input mode
     if args.input_jsonl:
@@ -368,9 +368,9 @@ def main() -> None:
                 )
                 assert os.path.exists(tar_path), f"File {tar_path} does not exist."
                 assert os.path.exists(jsonl_path), f"File {jsonl_path} does not exist."
-                assert jsonl_path.endswith(
-                    ".jsonl"
-                ), f"File {jsonl_path} is not a .jsonl file."
+                assert jsonl_path.endswith(".jsonl"), (
+                    f"File {jsonl_path} is not a .jsonl file."
+                )
                 if (
                     args.num_machines > 1
                     and line_id % args.num_machines != args.machine_index

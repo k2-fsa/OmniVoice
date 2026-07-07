@@ -212,10 +212,10 @@ def process_single_shard(
     total_duration = 0.0
     errors = []
 
-    with wds.TarWriter(tar_fname) as sink, open(
-        jsonl_fname, "w", encoding="utf-8"
-    ) as jsonl_f:
-
+    with (
+        wds.TarWriter(tar_fname) as sink,
+        open(jsonl_fname, "w", encoding="utf-8") as jsonl_f,
+    ):
         with ThreadPoolExecutor(max_workers=num_threads) as thread_pool:
             futures = []
 
@@ -331,7 +331,6 @@ def pack_dataset(
     print(f"Total samples: {total_lines}, Estimated shards: {total_shards_est}")
 
     with ProcessPoolExecutor(max_workers=num_workers) as executor:
-
         futures = set()
 
         shard_idx = 0

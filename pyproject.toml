@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "omnivoice"
-version = "0.1.5"
+version = "0.2.0"
 description = "OmniVoice: Towards Omnilingual Zero-Shot Text-to-Speech with Diffusion Language Models"
 readme = "README.md"
 license = "Apache-2.0"
@@ -88,6 +88,9 @@ constraint-dependencies = [
     "torch==2.8.0",
     "torchaudio==2.8.0",
 ]
+
+[tool.ruff.lint]
+ignore = ["F401", "E402", "F403", "F841", "E741"]
 
 [tool.hatch.build.targets.sdist]
 include = ["omnivoice"]

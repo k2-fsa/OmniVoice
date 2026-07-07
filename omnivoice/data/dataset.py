@@ -339,7 +339,6 @@ class WebDatasetReader(IterableDataReader):
             random.Random(epoch).shuffle(self.urls)
 
     def __iter__(self) -> Iterator[Dict[str, Any]]:
-
         dataset = wds.WebDataset(
             self.urls,
             shardshuffle=False,
@@ -430,9 +429,7 @@ class JsonlDatasetReader(IterableDataReader):
                 )
                 continue
             try:
-                waveform = torch.from_numpy(
-                    load_audio(audio_path, self.sample_rate)
-                )
+                waveform = torch.from_numpy(load_audio(audio_path, self.sample_rate))
                 if self.normalize_audio:
                     waveform = (waveform / (waveform.abs().max() + 1e-7)) * 0.9
                 meta["audio_duration"] = waveform.shape[1] / self.sample_rate
@@ -495,9 +492,9 @@ class LazyIteratorMultiplexer:
         self.stop_early = stop_early
         self.seed = seed
 
-        assert (
-            len(self.iterators) > 1
-        ), "There have to be at least two iterables to multiplex."
+        assert len(self.iterators) > 1, (
+            "There have to be at least two iterables to multiplex."
+        )
 
         if weights is None:
             if all(hasattr(it, "__len__") for it in self.iterators):
@@ -512,7 +509,6 @@ class LazyIteratorMultiplexer:
         assert len(self.iterators) == len(self.weights)
 
     def __iter__(self):
-
         rng = random.Random(self.seed)
         iters = [iter(it) for it in self.iterators]
         exhausted = [False for _ in range(len(iters))]

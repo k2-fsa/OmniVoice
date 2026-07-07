@@ -2,7 +2,7 @@
 
 ## Training Config
 
-All training is controlled by a JSON training config file and a JSON data config file. 
+All training is controlled by a JSON training config file and a JSON data config file.
 
 See [examples/config/](../examples/config/) for ready-to-use configs.
 

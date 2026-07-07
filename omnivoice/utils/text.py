@@ -27,7 +27,7 @@ from typing import List, Optional
 
 
 SPLIT_PUNCTUATION = set(".,;:!?。，；：！？")
-CLOSING_MARKS = set("\"'""'）]》》>」】")
+CLOSING_MARKS = set("\"'“”‘’）]》>」】")
 
 END_PUNCTUATION = {
     ";",
@@ -42,8 +42,10 @@ END_PUNCTUATION = {
     "}",
     '"',
     "'",
-    """,
-    "'",
+    "“",
+    "”",
+    "‘",
+    "’",
     "；",
     "：",
     "，",
@@ -54,8 +56,6 @@ END_PUNCTUATION = {
     "……",
     "）",
     "】",
-    """,
-    "'",
 }
 
 

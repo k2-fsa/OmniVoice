@@ -108,6 +108,8 @@ class OmniVoiceGenerationConfig:
     postprocess_output: bool = True
     audio_chunk_duration: float = 15.0
     audio_chunk_threshold: float = 30.0
+    pad_duration: float = 0.1
+    fade_duration: float = 0.1
 
     @classmethod
     def from_dict(cls, kwargs_dict):
@@ -174,7 +176,6 @@ class OmniVoiceConfig(PretrainedConfig):
         llm_config: Optional[Union[dict, PretrainedConfig]] = None,
         **kwargs,
     ):
-
         if isinstance(llm_config, dict):
             llm_config = CONFIG_MAPPING[llm_config["model_type"]](**llm_config)
 
@@ -306,7 +307,9 @@ class OmniVoice(PreTrainedModel):
 
         logger.info("Loading ASR model %s ...", model_name)
         asr_dtype = (
-            torch.float16 if str(self.device).startswith("cuda") else torch.float32
+            torch.float16
+            if str(self.device).startswith(("cuda", "xpu"))
+            else torch.float32
         )
 
         model_name = _resolve_model_path(model_name)
@@ -389,7 +392,6 @@ class OmniVoice(PreTrainedModel):
         document_ids: Optional[torch.Tensor] = None,
         position_ids: Optional[torch.LongTensor] = None,
     ):
-
         inputs_embeds = self._prepare_embed_inputs(input_ids, audio_mask)
 
         if attention_mask is None and document_ids is not None:
@@ -433,7 +435,6 @@ class OmniVoice(PreTrainedModel):
         ).permute(0, 2, 1, 3)
 
         if labels is not None:
-
             # audio_logits.permute(0, 3, 1, 2):
             # [Batch, Layer, Seq, Vocab] -> [Batch, Vocab, Layer, Seq]
             # per_token_loss shape: [Batch, Layer, Seq]，ignore -100
@@ -540,6 +541,10 @@ class OmniVoice(PreTrainedModel):
                     this duration (seconds) and generate chunk by chunk.
                 audio_chunk_threshold: Only apply chunking if estimated audio
                     duration exceeds this threshold (seconds).
+                pad_duration: Silence padding duration per side in seconds
+                    (0 to disable).
+                fade_duration: Fade-in/out curve duration in seconds
+                    (0 to disable).
         Returns:
             ``audios`` a list of 1-D ``np.ndarray`` with shape ``(T,)`` and
             sampling rate consistent with the model's audio tokenizer
@@ -595,7 +600,9 @@ class OmniVoice(PreTrainedModel):
             assert results[i] is not None, f"Result {i} was not generated"
             generated_audios.append(
                 self._decode_and_post_process(
-                    results[i], full_task.ref_rms[i], gen_config  # type: ignore[arg-type]
+                    results[i],
+                    full_task.ref_rms[i],
+                    gen_config,  # type: ignore[arg-type]
                 )
             )
 
@@ -695,9 +702,7 @@ class OmniVoice(PreTrainedModel):
         ref_wav_tensor = torch.from_numpy(ref_wav).to(self.audio_tokenizer.device)
         ref_audio_tokens = self.audio_tokenizer.encode(
             ref_wav_tensor.unsqueeze(0),
-        ).audio_codes.squeeze(
-            0
-        )  # (C, T)
+        ).audio_codes.squeeze(0)  # (C, T)
 
         if preprocess_prompt:
             ref_text = add_punctuation(ref_text)
@@ -743,27 +748,27 @@ class OmniVoice(PreTrainedModel):
 
         audio_waveform = self._post_process_audio(
             audio_waveform,
-            postprocess_output=gen_config.postprocess_output,
             ref_rms=rms,
+            gen_config=gen_config,
         )
         return audio_waveform.squeeze(0)
 
     def _post_process_audio(
         self,
         generated_audio: np.ndarray,
-        postprocess_output: bool,
         ref_rms: Union[float, None],
+        gen_config: OmniVoiceGenerationConfig,
     ) -> np.ndarray:
         """Optionally remove long silences, adjust volume, and add edge padding.
 
         Args:
             generated_audio: Numpy array of shape (1, T).
-            postprocess_output: If True, remove long silences and apply fade/pad.
             ref_rms: RMS of the reference audio for volume normalisation.
+            gen_config: Generation config controlling post-processing behaviour.
         Returns:
             Processed numpy array of shape (1, T).
         """
-        if postprocess_output:
+        if gen_config.postprocess_output:
             generated_audio = remove_silence(
                 generated_audio,
                 self.sampling_rate,
@@ -781,6 +786,8 @@ class OmniVoice(PreTrainedModel):
 
         generated_audio = fade_and_pad_audio(
             generated_audio,
+            pad_duration=gen_config.pad_duration,
+            fade_duration=gen_config.fade_duration,
             sample_rate=self.sampling_rate,
         )
         return generated_audio
@@ -916,13 +923,12 @@ class OmniVoice(PreTrainedModel):
         speed: Union[float, list[Optional[float]], None] = None,
         duration: Union[float, list[Optional[float]], None] = None,
     ) -> GenerationTask:
-
         if isinstance(text, str):
             text_list = [text]
         else:
-            assert isinstance(
-                text, list
-            ), "text should be a string or a list of strings"
+            assert isinstance(text, list), (
+                "text should be a string or a list of strings"
+            )
             text_list = text
         batch_size = len(text_list)
 
@@ -1106,9 +1112,7 @@ class OmniVoice(PreTrainedModel):
             self.text_tokenizer(style_text, return_tensors="pt")
             .input_ids.repeat(self.config.num_audio_codebook, 1)
             .unsqueeze(0)
-        ).to(
-            self.device
-        )  # [1, C, N1]
+        ).to(self.device)  # [1, C, N1]
 
         # Build text tokens
         full_text = _combine_text(ref_text=ref_text, text=text)
@@ -1117,9 +1121,7 @@ class OmniVoice(PreTrainedModel):
             _tokenize_with_nonverbal_tags(wrapped_text, self.text_tokenizer)
             .repeat(self.config.num_audio_codebook, 1)
             .unsqueeze(0)
-        ).to(
-            self.device
-        )  # [1, C, N2]
+        ).to(self.device)  # [1, C, N2]
 
         # Target: all MASK
         target_audio_tokens = torch.full(
@@ -1575,7 +1577,6 @@ def _tokenize_with_nonverbal_tags(text: str, tokenizer) -> torch.Tensor:
 
 
 def _combine_text(text, ref_text: Optional[str] = None) -> str:
-
     # combine with reference text if not None
     if ref_text:
         full_text = ref_text.strip() + " " + text.strip()

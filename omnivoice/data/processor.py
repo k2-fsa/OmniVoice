@@ -64,7 +64,6 @@ class OmniVoiceSampleProcessor:
         self.only_instruct_ratio = only_instruct_ratio
 
     def __call__(self, sample: Dict[str, Any]) -> Dict[str, Any]:
-
         # clean_start_token_idx is only used for prompt denoising training,
         # where the prompt region is augmented with noises and the model
         # needs to learn to recover the clean prompt.

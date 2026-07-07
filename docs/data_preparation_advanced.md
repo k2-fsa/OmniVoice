@@ -18,7 +18,7 @@ Step 2: Tokenize (with optional noise augmentation)
 ```
 
 
-## Denoise 
+## Denoise
 
 Use the [Sidon](https://github.com/sarulab-speech/Sidon) speech enhancement model to remove background noise from raw audio.
 

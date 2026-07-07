@@ -6,7 +6,7 @@
 # LICENSE file in the root directory of this source tree.
 
 """
-This module contains the text normalization function for WER evaluation. 
+This module contains the text normalization function for WER evaluation.
 Copied from https://github.com/facebookresearch/omnilingual-asr/blob/81f51e224ce9e74b02cc2a3eaf21b2d91d743455/workflows/dataprep/text_tools.py
 """
 
@@ -87,7 +87,6 @@ def text_normalize(
     # The lookaround enables overlapping pattern matches to be replaced
 
     if remove_numbers:
-
         digits_pattern = "[" + config["digit_set"]
 
         digits_pattern += "]+"

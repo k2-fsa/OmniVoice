@@ -43,6 +43,28 @@ def str2bool(v):
         raise argparse.ArgumentTypeError("Boolean value expected.")
 
 
+def get_best_device():
+    """Auto-detect the best available device: CUDA > XPU > MPS > CPU."""
+    if torch.cuda.is_available():
+        return "cuda"
+    if hasattr(torch, "xpu") and torch.xpu.is_available():
+        return "xpu"
+    if torch.backends.mps.is_available():
+        return "mps"
+    return "cpu"
+
+
+def get_best_device_with_count():
+    """Auto-detect best device and return (device_type, device_count)."""
+    if torch.cuda.is_available():
+        return "cuda", torch.cuda.device_count()
+    if hasattr(torch, "xpu") and torch.xpu.is_available():
+        return "xpu", torch.xpu.device_count()
+    if torch.backends.mps.is_available():
+        return "mps", 1
+    return "cpu", 1
+
+
 def fix_random_seed(random_seed: int):
     """
     Set the same random seed for the libraries and modules.

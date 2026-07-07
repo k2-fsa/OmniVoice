@@ -289,7 +289,6 @@ def main():
         initializer=process_init_sensevoice,
         initargs=(rank_queue, args.model_dir),
     ) as executor:
-
         futures = []
         for chunk in tasks:
             futures.append(

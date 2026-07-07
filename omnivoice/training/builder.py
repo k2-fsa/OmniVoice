@@ -189,9 +189,7 @@ def build_dataloaders(
         seed_worker,
         num_workers=config.num_workers,
         rank=(
-            torch.distributed.get_rank()
-            if torch.distributed.is_initialized()
-            else 0
+            torch.distributed.get_rank() if torch.distributed.is_initialized() else 0
         ),
     )
 
@@ -207,9 +205,7 @@ def build_dataloaders(
 
     eval_loader = None
     if dev_manifests:
-        raw_dev_ds = WebDatasetReader(
-            manifests=dev_manifests, evaluation=True
-        )
+        raw_dev_ds = WebDatasetReader(manifests=dev_manifests, evaluation=True)
         if use_packing:
             dev_dataset = PackingIterableDataset(
                 raw_dev_ds, processor, config.batch_tokens

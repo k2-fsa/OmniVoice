@@ -18,6 +18,7 @@
 """
 Shared utilities for WER evaluation scripts.
 """
+
 import logging
 
 import numpy as np

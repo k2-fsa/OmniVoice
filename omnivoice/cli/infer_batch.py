@@ -48,18 +48,9 @@ from omnivoice.models.omnivoice import OmniVoice
 import soundfile as sf
 
 from omnivoice.utils.audio import load_audio
-from omnivoice.utils.common import str2bool
+from omnivoice.utils.common import get_best_device_with_count, str2bool
 from omnivoice.utils.data_utils import read_test_list
 from omnivoice.utils.duration import RuleDurationEstimator
-
-
-def get_best_device():
-    """Auto-detect the best available device: CUDA > MPS > CPU."""
-    if torch.cuda.is_available():
-        return "cuda", torch.cuda.device_count()
-    if torch.backends.mps.is_available():
-        return "mps", 1
-    return "cpu", 1
 
 
 worker_model = None
@@ -228,7 +219,7 @@ def process_init(rank_queue, model_checkpoint, warmup=0):
     elif device_type == "mps":
         worker_device = "mps"
     else:
-        worker_device = f"cuda:{device_id}"
+        worker_device = f"{device_type}:{device_id}"
 
     logging.info(f"Initializing worker on device: {worker_device}")
 
@@ -386,7 +377,9 @@ def run_inference_batch(
     audios = worker_model.generate(
         text=texts,
         language=langs,
-        ref_audio=ref_audio_paths if any(p is not None for p in ref_audio_paths) else None,
+        ref_audio=ref_audio_paths
+        if any(p is not None for p in ref_audio_paths)
+        else None,
         ref_text=ref_texts if any(t is not None for t in ref_texts) else None,
         duration=durations if any(d is not None for d in durations) else None,
         speed=speeds if any(s is not None for s in speeds) else None,
@@ -420,7 +413,7 @@ def main():
     args = get_parser().parse_args()
     os.makedirs(args.res_dir, exist_ok=True)
 
-    device_type, num_devices = get_best_device()
+    device_type, num_devices = get_best_device_with_count()
     if device_type == "cpu":
         logging.warning(
             "No GPU found. Falling back to CPU inference. This might be slow."
