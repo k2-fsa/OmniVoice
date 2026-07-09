@@ -167,6 +167,31 @@ audio = model.generate(
 sf.write("out.wav", audio[0], 24000)
 ```
 
+By default, omitted `ref_text` uses the existing Whisper backend
+(`openai/whisper-large-v3-turbo`). To use the optional Faster-Whisper /
+CTranslate2 backend instead, install it separately:
+
+```bash
+pip install "omnivoice[asr]"
+# or: pip install faster-whisper
+```
+
+Then select it explicitly:
+
+```python
+model = OmniVoice.from_pretrained(
+    "k2-fsa/OmniVoice",
+    device_map="cuda:0",
+    dtype=torch.float16,
+    transcriber="faster-whisper",
+    # Optional: Faster-Whisper model name or CTranslate2 model path.
+    # asr_model_name="large-v3-turbo",
+    # Optional ASR hints:
+    # asr_language="en",
+    # asr_beam_size=5,
+)
+```
+
 > **Tips**
 >
 > - Use a 3–10 seconds reference audio clip. Longer audio slows down inference and may degrade cloning quality.
@@ -274,6 +299,16 @@ omnivoice-infer \
     --ref_text "Transcription of the reference audio." \
     --output hello.wav
 
+# Optional Faster-Whisper auto-transcription when ref_text is omitted.
+omnivoice-infer \
+    --model k2-fsa/OmniVoice \
+    --text "This is a test for text to speech." \
+    --ref_audio ref.wav \
+    --transcriber faster-whisper \
+    --asr-language en \
+    --asr-beam-size 5 \
+    --output hello.wav
+
 # Voice Design
 omnivoice-infer --model k2-fsa/OmniVoice \
     --text "This is a test for text to speech." \
@@ -285,6 +320,28 @@ omnivoice-infer \
     --model k2-fsa/OmniVoice \
     --text "This is a test for text to speech."\
     --output hello.wav
+```
+
+To quickly compare reference-audio transcription time without running full TTS,
+time `model.transcribe()` after loading each backend:
+
+```python
+import time
+import torch
+from omnivoice import OmniVoice
+
+for transcriber in ("whisper", "faster-whisper"):
+    model = OmniVoice.from_pretrained(
+        "k2-fsa/OmniVoice",
+        device_map="cuda:0",
+        dtype=torch.float16,
+        load_asr=True,
+        transcriber=transcriber,
+        asr_language="en",
+    )
+    start = time.perf_counter()
+    text = model.transcribe("ref.wav")
+    print(transcriber, f"{time.perf_counter() - start:.2f}s", text)
 ```
 
 ### Batch Inference
