@@ -45,6 +45,10 @@ dependencies = [
 
 [project.optional-dependencies]
 
+asr = [
+    "faster-whisper",
+]
+
 eval = [
     "jiwer==3.1.0",       # WER
     "s3prl",               # Speech representation (HuBERT etc.)
