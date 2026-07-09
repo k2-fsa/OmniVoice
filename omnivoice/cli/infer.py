@@ -66,6 +66,31 @@ def get_parser() -> argparse.ArgumentParser:
         default=None,
         help="Reference text describing the reference audio.",
     )
+    parser.add_argument(
+        "--transcriber",
+        type=str,
+        default="whisper",
+        choices=["whisper", "faster-whisper"],
+        help="ASR backend used when ref_text is omitted.",
+    )
+    parser.add_argument(
+        "--asr-model",
+        type=str,
+        default=None,
+        help="ASR model name or local path. Defaults depend on --transcriber.",
+    )
+    parser.add_argument(
+        "--asr-language",
+        type=str,
+        default=None,
+        help="Optional ASR language tag/code for reference transcription.",
+    )
+    parser.add_argument(
+        "--asr-beam-size",
+        type=int,
+        default=None,
+        help="Optional ASR beam size for reference transcription.",
+    )
     # Voice design
     parser.add_argument(
         "--instruct",
@@ -119,7 +144,13 @@ def main():
     device = args.device or get_best_device()
     logging.info(f"Loading model from {args.model} on {device} ...")
     model = OmniVoice.from_pretrained(
-        args.model, device_map=device, dtype=torch.float16
+        args.model,
+        device_map=device,
+        dtype=torch.float16,
+        transcriber=args.transcriber,
+        asr_model_name=args.asr_model,
+        asr_language=args.asr_language,
+        asr_beam_size=args.asr_beam_size,
     )
 
     logging.info(f"Generating audio for: {args.text[:80]}...")
