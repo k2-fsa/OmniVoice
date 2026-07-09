@@ -57,6 +57,7 @@ from transformers import (
     PreTrainedModel,
 )
 from transformers.modeling_outputs import ModelOutput
+from transformers.modeling_utils import ALL_ATTENTION_FUNCTIONS, AttentionInterface
 from transformers.models.auto import CONFIG_MAPPING, AutoConfig
 
 from omnivoice.utils.audio import (
@@ -80,6 +81,31 @@ from omnivoice.utils.voice_design import (
 )
 
 logger = logging.getLogger(__name__)
+
+_AUTOCAST_FLEX_ATTENTION = "omnivoice_flex_attention"
+
+
+def _autocast_flex_attention(module, query, key, value, *args, **kwargs):
+    """flex_attention with the same autocast treatment SDPA already gets.
+
+    Mixed-precision training keeps fp32 master weights, so Qwen3's
+    ``q_norm``/``k_norm`` (fp32 weight x bf16 activation) silently promote
+    q/k — and, through the fp32 RoPE constants, v — back to fp32. SDPA is
+    on autocast's cast list and is downcast at the kernel boundary;
+    ``flex_attention`` is not, so with ``attn_implementation:
+    "flex_attention"`` all attention math runs in fp32: the fp32 backward
+    template is ~12x slower at head_dim=128 (61.8ms vs 5.1ms per
+    layer-call, H100, identical mask/shape/layout), and the flex and sdpa
+    paths become numerically inconsistent with each other. Casting here
+    restores the treatment autocast applies to every other matmul; softmax
+    accumulation inside the kernel is fp32 either way.
+    """
+    if torch.is_autocast_enabled(query.device.type) and query.dtype == torch.float32:
+        dtype = torch.get_autocast_dtype(query.device.type)
+        query, key, value = (t.to(dtype) for t in (query, key, value))
+    return ALL_ATTENTION_FUNCTIONS["flex_attention"](
+        module, query, key, value, *args, **kwargs
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -213,6 +239,12 @@ class OmniVoice(PreTrainedModel):
         else:
             # Otherwise, initialize the LLM from the config.
             self.llm = AutoModel.from_config(self.config.llm_config)
+
+        if self.llm.config._attn_implementation == "flex_attention":
+            AttentionInterface.register(
+                _AUTOCAST_FLEX_ATTENTION, _autocast_flex_attention
+            )
+            self.llm.set_attn_implementation(_AUTOCAST_FLEX_ATTENTION)
 
         self.audio_embeddings = nn.Embedding(
             config.num_audio_codebook * config.audio_vocab_size,
