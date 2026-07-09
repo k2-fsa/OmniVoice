@@ -1,0 +1,12 @@
+{
+  "id": "token-cost-simulator-safety",
+  "category": "implementation-readiness",
+  "description": "Token and cost simulator must separate estimates from actual provider usage and enforce budget warnings.",
+  "input": "Estimate a full-book run, then compare it with provider usage and a project budget cap.",
+  "expectedSignals": [
+    "estimated and actual usage are separate",
+    "pricing source is visible",
+    "budget warning appears before continuous generation"
+  ],
+  "gate": "validate cost simulation before readiness"
+}

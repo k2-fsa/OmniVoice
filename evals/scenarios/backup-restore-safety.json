@@ -1,0 +1,13 @@
+{
+  "id": "backup-restore-safety",
+  "category": "cli-command-behavior",
+  "description": "Backup and restore must preserve project assets without leaking secrets.",
+  "input": "Export a complete audiobook project backup and restore it in a clean workspace.",
+  "expectedSignals": [
+    "manifest hashes verify",
+    "audio asset records restore",
+    "secrets are not included",
+    "path traversal and symlink entries are rejected"
+  ],
+  "gate": "validate backup restore is safe"
+}

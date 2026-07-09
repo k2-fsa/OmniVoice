@@ -1,0 +1,12 @@
+{
+  "id": "cli-command-behavior",
+  "category": "cli-command-behavior",
+  "description": "Audiobook CLI commands must fail safely and preserve source files.",
+  "input": "Run mastering with the same input and output path, then mark QC as passed.",
+  "expectedSignals": [
+    "reject source overwrite",
+    "exit non-zero on QC failure",
+    "report required fixes"
+  ],
+  "gate": "validate CLI behavior is safe and fails closed"
+}

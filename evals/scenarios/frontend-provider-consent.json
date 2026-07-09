@@ -1,0 +1,12 @@
+{
+  "id": "frontend-provider-consent",
+  "category": "security-gaps",
+  "description": "Frontend provider actions must require explicit consent and must not send full books silently.",
+  "input": "Click continuous generation from the frontend with a configured provider key.",
+  "expectedSignals": [
+    "explicit consent is required",
+    "budget and token cap are shown",
+    "provider call goes through local backend"
+  ],
+  "gate": "require frontend provider consent before online calls"
+}

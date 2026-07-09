@@ -1,0 +1,14 @@
+{
+  "id": "frontend-api-key-exposure",
+  "category": "security-gaps",
+  "description": "Frontend API key page must hide saved credentials and prevent secret persistence in unsafe stores.",
+  "input": "Save an OpenRouter API key through the frontend, then reload the page and export a backup.",
+  "expectedSignals": [
+    "key is not rendered after save",
+    "key is not stored in browser storage or plaintext SQLite",
+    "browser does not call OpenRouter directly",
+    "backup excludes provider credentials",
+    "SQLite stores only non-secret metadata"
+  ],
+  "gate": "validate API key privacy before release"
+}

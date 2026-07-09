@@ -1,6 +1,10 @@
 import warnings
 from importlib.metadata import PackageNotFoundError, version
 
+from omnivoice._offline import configure_offline_defaults
+
+configure_offline_defaults()
+
 warnings.filterwarnings("ignore", module="torchaudio")
 warnings.filterwarnings(
     "ignore",
@@ -19,10 +23,21 @@ try:
 except PackageNotFoundError:
     __version__ = "0.0.0"
 
-from omnivoice.models.omnivoice import (
-    OmniVoice,
-    OmniVoiceConfig,
-    OmniVoiceGenerationConfig,
-)
-
 __all__ = ["OmniVoice", "OmniVoiceConfig", "OmniVoiceGenerationConfig"]
+
+
+def __getattr__(name):
+    if name in __all__:
+        from omnivoice.models.omnivoice import (
+            OmniVoice,
+            OmniVoiceConfig,
+            OmniVoiceGenerationConfig,
+        )
+
+        values = {
+            "OmniVoice": OmniVoice,
+            "OmniVoiceConfig": OmniVoiceConfig,
+            "OmniVoiceGenerationConfig": OmniVoiceGenerationConfig,
+        }
+        return values[name]
+    raise AttributeError(f"module 'omnivoice' has no attribute {name!r}")

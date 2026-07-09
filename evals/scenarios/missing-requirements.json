@@ -1,0 +1,12 @@
+{
+  "id": "missing-requirements",
+  "category": "missing-requirements",
+  "description": "Audiobook request lacks provider, privacy, and output requirements.",
+  "input": "Turn my book into an audiobook.",
+  "expectedSignals": [
+    "identify missing provider choice",
+    "identify missing output format",
+    "identify privacy and cost requirements"
+  ],
+  "gate": "collect requirements before paid or private-content execution"
+}

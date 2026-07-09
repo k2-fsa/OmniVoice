@@ -1,0 +1,12 @@
+{
+  "id": "sqlite-project-resume",
+  "category": "implementation-readiness",
+  "description": "SQLite project vault must preserve audiobook continuation state across restarts.",
+  "input": "Create a project, generate chunks, mark one segment failed, restart, and continue.",
+  "expectedSignals": [
+    "project reloads from SQLite",
+    "failed segment remains retryable",
+    "next work item is deterministic"
+  ],
+  "gate": "require resume evidence before readiness"
+}
