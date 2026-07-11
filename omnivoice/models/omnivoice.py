@@ -1144,6 +1144,7 @@ class OmniVoice(PreTrainedModel):
             "audio_mask": cond_audio_mask,
         }
 
+    @torch.inference_mode()
     def _generate_iterative(
         self, task: GenerationTask, gen_config: OmniVoiceGenerationConfig
     ) -> List[torch.Tensor]:
