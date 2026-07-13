@@ -164,6 +164,8 @@ audio = model.generate(
 # If you don't want to input `ref_text` manually, you can directly omit the `ref_text`.
 # The model will use Whisper ASR to auto-transcribe it. To use a local copy (or
 # a different Whisper model), pass `asr_model_name="..."` to `from_pretrained`.
+# To control which device Whisper is loaded on (e.g. another GPU in multi-GPU
+# setups, or the CPU), pass `asr_device="cuda:1"` (or `"cpu"`).
 
 sf.write("out.wav", audio[0], 24000)
 ```

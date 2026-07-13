@@ -275,12 +275,14 @@ class OmniVoice(PreTrainedModel):
         self.sampling_rate = None
         self._asr_pipe = None
         self._asr_model_name = "openai/whisper-large-v3-turbo"
+        self._asr_device = None
 
     @classmethod
     def from_pretrained(cls, pretrained_model_name_or_path, *args, **kwargs):
         train_mode = kwargs.pop("train", False)
         load_asr = kwargs.pop("load_asr", False)
         asr_model_name = kwargs.pop("asr_model_name", None)
+        asr_device = kwargs.pop("asr_device", None)
 
         # Suppress noisy INFO logs from transformers/huggingface_hub during loading
         _prev_disable = logging.root.manager.disable
@@ -320,6 +322,8 @@ class OmniVoice(PreTrainedModel):
 
                 if asr_model_name is not None:
                     model._asr_model_name = asr_model_name
+                if asr_device is not None:
+                    model._asr_device = asr_device
                 if load_asr:
                     model.load_asr_model()
         finally:
@@ -331,7 +335,9 @@ class OmniVoice(PreTrainedModel):
     # ASR support (optional, for auto-transcription)
     # -------------------------------------------------------------------
 
-    def load_asr_model(self, model_name: Optional[str] = None):
+    def load_asr_model(
+        self, model_name: Optional[str] = None, device: Optional[str] = None
+    ):
         """Load a Whisper ASR model for reference audio transcription.
 
         Args:
@@ -339,28 +345,36 @@ class OmniVoice(PreTrainedModel):
                 model. Defaults to the ``asr_model_name`` passed to
                 :meth:`from_pretrained` (``openai/whisper-large-v3-turbo``
                 if unset).
+            device: Device to load the ASR model on (e.g. ``"cuda:1"`` or
+                ``"cpu"``). Defaults to the ``asr_device`` passed to
+                :meth:`from_pretrained`, falling back to the main model's
+                device (its first shard when sharded across GPUs).
         """
         from transformers import pipeline as hf_pipeline
 
         if model_name is None:
             model_name = self._asr_model_name
+        if device is None:
+            device = self._asr_device if self._asr_device is not None else self.device
 
         logger.info("Loading ASR model %s ...", model_name)
         asr_dtype = (
-            torch.float16
-            if str(self.device).startswith(("cuda", "xpu"))
-            else torch.float32
+            torch.float16 if str(device).startswith(("cuda", "xpu")) else torch.float32
         )
 
         model_name = _resolve_model_path(model_name)
 
+        # Use `device=` (single-device placement) rather than `device_map=`:
+        # pipeline() ignores a plain device string in `device_map` and
+        # auto-selects an accelerator, which is why the ASR model could not
+        # be moved off the default GPU (#180).
         self._asr_pipe = hf_pipeline(
             "automatic-speech-recognition",
             model=model_name,
             dtype=asr_dtype,
-            device_map=self.device,
+            device=device,
         )
-        logger.info("ASR model loaded on %s.", self.device)
+        logger.info("ASR model loaded on %s.", device)
 
     @torch.inference_mode()
     def transcribe(
