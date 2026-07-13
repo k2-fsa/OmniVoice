@@ -162,7 +162,8 @@ audio = model.generate(
 ) # audio is a list of `np.ndarray` with shape (T,) at 24 kHz.
 
 # If you don't want to input `ref_text` manually, you can directly omit the `ref_text`.
-# The model will use Whisper ASR to auto-transcribe it.
+# The model will use Whisper ASR to auto-transcribe it. To use a local copy (or
+# a different Whisper model), pass `asr_model_name="..."` to `from_pretrained`.
 
 sf.write("out.wav", audio[0], 24000)
 ```

@@ -274,12 +274,13 @@ class OmniVoice(PreTrainedModel):
         self.duration_estimator = None
         self.sampling_rate = None
         self._asr_pipe = None
+        self._asr_model_name = "openai/whisper-large-v3-turbo"
 
     @classmethod
     def from_pretrained(cls, pretrained_model_name_or_path, *args, **kwargs):
         train_mode = kwargs.pop("train", False)
         load_asr = kwargs.pop("load_asr", False)
-        asr_model_name = kwargs.pop("asr_model_name", "openai/whisper-large-v3-turbo")
+        asr_model_name = kwargs.pop("asr_model_name", None)
 
         # Suppress noisy INFO logs from transformers/huggingface_hub during loading
         _prev_disable = logging.root.manager.disable
@@ -317,8 +318,10 @@ class OmniVoice(PreTrainedModel):
 
                 model.duration_estimator = RuleDurationEstimator()
 
+                if asr_model_name is not None:
+                    model._asr_model_name = asr_model_name
                 if load_asr:
-                    model.load_asr_model(model_name=asr_model_name)
+                    model.load_asr_model()
         finally:
             logging.disable(_prev_disable)
 
@@ -328,13 +331,19 @@ class OmniVoice(PreTrainedModel):
     # ASR support (optional, for auto-transcription)
     # -------------------------------------------------------------------
 
-    def load_asr_model(self, model_name: str = "openai/whisper-large-v3-turbo"):
+    def load_asr_model(self, model_name: Optional[str] = None):
         """Load a Whisper ASR model for reference audio transcription.
 
         Args:
-            model_name: HuggingFace model name or local path for the Whisper model.
+            model_name: HuggingFace model name or local path for the Whisper
+                model. Defaults to the ``asr_model_name`` passed to
+                :meth:`from_pretrained` (``openai/whisper-large-v3-turbo``
+                if unset).
         """
         from transformers import pipeline as hf_pipeline
+
+        if model_name is None:
+            model_name = self._asr_model_name
 
         logger.info("Loading ASR model %s ...", model_name)
         asr_dtype = (
