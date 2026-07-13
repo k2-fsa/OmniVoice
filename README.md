@@ -168,6 +168,24 @@ audio = model.generate(
 sf.write("out.wav", audio[0], 24000)
 ```
 
+#### Reusing a cloned voice across sessions
+
+Encode the reference audio once, save the resulting prompt, and skip the
+audio loading / auto-transcription steps in later sessions:
+
+```python
+prompt = model.create_voice_clone_prompt(
+    ref_audio="ref.wav", ref_text="Transcription of the reference audio."
+)
+prompt.save("my_voice.pt")
+
+# Later, in a new session:
+from omnivoice import VoiceClonePrompt
+
+prompt = VoiceClonePrompt.load("my_voice.pt")
+audio = model.generate(text="Hello again!", voice_clone_prompt=prompt)
+```
+
 > **Tips**
 >
 > - Use a 3–10 seconds reference audio clip. Longer audio slows down inference and may degrade cloning quality.
