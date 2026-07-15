@@ -246,7 +246,7 @@ def add_punctuation(text: str):
 _BRACKET_TAG_RE = re.compile(r"\[[^\[\]]*\]")
 # Uppercase pinyin followed by a tone digit 1-5 (Chinese pronunciation control).
 _PINYIN_TONE_RE = re.compile(r"[A-Z]+[1-5]")
-_CJK_RE = re.compile("[一-鿿]")
+_CJK_RE = re.compile(r"[\u4e00-\u9fff]")
 
 _TN_INSTALL_MSG = (
     "Text normalization (normalize_text=True) requires WeTextProcessing, which "
@@ -309,8 +309,8 @@ def _resolve_lang_code(language: Optional[str], text: str) -> str:
             try:
                 from omnivoice.utils.lang_map import LANG_IDS, LANG_NAME_TO_ID
 
-                if language in LANG_IDS:
-                    return language
+                if code in LANG_IDS:
+                    return code
                 if code in LANG_NAME_TO_ID:
                     return LANG_NAME_TO_ID[code]
             except Exception:  # pragma: no cover - lang_map should be importable
