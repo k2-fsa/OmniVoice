@@ -69,7 +69,11 @@ from omnivoice.utils.audio import (
 )
 from omnivoice.utils.duration import RuleDurationEstimator
 from omnivoice.utils.lang_map import LANG_IDS, LANG_NAMES
-from omnivoice.utils.text import add_punctuation, chunk_text_punctuation
+from omnivoice.utils.text import (
+    add_punctuation,
+    chunk_text_punctuation,
+    normalize_text as _normalize_text,
+)
 from omnivoice.utils.voice_design import (
     _INSTRUCT_ALL_VALID,
     _INSTRUCT_EN_TO_ZH,
@@ -596,6 +600,7 @@ class OmniVoice(PreTrainedModel):
         duration: Union[float, list[Optional[float]], None] = None,
         speed: Union[float, list[Optional[float]], None] = None,
         generation_config: Optional[OmniVoiceGenerationConfig] = None,
+        normalize_text: bool = False,
         **kwargs,
     ) -> list[np.ndarray]:
         """Generate speech audio given text in various modes.
@@ -628,6 +633,15 @@ class OmniVoice(PreTrainedModel):
             speed: Speaking speed factor. ``> 1.0`` for faster, ``< 1.0`` for
                 slower. If a list, one value per item. ``None`` (default) uses
                 the model's default estimation.
+            normalize_text: If ``True``, run text normalization on the target
+                text before synthesis (numbers, dates, currency, etc. are
+                converted to their spoken form, e.g. ``"2345"`` ->
+                ``"twenty three forty five"``). Default ``False`` (paper
+                reproducibility is unaffected). Chinese/English require the
+                optional ``omnivoice[tn]`` dependency (WeTextProcessing); other
+                languages use ``num2words`` for bare integers when installed.
+                Inline control syntax (``[laughter]``, ``[B EY1 S]``, pinyin
+                tone markers) is preserved. See :func:`omnivoice.utils.text.normalize_text`.
             generation_config: Explicit config object. If provided, takes
                 precedence over ``**kwargs``.
             **kwargs: Generation config or its fields:
@@ -678,6 +692,7 @@ class OmniVoice(PreTrainedModel):
             preprocess_prompt=gen_config.preprocess_prompt,
             speed=speed,
             duration=duration,
+            normalize_text=normalize_text,
         )
 
         short_idx, long_idx = full_task.get_indices(
@@ -1025,6 +1040,7 @@ class OmniVoice(PreTrainedModel):
         preprocess_prompt: bool = True,
         speed: Union[float, list[Optional[float]], None] = None,
         duration: Union[float, list[Optional[float]], None] = None,
+        normalize_text: bool = False,
     ) -> GenerationTask:
         if isinstance(text, str):
             text_list = [text]
@@ -1037,6 +1053,14 @@ class OmniVoice(PreTrainedModel):
 
         language_list = self._ensure_list(language, batch_size)
         language_list = [_resolve_language(lang) for lang in language_list]
+
+        # Optional text normalization (opt-in). Applied to the target text only
+        # (not ref_text, which must stay aligned with the reference audio),
+        # before duration estimation so the estimate matches the spoken form.
+        if normalize_text:
+            text_list = [
+                _normalize_text(t, lang) for t, lang in zip(text_list, language_list)
+            ]
         instruct_list = self._ensure_list(instruct, batch_size)
         for i, s in enumerate(instruct_list):
             if s is None:
