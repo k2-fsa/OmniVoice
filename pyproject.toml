@@ -45,6 +45,11 @@ dependencies = [
 
 [project.optional-dependencies]
 
+tn = [
+    "WeTextProcessing",   # zh/en text normalization (numbers, dates, currency)
+    "num2words",           # integer-to-words fallback for other languages
+]
+
 eval = [
     "jiwer==3.1.0",       # WER
     "s3prl",               # Speech representation (HuBERT etc.)

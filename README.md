@@ -192,7 +192,14 @@ audio = model.generate(text="Hello again!", voice_clone_prompt=prompt)
 >
 > - Use a 3–10 seconds reference audio clip. Longer audio slows down inference and may degrade cloning quality.
 > - For standard pronunciation, use a reference audio in the **same language** as the target speech. In cross-lingual voice cloning (i.e., the reference audio and target speech are in different languages), the generated speech will carry an accent from the reference audio's language.
-> - For better results with Arabic numerals, normalize them to words first (e.g., "123" → "one hundred twenty-three") with text normalization tools (e.g., [WeTextProcessing](https://github.com/wenet-e2e/WeTextProcessing)).
+> - For better results with Arabic numerals, normalize them to words first (e.g., "123" → "one hundred twenty-three"). You can pass `normalize_text=True` to `generate()` to do this automatically (opt-in; install the extra with `pip install "omnivoice[tn]"`, which pulls in [WeTextProcessing](https://github.com/wenet-e2e/WeTextProcessing)):
+>
+>   ```python
+>   # "I have 2345 apples." is read correctly instead of digit-by-digit.
+>   audio = model.generate(text="I have 2345 apples.", normalize_text=True)
+>   ```
+>
+>   Chinese and English use WeTextProcessing; other languages fall back to `num2words` for integers. Inline control syntax (`[laughter]`, `[B EY1 S]`, pinyin tone markers) is preserved. On macOS (Apple Silicon), `pynini` has no wheel — install it via `conda install -c conda-forge pynini` first.
 >
 > For more tips, see [docs/tips.md](docs/tips.md).
 
