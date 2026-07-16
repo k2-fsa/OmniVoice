@@ -456,7 +456,7 @@ ISO 639-3 code, and training data duration (hours).
 | 447 | Oromo | om | orm | 6.6 |
 | 448 | Pahari-Potwari | phr | phr | 24.03 |
 | 449 | Paiwan | pwn | pwn | 13.76 |
-| 450 | Panjabi | pa | pan | 147.37 |
+| 450 | Punjabi | pa | pan | 147.37 |
 | 451 | Papuan Malay | pmy | pmy | 10.17 |
 | 452 | Parkari Koli | kvx | kvx | 11.04 |
 | 453 | Pedi | nso | nso | 12.64 |
@@ -631,7 +631,7 @@ ISO 639-3 code, and training data duration (hours).
 | 622 | Western Maninkakan | mlq | mlq | 9.83 |
 | 623 | Western Mari | mrj | mrj | 32.26 |
 | 624 | Western Niger Fulfulde | fuh | fuh | 9.69 |
-| 625 | Western Panjabi | pnb | pnb | 10.0 |
+| 625 | Western Punjabi | pnb | pnb | 10.0 |
 | 626 | Wolof | wo | wol | 8.71 |
 | 627 | Wuzlam | udl | udl | 9.23 |
 | 628 | Xanaguía Zapotec | ztg | ztg | 9.86 |
