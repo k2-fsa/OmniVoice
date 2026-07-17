@@ -176,10 +176,32 @@ _FRACTIONS = {
 }
 
 _ENGLISH_LETTERS = {
-    "A": "എ", "B": "ബി", "C": "സി", "D": "ഡി", "E": "ഇ", "F": "എഫ്", "G": "ജി",
-    "H": "എച്ച്", "I": "ഐ", "J": "ജെ", "K": "കെ", "L": "എൽ", "M": "എം", "N": "എൻ",
-    "O": "ഒ", "P": "പി", "Q": "ക്യൂ", "R": "ആർ", "S": "എസ്", "T": "ടി", "U": "യു",
-    "V": "വി", "W": "ഡബ്ല്യൂ", "X": "എക്സ്", "Y": "വൈ", "Z": "സെഡ്"
+    "A": "എ",
+    "B": "ബി",
+    "C": "സി",
+    "D": "ഡി",
+    "E": "ഇ",
+    "F": "എഫ്",
+    "G": "ജി",
+    "H": "എച്ച്",
+    "I": "ഐ",
+    "J": "ജെ",
+    "K": "കെ",
+    "L": "എൽ",
+    "M": "എം",
+    "N": "എൻ",
+    "O": "ഒ",
+    "P": "പി",
+    "Q": "ക്യൂ",
+    "R": "ആർ",
+    "S": "എസ്",
+    "T": "ടി",
+    "U": "യു",
+    "V": "വി",
+    "W": "ഡബ്ല്യൂ",
+    "X": "എക്സ്",
+    "Y": "വൈ",
+    "Z": "സെഡ്",
 }
 
 _CURRENCY_MAP = {
@@ -427,7 +449,7 @@ def _normalize_time(text: str) -> str:
         mins = m.group(2)
         if mins == "00":
             return f"{hour} മണി"
-        
+
         # Strip leading zeros so "05" becomes "5" to avoid digit-by-digit fallback
         mins_stripped = mins.lstrip("0")
         return f"{hour} {mins_stripped}"
@@ -464,7 +486,7 @@ def _normalize_ordinals(text: str) -> str:
         word = _number_to_malayalam(n)
         if word is None:
             return m.group(0)
-        
+
         if word.endswith("്") or word.endswith("ം"):
             return word[:-1] + "ാമത്തെ"
         return word + "ാമത്തെ"
@@ -495,7 +517,7 @@ def _normalize_numbers(text: str) -> str:
         n = _parse_number_str(n_str)
         if n is None:
             return m.group(0)
-        
+
         word = _number_to_malayalam(n)
         if word is None:
             return _digit_by_digit(n_str)

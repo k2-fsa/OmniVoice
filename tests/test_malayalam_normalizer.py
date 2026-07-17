@@ -211,10 +211,15 @@ class TestNormalizeMalayalam:
 
     def test_digit_by_digit_fallback_large(self):
         # 10,000,000 is out of bounds for the word converter, so it falls back to digits
-        assert normalize_malayalam("10000000") == "ഒന്ന് പൂജ്യം പൂജ്യം പൂജ്യം പൂജ്യം പൂജ്യം പൂജ്യം പൂജ്യം"
+        assert (
+            normalize_malayalam("10000000") == "ഒന്ന് പൂജ്യം പൂജ്യം പൂജ്യം പൂജ്യം പൂജ്യം പൂജ്യം പൂജ്യം"
+        )
 
     def test_digit_by_digit_phone_number(self):
-        assert normalize_malayalam("9876543210") == "ഒമ്പത് എട്ട് ഏഴ് ആറ് അഞ്ച് നാല് മൂന്ന് രണ്ട് ഒന്ന് പൂജ്യം"
+        assert (
+            normalize_malayalam("9876543210")
+            == "ഒമ്പത് എട്ട് ഏഴ് ആറ് അഞ്ച് നാല് മൂന്ന് രണ്ട് ഒന്ന് പൂജ്യം"
+        )
 
     def test_digit_by_digit_leading_zero(self):
         assert normalize_malayalam("0484") == "പൂജ്യം നാല് എട്ട് നാല്"
@@ -242,7 +247,9 @@ class TestNormalizeMalayalam:
         assert normalize_malayalam("12:45") == "പന്ത്രണ്ട് നാല്പത്തി അഞ്ച്"
 
     def test_time_zeros(self):
-        assert normalize_malayalam("10:05") == "പത്ത് അഞ്ച്" # "പത്ത് പൂജ്യം അഞ്ച്" isn't standard, but this matches our generic logic ("10" "05" -> "10" "5" -> പത്ത് അഞ്ച്)
+        assert (
+            normalize_malayalam("10:05") == "പത്ത് അഞ്ച്"
+        )  # "പത്ത് പൂജ്യം അഞ്ച്" isn't standard, but this matches our generic logic ("10" "05" -> "10" "5" -> പത്ത് അഞ്ച്)
 
     # --- Fractions ---
 
@@ -262,7 +269,7 @@ class TestNormalizeMalayalam:
         assert normalize_malayalam("2nd") == "രണ്ടാമത്തെ"
         assert normalize_malayalam("3rd") == "മൂന്നാമത്തെ"
         assert normalize_malayalam("4th") == "നാലാമത്തെ"
-        
+
     def test_ordinals_tens(self):
         assert normalize_malayalam("10th") == "പത്താമത്തെ"
         assert normalize_malayalam("20th") == "ഇരുപതാമത്തെ"
