@@ -1068,7 +1068,9 @@ class OmniVoice(PreTrainedModel):
         # digits/symbols. Currently supports Malayalam ("ml").
         for i in range(batch_size):
             if language_list[i] is not None:
-                text_list[i] = _normalize_text_ml(text_list[i], language=language_list[i])
+                text_list[i] = _normalize_text_ml(
+                    text_list[i], language=language_list[i]
+                )
 
         instruct_list = self._ensure_list(instruct, batch_size)
         for i, s in enumerate(instruct_list):
