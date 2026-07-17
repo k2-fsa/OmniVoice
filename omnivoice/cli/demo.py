@@ -32,16 +32,8 @@ import numpy as np
 import torch
 
 from omnivoice import OmniVoice, OmniVoiceGenerationConfig
+from omnivoice.utils.common import get_best_device
 from omnivoice.utils.lang_map import LANG_NAMES, lang_display_name
-
-
-def get_best_device():
-    """Auto-detect the best available device: CUDA > MPS > CPU."""
-    if torch.cuda.is_available():
-        return "cuda"
-    if torch.backends.mps.is_available():
-        return "mps"
-    return "cpu"
 
 
 # ---------------------------------------------------------------------------
@@ -162,7 +154,6 @@ def build_demo(
     checkpoint: str,
     generate_fn=None,
 ) -> gr.Blocks:
-
     sampling_rate = model.sampling_rate
 
     # -- shared generation core --
@@ -265,8 +256,7 @@ def build_demo(
                 value=None,
                 label="Duration (seconds)",
                 info=(
-                    "Leave empty to use speed."
-                    " Set a fixed duration to override speed."
+                    "Leave empty to use speed. Set a fixed duration to override speed."
                 ),
             )
             ns = gr.Slider(
@@ -341,7 +331,7 @@ by Xiaomi AI Lab Next-gen Kaldi team.
                             "</span>"
                         )
                         vc_ref_text = gr.Textbox(
-                            label=("Reference Text (optional)" " / 参考音频文本（可选）"),
+                            label=("Reference Text (optional) / 参考音频文本（可选）"),
                             lines=2,
                             placeholder="Transcript of the reference audio. Leave empty"
                             " to auto-transcribe via ASR models.",

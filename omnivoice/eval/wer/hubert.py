@@ -18,6 +18,7 @@
 """
 Computes word error rate (WER) with Hubert models for LibriSpeech test sets.
 """
+
 import argparse
 import logging
 import multiprocessing as mp
@@ -250,7 +251,6 @@ def main():
         initializer=process_init,
         initargs=(rank_queue, args.model_dir),
     ) as executor:
-
         futures = []
         for chunk in tasks:
             futures.append(executor.submit(run_eval_worker, chunk, args.batch_size))
@@ -288,9 +288,7 @@ def main():
             )
 
     wer_weighted = (
-        round(
-            (np.sum(subses) + np.sum(deles) + np.sum(inses)) / word_nums * 100, 2
-        )
+        round((np.sum(subses) + np.sum(deles) + np.sum(inses)) / word_nums * 100, 2)
         if word_nums > 0
         else float("nan")
     )

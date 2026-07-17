@@ -19,6 +19,7 @@
 Computes speaker similarity (SIM-o) using a WavLM-based
     ECAPA-TDNN speaker verification model.
 """
+
 import argparse
 import logging
 import multiprocessing as mp
@@ -144,7 +145,9 @@ def worker_init(
 @torch.no_grad()
 def get_embedding(wav_path: str) -> torch.Tensor:
     """Extract embedding for a single file."""
-    speech = load_eval_waveform(wav_path, worker_sr, device=worker_device, max_seconds=120)
+    speech = load_eval_waveform(
+        wav_path, worker_sr, device=worker_device, max_seconds=120
+    )
     return worker_model([speech])
 
 
@@ -212,7 +215,7 @@ def main():
     total_procs = num_gpus * args.nj_per_gpu
 
     logging.info(
-        f"Starting evaluation with {total_procs} processes " f"on {num_gpus} GPUs."
+        f"Starting evaluation with {total_procs} processes on {num_gpus} GPUs."
     )
 
     manager = mp.Manager()
@@ -277,7 +280,7 @@ def main():
 
     except (Exception, KeyboardInterrupt) as e:
         logging.critical(
-            f"An unrecoverable error occurred: {e}. " f"Terminating all processes."
+            f"An unrecoverable error occurred: {e}. Terminating all processes."
         )
         detailed_error_info = traceback.format_exc()
         logging.error(f"--- DETAILED TRACEBACK ---\n{detailed_error_info}")

@@ -87,7 +87,11 @@ class OmniTrainer:
             ] = 1
 
         # 4. Prepare with Accelerator
-        (self.model, self.optimizer, self.lr_scheduler,) = self.accelerator.prepare(
+        (
+            self.model,
+            self.optimizer,
+            self.lr_scheduler,
+        ) = self.accelerator.prepare(
             self.model,
             self.optimizer,
             self.lr_scheduler,
@@ -293,9 +297,7 @@ class OmniTrainer:
                         grad_norm = self.accelerator.clip_grad_norm_(
                             self.model.parameters(), self.config.max_grad_norm
                         )
-                        grad_norm = (
-                            grad_norm.item() if grad_norm is not None else 0.0
-                        )
+                        grad_norm = grad_norm.item() if grad_norm is not None else 0.0
 
                     self.optimizer.step()
                     self.lr_scheduler.step()

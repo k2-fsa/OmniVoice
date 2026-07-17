@@ -82,20 +82,22 @@ class PaddingDataCollator:
             valid[i, :length] = True
 
         # Stack into [B, C, max_len] / [B, max_len]
-        input_ids = torch.stack(padded_input_ids, dim=0)      # [B, C, max_len]
-        labels = torch.stack(padded_labels, dim=0)             # [B, C, max_len]
-        audio_mask = torch.stack(padded_audio_mask, dim=0)     # [B, max_len]
-        position_ids = torch.stack(padded_position_ids, dim=0) # [B, max_len]
+        input_ids = torch.stack(padded_input_ids, dim=0)  # [B, C, max_len]
+        labels = torch.stack(padded_labels, dim=0)  # [B, C, max_len]
+        audio_mask = torch.stack(padded_audio_mask, dim=0)  # [B, max_len]
+        position_ids = torch.stack(padded_position_ids, dim=0)  # [B, max_len]
 
         # 4D bidirectional attention mask: mask[b, 0, i, j] = valid[b, j]
         # All query positions attend to all non-padding key positions.
-        attention_mask = valid[:, None, None, :].expand(B, 1, max_len, max_len).contiguous()
+        attention_mask = (
+            valid[:, None, None, :].expand(B, 1, max_len, max_len).contiguous()
+        )
 
         return {
-            "input_ids": input_ids,           # [B, C, max_len]
-            "labels": labels,                  # [B, C, max_len]
-            "audio_mask": audio_mask,          # [B, max_len]
-            "position_ids": position_ids,      # [B, max_len]
+            "input_ids": input_ids,  # [B, C, max_len]
+            "labels": labels,  # [B, C, max_len]
+            "audio_mask": audio_mask,  # [B, max_len]
+            "position_ids": position_ids,  # [B, max_len]
             "attention_mask": attention_mask,  # [B, 1, max_len, max_len]
         }
 
@@ -106,7 +108,6 @@ class PackingDataCollator:
         self.processor = processor
 
     def __call__(self, processed_samples: List[Dict[str, Any]]) -> Dict[str, Any]:
-
         target_length = self.batch_tokens
 
         input_ids = torch.cat(

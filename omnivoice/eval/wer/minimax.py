@@ -19,6 +19,7 @@
 Computes word error rate (WER) with Whisper-large-v3 for English and
 Paraformer for Chinese. Intended to evaluate WERs on Seed-TTS test sets.
 """
+
 import argparse
 import logging
 import multiprocessing as mp
@@ -108,7 +109,7 @@ def get_parser():
         "--lang",
         type=str,
         default=None,
-        help="""Language code to evaluate (e.g., 'en' for English, 'zh' for Chinese). 
+        help="""Language code to evaluate (e.g., 'en' for English, 'zh' for Chinese).
         If not provided, the script will evaluate all languages found in the test list.
         If specified, only samples of the given language will be evaluated.
         """,
@@ -239,7 +240,6 @@ def post_process(text: str, lang: str) -> str:
         str: The cleaned and normalized text.
     """
     if lang != "unknown":
-
         iso_639_3_code = mixed_id_to_iso_639_3_id[lang]
         text = text_normalize(
             text,
@@ -275,7 +275,9 @@ class SpeechEvalDataset(torch.utils.data.Dataset):
 
     def __getitem__(self, index):
         item = self.data_list[index]
-        waveform = load_eval_waveform(item["wav_path"], sample_rate=16000, return_numpy=True)
+        waveform = load_eval_waveform(
+            item["wav_path"], sample_rate=16000, return_numpy=True
+        )
         return {
             "array": waveform,
             "sampling_rate": 16000,
@@ -460,7 +462,6 @@ def main():
             initializer=process_init,
             initargs=(whisper_rank_queue, args.model_dir),
         ) as executor:
-
             futures = []
             for task in whisper_tasks:
                 futures.append(
@@ -494,7 +495,6 @@ def main():
             initializer=process_init_paraformer,
             initargs=(para_rank_queue, args.model_dir),
         ) as executor:
-
             futures = []
             for chunk in paraformer_tasks:
                 futures.append(

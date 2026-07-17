@@ -354,7 +354,6 @@ class AttentiveStatsPool(nn.Module):
         )  # equals V and k in the paper
 
     def forward(self, x):
-
         if self.global_context_att:
             context_mean = torch.mean(x, dim=-1, keepdim=True).expand_as(x)
             context_std = torch.sqrt(

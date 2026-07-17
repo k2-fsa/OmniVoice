@@ -84,7 +84,6 @@ class StreamLengthGroupDataset(WrappedIterableDataset):
         self.dataset.set_epoch(epoch)
 
     def _get_bucket_id(self, length: float) -> int:
-
         return bisect.bisect_left(self.boundaries, length)
 
     def __iter__(self) -> Iterator[List[Dict[str, Any]]]:

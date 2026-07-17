@@ -57,6 +57,8 @@ Priority: `duration` > `speed`.
 |---|---|---|---|
 | `preprocess_prompt` | bool | True | Whether to apply preprocessing to the voice-clone prompt audio (remove long silences in reference audio, add punctuation in the end of reference text). |
 | `postprocess_output` | bool | True | Apply post-processing to generated audio (remove long silences). |
+| `pad_duration` | float | 0.1 | Silence padding duration per side in seconds. Set to 0 to disable. |
+| `fade_duration` | float | 0.1 | Fade-in/out curve duration in seconds. Set to 0 to disable. |
 
 ## Long-Form Generation
 

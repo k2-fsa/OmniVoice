@@ -28,6 +28,7 @@ Usage:
         --model-card omniASR_LLM_Unlimited_7B_v2 \\
         --chunk-size 100 --batch-size 50
 """
+
 import argparse
 import logging
 import multiprocessing as mp
@@ -189,7 +190,7 @@ def get_parser():
         "--lang",
         type=str,
         default=None,
-        help="""Language code to evaluate (e.g., 'en' for English, 'zh' for Chinese). 
+        help="""Language code to evaluate (e.g., 'en' for English, 'zh' for Chinese).
         If not provided, the script will evaluate all languages found in the test list.
         If specified, only samples of the given language will be evaluated.
         """,
@@ -404,7 +405,6 @@ def main():
         initializer=process_init,
         initargs=(rank_queue, args.model_card),
     ) as executor:
-
         futures = []
         for task in tasks:
             futures.append(
