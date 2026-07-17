@@ -58,3 +58,6 @@ If you have a project you'd like to add, please open a PR.
 - **[tts-audiobook-tool](https://github.com/zeropointnine/tts-audiobook-tool)** —
   Audiobook creation tool supporting a dozen different TTS models including OmniVoice, Qwen3-TTS, VibeVoice, etc.,
   focused on high-quality output
+
+- **[LocalText2Voice](https://github.com/estebanstifli/LocalText2Voice)** —
+  User-friendly Windows desktop pipeline for long-form audiobook and podcast production with OmniVoice support, voice-library management, chapter-aware generation, Whisper-based segment review and retries, multi-voice markup, music/SFX mixing, and MCP automation.
