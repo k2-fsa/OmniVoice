@@ -4,29 +4,30 @@ Generates audio from a single text input using voice cloning,
 voice design, or auto voice.
 
 Usage:
-    # Voice cloning
+    # Voice cloning (WAV output)
     omnivoice-infer --model k2-fsa/OmniVoice \
         --text "Hello, this is a text for text-to-speech." \
         --ref_audio ref.wav --ref_text "Reference transcript." --output out.wav
 
-    # Voice design
+    # Voice design (MP3 output)
     omnivoice-infer --model k2-fsa/OmniVoice \
         --text "Hello, this is a text for text-to-speech." \
-        --instruct "male, British accent" --output out.wav
+        --instruct "male, British accent" --output out.mp3
 
-    # Auto voice
+    # Auto voice (MP3, explicit format)
     omnivoice-infer --model k2-fsa/OmniVoice \
-        --text "Hello, this is a text for text-to-speech." --output out.wav
+        --text "Hello, this is a text for text-to-speech." \
+        --output out.mp3 --format mp3
 """
 
 import argparse
 import logging
+import os
 
 import torch
 
-import soundfile as sf
-
 from omnivoice.models.omnivoice import OmniVoice
+from omnivoice.utils.audio import save_audio
 from omnivoice.utils.common import get_best_device, str2bool
 
 
@@ -51,7 +52,14 @@ def get_parser() -> argparse.ArgumentParser:
         "--output",
         type=str,
         required=True,
-        help="Output WAV file path.",
+        help="Output file path. Extension determines format: .wav (WAV) or .mp3 (MP3 128kbps).",
+    )
+    parser.add_argument(
+        "--format",
+        type=str,
+        default=None,
+        choices=["wav", "mp3"],
+        help="Output format (overrides extension heuristic). Default: inferred from extension.",
     )
     # Voice cloning
     parser.add_argument(
@@ -141,7 +149,14 @@ def main():
         class_temperature=args.class_temperature,
     )
 
-    sf.write(args.output, audios[0], model.sampling_rate)
+    # Honour --format flag by ensuring the output filename has the right extension
+    if args.format:
+        base = os.path.splitext(args.output)[0]
+        ext = f".{args.format}"
+        if args.output != base + ext:
+            args.output = base + ext
+
+    save_audio(audios[0], args.output, model.sampling_rate)
     logging.info(f"Saved to {args.output}")
 
 
