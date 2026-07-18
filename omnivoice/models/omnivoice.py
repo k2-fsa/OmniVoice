@@ -69,6 +69,7 @@ from omnivoice.utils.audio import (
 )
 from omnivoice.utils.duration import RuleDurationEstimator
 from omnivoice.utils.lang_map import LANG_IDS, LANG_NAMES
+from omnivoice.utils.text_normalization import normalize_text as _normalize_text_ml
 from omnivoice.utils.text import (
     add_punctuation,
     chunk_text_punctuation,
@@ -1061,6 +1062,16 @@ class OmniVoice(PreTrainedModel):
             text_list = [
                 _normalize_text(t, lang) for t, lang in zip(text_list, language_list)
             ]
+
+        # Apply language-specific text normalization (e.g., numbers, currency,
+        # units) so the TTS model receives spoken-form text instead of raw
+        # digits/symbols. Currently supports Malayalam ("ml").
+        for i in range(batch_size):
+            if language_list[i] is not None:
+                text_list[i] = _normalize_text_ml(
+                    text_list[i], language=language_list[i]
+                )
+
         instruct_list = self._ensure_list(instruct, batch_size)
         for i, s in enumerate(instruct_list):
             if s is None:
