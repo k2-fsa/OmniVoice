@@ -1,5 +1,7 @@
 services:
   omnivoice:
+    environment:
+      OMNIVOICE_DEVICE: ${OMNIVOICE_DEVICE:-cuda}
     deploy:
       resources:
         reservations:

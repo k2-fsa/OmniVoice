@@ -25,6 +25,7 @@ Usage:
 
 import argparse
 import logging
+import os
 from typing import Any, Dict
 
 import gradio as gr
@@ -32,6 +33,7 @@ import numpy as np
 import torch
 
 from omnivoice import OmniVoice, OmniVoiceGenerationConfig
+from omnivoice.cli._demo_config import ensure_output_dir, env_port, env_value
 from omnivoice.utils.common import get_best_device
 from omnivoice.utils.lang_map import LANG_NAMES, lang_display_name
 
@@ -97,6 +99,18 @@ _ATTR_INFO = {
     "Chinese Dialect / 中文方言": "Only effective for Chinese speech.",
 }
 
+_CSS = """
+.gradio-container {max-width: 100% !important; font-size: 16px !important;}
+.gradio-container h1 {font-size: 1.5em !important;}
+.gradio-container .prose {font-size: 1.1em !important;}
+.compact-audio audio {height: 60px !important;}
+.compact-audio .waveform {min-height: 80px !important;}
+"""
+
+
+def _demo_theme():
+    return gr.themes.Soft(font=["Inter", "Arial", "sans-serif"])
+
 # ---------------------------------------------------------------------------
 # Argument parser
 # ---------------------------------------------------------------------------
@@ -110,19 +124,28 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--model",
-        default="k2-fsa/OmniVoice",
+        default=env_value("OMNIVOICE_MODEL", "k2-fsa/OmniVoice"),
         help="Model checkpoint path or HuggingFace repo id.",
     )
     parser.add_argument(
-        "--device", default=None, help="Device to use. Auto-detected if not specified."
+        "--device",
+        default=os.getenv("OMNIVOICE_DEVICE") or None,
+        help="Device to use. Auto-detected if not specified.",
     )
-    parser.add_argument("--ip", default="0.0.0.0", help="Server IP (default: 0.0.0.0).")
     parser.add_argument(
-        "--port", type=int, default=7860, help="Server port (default: 7860)."
+        "--ip",
+        default=env_value("OMNIVOICE_HOST", "0.0.0.0"),
+        help="Server IP (default: 0.0.0.0).",
+    )
+    parser.add_argument(
+        "--port",
+        type=int,
+        default=env_port(),
+        help="Server port (default: 7860).",
     )
     parser.add_argument(
         "--root-path",
-        default=None,
+        default=os.getenv("OMNIVOICE_ROOT_PATH") or None,
         help="Root path for reverse proxy.",
     )
     parser.add_argument(
@@ -219,17 +242,6 @@ def build_demo(
     # =====================================================================
     # UI
     # =====================================================================
-    theme = gr.themes.Soft(
-        font=["Inter", "Arial", "sans-serif"],
-    )
-    css = """
-    .gradio-container {max-width: 100% !important; font-size: 16px !important;}
-    .gradio-container h1 {font-size: 1.5em !important;}
-    .gradio-container .prose {font-size: 1.1em !important;}
-    .compact-audio audio {height: 60px !important;}
-    .compact-audio .waveform {min-height: 80px !important;}
-    """
-
     # Reusable: language dropdown component
     def _lang_dropdown(label="Language (optional) / 语种 (可选)", value="Auto"):
         return gr.Dropdown(
@@ -293,7 +305,7 @@ def build_demo(
             )
         return ns, gs, dn, sp, du, pp, po
 
-    with gr.Blocks(theme=theme, css=css, title="OmniVoice Demo") as demo:
+    with gr.Blocks(title="OmniVoice Demo") as demo:
         gr.Markdown(
             """
 # OmniVoice Demo
@@ -507,6 +519,9 @@ def main(argv=None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
 
+    output_dir = ensure_output_dir()
+    os.environ.setdefault("GRADIO_TEMP_DIR", str(output_dir))
+
     device = args.device or get_best_device()
 
     checkpoint = args.model
@@ -531,6 +546,8 @@ def main(argv=None) -> int:
         server_port=args.port,
         share=args.share,
         root_path=args.root_path,
+        theme=_demo_theme(),
+        css=_CSS,
     )
     return 0
 

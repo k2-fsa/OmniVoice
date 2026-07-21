@@ -6,19 +6,27 @@ services:
     image: omnivoice-ui:468e927
     container_name: omnivoice-ui
     ports:
-      - "8001:8001"
+      - "${OMNIVOICE_PORT:-8001}:${OMNIVOICE_PORT:-8001}"
     environment:
-      HF_HOME: /cache/huggingface
+      HF_HOME: ${HF_HOME:-/cache/huggingface}
       GRADIO_ANALYTICS_ENABLED: "false"
+      GRADIO_TEMP_DIR: ${OMNIVOICE_OUTPUT_DIR:-/app/outputs}
+      OMNIVOICE_DEVICE: ${OMNIVOICE_DEVICE:-}
+      OMNIVOICE_HOST: ${OMNIVOICE_HOST:-0.0.0.0}
+      OMNIVOICE_MODEL: ${OMNIVOICE_MODEL:-k2-fsa/OmniVoice}
+      OMNIVOICE_OUTPUT_DIR: ${OMNIVOICE_OUTPUT_DIR:-/app/outputs}
+      OMNIVOICE_PORT: ${OMNIVOICE_PORT:-8001}
+      OMNIVOICE_ROOT_PATH: ${OMNIVOICE_ROOT_PATH:-}
     volumes:
-      - huggingface-cache:/cache/huggingface
+      - huggingface-cache:${HF_HOME:-/cache/huggingface}
+      - omnivoice-outputs:${OMNIVOICE_OUTPUT_DIR:-/app/outputs}
     shm_size: "2gb"
     healthcheck:
       test:
         - CMD
         - python
         - -c
-        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8001/', timeout=5)"
+        - "import os, urllib.request; port=os.environ.get('OMNIVOICE_PORT', '8001'); urllib.request.urlopen(f'http://127.0.0.1:{port}/', timeout=5)"
       interval: 30s
       timeout: 10s
       retries: 5
@@ -27,3 +35,5 @@ services:
 volumes:
   huggingface-cache:
     name: omnivoice_huggingface-cache
+  omnivoice-outputs:
+    name: omnivoice_outputs
