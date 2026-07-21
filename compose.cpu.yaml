@@ -1,0 +1,17 @@
+services:
+  omnivoice:
+    build:
+      dockerfile: Dockerfile.cpu
+    image: omnivoice-ui:cpu
+    command:
+      - omnivoice-demo
+      - --model
+      - k2-fsa/OmniVoice
+      - --ip
+      - 0.0.0.0
+      - --port
+      - "8001"
+      - --device
+      - cpu
+      - --no-asr
+

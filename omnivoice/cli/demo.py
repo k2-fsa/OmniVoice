@@ -514,10 +514,11 @@ def main(argv=None) -> int:
         parser.print_help()
         return 0
     logging.info(f"Loading model from {checkpoint}, device={device} ...")
+    dtype = torch.float32 if str(device).startswith("cpu") else torch.float16
     model = OmniVoice.from_pretrained(
         checkpoint,
         device_map=device,
-        dtype=torch.float16,
+        dtype=dtype,
         load_asr=not args.no_asr,
         asr_model_name=args.asr_model,
     )

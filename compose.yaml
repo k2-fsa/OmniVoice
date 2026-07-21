@@ -1,0 +1,29 @@
+services:
+  omnivoice:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: omnivoice-ui:468e927
+    container_name: omnivoice-ui
+    ports:
+      - "8001:8001"
+    environment:
+      HF_HOME: /cache/huggingface
+      GRADIO_ANALYTICS_ENABLED: "false"
+    volumes:
+      - huggingface-cache:/cache/huggingface
+    shm_size: "2gb"
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8001/', timeout=5)"
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 15m
+
+volumes:
+  huggingface-cache:
+    name: omnivoice_huggingface-cache
