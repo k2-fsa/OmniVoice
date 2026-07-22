@@ -36,6 +36,7 @@ from omnivoice import OmniVoice, OmniVoiceGenerationConfig
 from omnivoice.cli._demo_config import ensure_output_dir, env_port, env_value
 from omnivoice.utils.common import get_best_device
 from omnivoice.utils.lang_map import LANG_NAMES, lang_display_name
+from omnivoice.utils.text import normalize_text_input
 
 
 # ---------------------------------------------------------------------------
@@ -110,6 +111,7 @@ _CSS = """
 
 def _demo_theme():
     return gr.themes.Soft(font=["Inter", "Arial", "sans-serif"])
+
 
 # ---------------------------------------------------------------------------
 # Argument parser
@@ -195,7 +197,15 @@ def build_demo(
         mode,
         ref_text=None,
     ):
-        if not text or not text.strip():
+        normalized_text = normalize_text_input(text or "")
+        normalized_ref_text = (
+            normalize_text_input(ref_text) if ref_text is not None else None
+        )
+        was_normalized = (
+            normalized_text != (text or "") or normalized_ref_text != ref_text
+        )
+
+        if not normalized_text:
             return None, "Please enter the text to synthesize."
 
         gen_config = OmniVoiceGenerationConfig(
@@ -209,7 +219,7 @@ def build_demo(
         lang = language if (language and language != "Auto") else None
 
         kw: Dict[str, Any] = dict(
-            text=text.strip(), language=lang, generation_config=gen_config
+            text=normalized_text, language=lang, generation_config=gen_config
         )
 
         if speed is not None and float(speed) != 1.0:
@@ -222,7 +232,7 @@ def build_demo(
                 return None, "Please upload a reference audio."
             kw["voice_clone_prompt"] = model.create_voice_clone_prompt(
                 ref_audio=ref_audio,
-                ref_text=ref_text,
+                ref_text=normalized_ref_text,
             )
 
         if instruct and instruct.strip():
@@ -234,7 +244,8 @@ def build_demo(
             return None, f"Error: {type(e).__name__}: {e}"
 
         waveform = (audio[0] * 32767).astype(np.int16)
-        return (sampling_rate, waveform), "Done."
+        status = "Done. Unicode text was normalized." if was_normalized else "Done."
+        return (sampling_rate, waveform), status
 
     # Allow external wrappers (e.g. spaces.GPU for ZeroGPU Spaces)
     _gen = generate_fn if generate_fn is not None else _gen_core

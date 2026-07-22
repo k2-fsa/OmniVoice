@@ -28,6 +28,7 @@ import soundfile as sf
 
 from omnivoice.models.omnivoice import OmniVoice
 from omnivoice.utils.common import get_best_device, str2bool
+from omnivoice.utils.text import normalize_text_input
 
 
 def get_parser() -> argparse.ArgumentParser:
@@ -114,7 +115,13 @@ def main():
     formatter = "%(asctime)s %(levelname)s [%(filename)s:%(lineno)d] %(message)s"
     logging.basicConfig(format=formatter, level=logging.INFO, force=True)
 
-    args = get_parser().parse_args()
+    parser = get_parser()
+    args = parser.parse_args()
+    args.text = normalize_text_input(args.text)
+    if not args.text:
+        parser.error("--text is empty after Unicode normalization")
+    if args.ref_text is not None:
+        args.ref_text = normalize_text_input(args.ref_text)
 
     device = args.device or get_best_device()
     logging.info(f"Loading model from {args.model} on {device} ...")

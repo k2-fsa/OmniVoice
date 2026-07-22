@@ -1,0 +1,123 @@
+[1mdiff --git a/.dockerignore b/.dockerignore[m
+[1mnew file mode 100644[m
+[1mindex 0000000..02d620d[m
+[1m--- /dev/null[m
+[1m+++ b/.dockerignore[m
+[36m@@ -0,0 +1,22 @@[m
+[32m+[m[32m.git[m
+[32m+[m[32m.github[m
+[32m+[m[32m.agents[m
+[32m+[m[32m.codex[m
+[32m+[m[32m.venv[m
+[32m+[m[32m__pycache__[m
+[32m+[m[32m*.pyc[m
+[32m+[m[32m*.wav[m
+[32m+[m[32m*.pt[m
+[32m+[m[32m*.ckpt[m
+[32m+[m[32m*.safetensors[m
+[32m+[m[32m.ipynb_checkpoints[m
+[32m+[m[32mdocs[m
+[32m+[m[32mexamples[m
+[32m+[m[32moutputs[m
+[32m+[m[32mresults[m
+[32m+[m[32mdata[m
+[32m+[m[32mhf-cache[m
+[32m+[m[32mcompose*.yaml[m
+[32m+[m[32mdocker-compose*.yml[m
+[32m+[m[32mDockerfile[m
+[32m+[m[32mREADME-docker.md[m
+[1mdiff --git a/Dockerfile b/Dockerfile[m
+[1mnew file mode 100644[m
+[1mindex 0000000..3615104[m
+[1m--- /dev/null[m
+[1m+++ b/Dockerfile[m
+[36m@@ -0,0 +1,35 @@[m
+[32m+[m[32mFROM python:3.11-slim-bookworm[m
+[32m+[m
+[32m+[m[32mARG UV_VERSION=0.10.4[m
+[32m+[m
+[32m+[m[32mENV PYTHONUNBUFFERED=1 \[m
+[32m+[m[32m    PIP_NO_CACHE_DIR=1 \[m
+[32m+[m[32m    UV_LINK_MODE=copy \[m
+[32m+[m[32m    HF_HOME=/cache/huggingface \[m
+[32m+[m[32m    GRADIO_ANALYTICS_ENABLED=false[m
+[32m+[m
+[32m+[m[32mRUN apt-get update && apt-get install -y --no-install-recommends \[m
+[32m+[m[32m    ffmpeg \[m
+[32m+[m[32m    libsndfile1 \[m
+[32m+[m[32m    libgomp1 \[m
+[32m+[m[32m    && rm -rf /var/lib/apt/lists/*[m
+[32m+[m
+[32m+[m[32mWORKDIR /app[m
+[32m+[m
+[32m+[m[32mRUN pip install --no-cache-dir "uv==${UV_VERSION}"[m
+[32m+[m
+[32m+[m[32mCOPY pyproject.toml uv.lock README.md LICENSE ./[m
+[32m+[m[32mRUN uv sync --frozen --no-dev --no-install-project[m
+[32m+[m
+[32m+[m[32mCOPY omnivoice ./omnivoice[m
+[32m+[m[32mRUN uv sync --frozen --no-dev[m
+[32m+[m
+[32m+[m[32mENV PATH="/app/.venv/bin:$PATH"[m
+[32m+[m
+[32m+[m[32mEXPOSE 8001[m
+[32m+[m
+[32m+[m[32mCMD ["omnivoice-demo", \[m
+[32m+[m[32m     "--model", "k2-fsa/OmniVoice", \[m
+[32m+[m[32m     "--ip", "0.0.0.0", \[m
+[32m+[m[32m     "--port", "8001", \[m
+[32m+[m[32m     "--no-asr"][m
+[1mdiff --git a/README-docker.md b/README-docker.md[m
+[1mnew file mode 100644[m
+[1mindex 0000000..e69de29[m
+[1mdiff --git a/compose.gpu.yaml b/compose.gpu.yaml[m
+[1mnew file mode 100644[m
+[1mindex 0000000..55f6b2c[m
+[1m--- /dev/null[m
+[1m+++ b/compose.gpu.yaml[m
+[36m@@ -0,0 +1,10 @@[m
+[32m+[m[32mservices:[m
+[32m+[m[32m  omnivoice:[m
+[32m+[m[32m    deploy:[m
+[32m+[m[32m      resources:[m
+[32m+[m[32m        reservations:[m
+[32m+[m[32m          devices:[m
+[32m+[m[32m            - driver: nvidia[m
+[32m+[m[32m              count: 1[m
+[32m+[m[32m              capabilities:[m
+[32m+[m[32m                - gpu[m
+[1mdiff --git a/compose.yaml b/compose.yaml[m
+[1mnew file mode 100644[m
+[1mindex 0000000..2d82692[m
+[1m--- /dev/null[m
+[1m+++ b/compose.yaml[m
+[36m@@ -0,0 +1,29 @@[m
+[32m+[m[32mservices:[m
+[32m+[m[32m  omnivoice:[m
+[32m+[m[32m    build:[m
+[32m+[m[32m      context: .[m
+[32m+[m[32m      dockerfile: Dockerfile[m
+[32m+[m[32m    image: omnivoice-ui:468e927[m
+[32m+[m[32m    container_name: omnivoice-ui[m
+[32m+[m[32m    ports:[m
+[32m+[m[32m      - "8001:8001"[m
+[32m+[m[32m    environment:[m
+[32m+[m[32m      HF_HOME: /cache/huggingface[m
+[32m+[m[32m      GRADIO_ANALYTICS_ENABLED: "false"[m
+[32m+[m[32m    volumes:[m
+[32m+[m[32m      - huggingface-cache:/cache/huggingface[m
+[32m+[m[32m    shm_size: "2gb"[m
+[32m+[m[32m    healthcheck:[m
+[32m+[m[32m      test:[m
+[32m+[m[32m        - CMD[m
+[32m+[m[32m        - python[m
+[32m+[m[32m        - -c[m
+[32m+[m[32m        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8001/', timeout=5)"[m
+[32m+[m[32m      interval: 30s[m
+[32m+[m[32m      timeout: 10s[m
+[32m+[m[32m      retries: 5[m
+[32m+[m[32m      start_period: 15m[m
+[32m+[m
+[32m+[m[32mvolumes:[m
+[32m+[m[32m  huggingface-cache:[m
+[32m+[m[32m    name: omnivoice_huggingface-cache[m

@@ -28,3 +28,7 @@ examples/exp*
 .claude/
 *.wav
 *.jsonl
+!/experiments/
+!/experiments/unicode_audio_tests/
+!/experiments/unicode_audio_tests/run_experiment.py
+/experiments/unicode_audio_tests/results/

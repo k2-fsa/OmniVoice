@@ -72,6 +72,7 @@ from omnivoice.utils.lang_map import LANG_IDS, LANG_NAMES
 from omnivoice.utils.text import (
     add_punctuation,
     chunk_text_punctuation,
+    normalize_text_input,
     normalize_text as _normalize_text,
 )
 from omnivoice.utils.voice_design import (
@@ -753,6 +754,9 @@ class OmniVoice(PreTrainedModel):
                 "with OmniVoice.from_pretrained()."
             )
 
+        if ref_text is not None:
+            ref_text = normalize_text_input(ref_text)
+
         if isinstance(ref_audio, str):
             ref_wav = load_audio(ref_audio, self.sampling_rate)
         else:
@@ -812,6 +816,8 @@ class OmniVoice(PreTrainedModel):
                 self.load_asr_model()
             ref_text = self.transcribe((ref_wav, self.sampling_rate))
             logger.debug("Auto-transcribed ref_text: %s", ref_text)
+
+        ref_text = normalize_text_input(ref_text)
 
         chunk_size = self.audio_tokenizer.config.hop_length
         clip_size = int(ref_wav.shape[-1] % chunk_size)
@@ -1051,6 +1057,14 @@ class OmniVoice(PreTrainedModel):
             text_list = text
         batch_size = len(text_list)
 
+        text_list = [normalize_text_input(item) for item in text_list]
+        empty_indices = [i for i, item in enumerate(text_list) if not item]
+        if empty_indices:
+            raise ValueError(
+                "Target text is empty after Unicode normalization "
+                f"for batch item(s): {empty_indices}."
+            )
+
         language_list = self._ensure_list(language, batch_size)
         language_list = [_resolve_language(lang) for lang in language_list]
 
@@ -1093,7 +1107,9 @@ class OmniVoice(PreTrainedModel):
 
         voice_clone_prompt_list = self._ensure_list(voice_clone_prompt, batch_size)
         if voice_clone_prompt_list[0] is not None:
-            ref_text_list = [vc.ref_text for vc in voice_clone_prompt_list]
+            ref_text_list = [
+                normalize_text_input(vc.ref_text) for vc in voice_clone_prompt_list
+            ]
             ref_audio_tokens_list = [
                 vc.ref_audio_tokens for vc in voice_clone_prompt_list
             ]
