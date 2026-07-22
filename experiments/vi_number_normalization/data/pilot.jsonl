@@ -1,0 +1,200 @@
+{"id":"cardinal_001","raw_text":"Số hồ sơ bị lỗi là 0.","number":"0","role":"QUANTITY","preferred_spoken":["Số hồ sơ bị lỗi là không."]}
+{"id":"cardinal_002","raw_text":"Tôi mua 1 quyển sách.","number":"1","role":"QUANTITY","preferred_spoken":["Tôi mua một quyển sách."]}
+{"id":"cardinal_003","raw_text":"Bàn này có 4 chân.","number":"4","role":"QUANTITY","preferred_spoken":["Bàn này có bốn chân."]}
+{"id":"cardinal_004","raw_text":"Nhóm có 5 thành viên.","number":"5","role":"QUANTITY","preferred_spoken":["Nhóm có năm thành viên."]}
+{"id":"cardinal_005","raw_text":"Tôi cần 10 chiếc hộp.","number":"10","role":"QUANTITY","preferred_spoken":["Tôi cần mười chiếc hộp."]}
+{"id":"cardinal_006","raw_text":"Lớp có 15 sinh viên.","number":"15","role":"QUANTITY","preferred_spoken":["Lớp có mười lăm sinh viên."]}
+{"id":"cardinal_007","raw_text":"Cửa hàng còn 21 sản phẩm.","number":"21","role":"QUANTITY","preferred_spoken":["Cửa hàng còn hai mốt sản phẩm","Cửa hàng còn hai mươi mốt sản phẩm."]}
+{"id":"cardinal_008","raw_text":"Tôi đã đọc 24 trang.","number":"24","role":"QUANTITY","preferred_spoken":["Tôi đã đọc hai mươi tư trang.", "Tôi đã đọc hai mươi bốn trang", "Tôi đã đọc hai tư trang", "Tôi đã đọc hai bốn trang"]}
+{"id":"cardinal_009","raw_text":"Đội có 25 người.","number":"25","role":"QUANTITY","preferred_spoken":["Đội có hai mươi lăm người.", "Đội có hai lăm người."]}
+{"id":"cardinal_010","raw_text":"Thư viện nhận 101 cuốn sách.","number":"101","role":"QUANTITY","preferred_spoken":["Thư viện nhận một trăm linh mốt cuốn sách.", "Thư viện nhận một trăm linh một cuốn sách."],"acceptable_spoken":["Thư viện nhận một trăm lẻ một cuốn sách."]}
+{"id":"cardinal_011","raw_text":"Kho hiện có 105 hộp.","number":"105","role":"QUANTITY","preferred_spoken":["Kho hiện có một trăm linh năm hộp."],"acceptable_spoken":["Kho hiện có một trăm lẻ năm hộp."]}
+{"id":"cardinal_012","raw_text":"Trường tuyển 115 học sinh.","number":"115","role":"QUANTITY","preferred_spoken":["Trường tuyển một trăm mười lăm học sinh."]}
+{"id":"cardinal_013","raw_text":"Cuộc khảo sát có 1.001 người tham gia.","number":"1.001","role":"QUANTITY","preferred_spoken":["Cuộc khảo sát có một nghìn không trăm linh một người tham gia.","Cuộc khảo sát có một nghìn linh một người tham gia."],"acceptable_spoken":["Cuộc khảo sát có một ngàn lẻ một người tham gia."]}
+{"id":"cardinal_014","raw_text":"Hệ thống ghi nhận 1.005 yêu cầu.","number":"1.005","role":"QUANTITY","preferred_spoken":["Hệ thống ghi nhận một nghìn không trăm linh năm yêu cầu.","Hệ thống ghi nhận một nghìn linh năm yêu cầu."],"acceptable_spoken":["Hệ thống ghi nhận một ngàn lẻ năm yêu cầu."]}
+{"id":"cardinal_015","raw_text":"Nhà máy sản xuất 1.015 linh kiện.","number":"1.015","role":"QUANTITY","preferred_spoken":["Nhà máy sản xuất một nghìn không trăm mười lăm linh kiện.","Nhà máy sản xuất một nghìn mười lăm linh kiện."]}
+{"id":"cardinal_016","raw_text":"Thành phố trồng thêm 10.001 cây xanh.","number":"10.001","role":"QUANTITY","preferred_spoken":["Thành phố trồng thêm mười nghìn không trăm linh một cây xanh.","Thành phố trồng thêm mười nghìn linh một cây xanh."]}
+{"id":"cardinal_017","raw_text":"Sân vận động có 10.500 chỗ ngồi.","number":"10.500","role":"QUANTITY","preferred_spoken":["Sân vận động có mười nghìn năm trăm chỗ ngồi."]}
+{"id":"cardinal_018","raw_text":"Ứng dụng đạt 1.000.000 lượt tải.","number":"1.000.000","role":"QUANTITY","preferred_spoken":["Ứng dụng đạt một triệu lượt tải."]}
+{"id":"cardinal_019","raw_text":"Dân số khu vực là 1.234.567 người.","number":"1.234.567","role":"QUANTITY","preferred_spoken":["Dân số khu vực là một triệu hai trăm ba mươi tư nghìn năm trăm sáu mươi bảy người."]}
+{"id":"cardinal_020","raw_text":"Tài khoản đang có số dư âm 125 điểm.","number":"125","role":"NEGATIVE_QUANTITY","preferred_spoken":["Tài khoản đang có số dư âm một trăm hai lăm điểm.", "Tài khoản đang có số dư âm một trăm hai mươi lăm điểm."]}
+{"id":"decimal_math_001","raw_text":"Xác suất bằng 0,5.","number":"0,5","role":"DECIMAL","preferred_spoken":["Xác suất bằng không phẩy năm."]}
+{"id":"decimal_math_002","raw_text":"Kết quả đo là 1,05.","number":"1,05","role":"DECIMAL","preferred_spoken":["Kết quả đo là một phẩy không năm."]}
+{"id":"decimal_math_003","raw_text":"Giá trị trung bình là 12,04.","number":"12,04","role":"DECIMAL","preferred_spoken":["Giá trị trung bình là mười hai phẩy không bốn."]}
+{"id":"decimal_math_004","raw_text":"Nghiệm của phương trình là -3,5.","number":"-3,5","role":"SIGNED_NUMBER","preferred_spoken":["Nghiệm của phương trình là âm ba phẩy năm."]}
+{"id":"decimal_math_005","raw_text":"Sai số hiệu chỉnh là +2,5.","number":"+2,5","role":"SIGNED_NUMBER","preferred_spoken":["Sai số hiệu chỉnh là dương hai phẩy năm.", "Sai số hiệu chỉnh là hai phẩy năm."],"acceptable_spoken":["Sai số hiệu chỉnh là cộng hai phẩy năm."]}
+{"id":"decimal_math_006","raw_text":"Tổng doanh thu là 1.234,56 triệu đồng.","number":"1.234,56","role":"DECIMAL","preferred_spoken":["Tổng doanh thu là một nghìn hai trăm ba mươi tư phẩy năm sáu triệu đồng."]}
+{"id":"decimal_math_007","raw_text":"Hằng số pi xấp xỉ 3,14159.","number":"3,14159","role":"DECIMAL","preferred_spoken":["Hằng số pi xấp xỉ ba phẩy một bốn một năm chín."]}
+{"id":"decimal_math_008","raw_text":"Một triệu có thể viết là 10^6.","number":"10^6","role":"POWER","preferred_spoken":["Một triệu có thể viết là mười mũ sáu."]}
+{"id":"decimal_math_009","raw_text":"Diện tích hình vuông được tính bằng 2².","number":"2²","role":"POWER","preferred_spoken":["Diện tích hình vuông được tính bằng hai bình phương."],"acceptable_spoken":["Diện tích hình vuông được tính bằng hai mũ hai."]}
+{"id":"decimal_math_010","raw_text":"Căn bậc hai của 2 là một số vô tỉ.","number":"2","role":"RADICAL","preferred_spoken":["Căn bậc hai của hai là một số vô tỉ."]}
+{"id":"decimal_math_011","raw_text":"Giá trị bằng 1,2×10^-3.","number":"1,2×10^-3","role":"SCIENTIFIC_NOTATION","preferred_spoken":["Giá trị bằng một phẩy hai nhân mười mũ âm ba."]}
+{"id":"decimal_math_012","raw_text":"Ta có 2 + 3 = 5.","number":"2 + 3 = 5","role":"EQUATION","preferred_spoken":["Ta có hai cộng ba bằng năm."]}
+{"id":"decimal_math_013","raw_text":"Phép tính 7 ÷ 2 = 3,5.","number":"7 ÷ 2 = 3,5","role":"EQUATION","preferred_spoken":["Phép tính bảy chia hai bằng ba phẩy năm."]}
+{"id":"decimal_math_014","raw_text":"Biểu thức 4 : 2 = 2 rất đơn giản.","number":"4 : 2 = 2","role":"EQUATION","preferred_spoken":["Biểu thức bốn chia hai bằng hai rất đơn giản."]}
+{"id":"decimal_math_015","raw_text":"Độ chính xác đạt 10⁻⁶.","number":"10⁻⁶","role":"POWER","preferred_spoken":["Độ chính xác đạt mười mũ âm sáu."]}
+{"id":"year_date_001","raw_text":"Tôi sinh năm 1995.","number":"1995","role":"YEAR","preferred_spoken":["Tôi sinh năm một nghìn chín trăm chín mươi lăm."]}
+{"id":"year_date_002","raw_text":"Công ty được thành lập năm 2000.","number":"2000","role":"YEAR","preferred_spoken":["Công ty được thành lập năm hai nghìn."]}
+{"id":"year_date_003","raw_text":"Tôi sinh năm 2005.","number":"2005","role":"YEAR","preferred_spoken":["Tôi sinh năm hai nghìn không trăm linh năm.","Tôi sinh năm hai nghìn linh năm."],"acceptable_spoken":["Tôi sinh năm hai nghìn lẻ năm."]}
+{"id":"year_date_004","raw_text":"Dự án bắt đầu từ năm 2010.","number":"2010","role":"YEAR","preferred_spoken":["Dự án bắt đầu từ năm hai nghìn không trăm mười.","Dự án bắt đầu từ năm hai nghìn mười."]}
+{"id":"year_date_005","raw_text":"Báo cáo được công bố năm 2024.","number":"2024","role":"YEAR","preferred_spoken":["Báo cáo được công bố năm hai nghìn không trăm hai mươi tư.","Báo cáo được công bố năm hai nghìn hai mươi tư."]}
+{"id":"year_date_006","raw_text":"Sự kiện diễn ra vào năm 45 TCN.","number":"45","role":"YEAR_BCE","preferred_spoken":["Sự kiện diễn ra vào năm bốn mươi lăm trước Công nguyên."]}
+{"id":"year_date_007","raw_text":"Khóa học thuộc niên khóa 2025-2026.","number":"2025-2026","role":"YEAR_RANGE","preferred_spoken":["Khóa học thuộc niên khóa hai nghìn không trăm hai mươi lăm đến hai nghìn không trăm hai mươi sáu."],"acceptable_spoken":["Khóa học thuộc niên khóa hai nghìn hai mươi lăm đến hai nghìn hai mươi sáu."]}
+{"id":"year_date_008","raw_text":"Tài liệu này có từ năm 1873.","number":"1873","role":"YEAR","preferred_spoken":["Tài liệu này có từ năm một nghìn tám trăm bảy mươi ba.", "Tài liệu này có từ năm một nghìn tám trăm bảy ba."]}
+{"id":"year_date_009","raw_text":"Cuộc hẹn là ngày 03/09/2026.","number":"03/09/2026","role":"DATE","preferred_spoken":["Cuộc hẹn là ngày mùng ba tháng chín năm hai nghìn không trăm hai mươi sáu."],"acceptable_spoken":["Cuộc hẹn là ngày ba tháng chín năm hai nghìn không trăm hai mươi sáu."]}
+{"id":"year_date_010","raw_text":"Hóa đơn được lập ngày 9-1-2021.","number":"9-1-2021","role":"DATE","preferred_spoken":["Hóa đơn được lập ngày mùng chín tháng một năm hai nghìn không trăm hai mươi mốt."]}
+{"id":"year_date_011","raw_text":"Ngày 29/02/2024 là ngày nhuận.","number":"29/02/2024","role":"DATE","preferred_spoken":["Ngày hai mươi chín tháng hai năm hai nghìn không trăm hai mươi tư là ngày nhuận."]}
+{"id":"year_date_012","raw_text":"Chúng tôi nghỉ vào ngày 1/5.","number":"1/5","role":"DATE","preferred_spoken":["Chúng tôi nghỉ vào ngày mùng một tháng năm."],"acceptable_spoken":["Chúng tôi nghỉ vào ngày một tháng năm."]}
+{"id":"year_date_013","raw_text":"Ngày 30-4 là ngày lễ.","number":"30-4","role":"DATE","preferred_spoken":["Ngày ba mươi tháng tư là ngày lễ."]}
+{"id":"year_date_014","raw_text":"Hợp đồng hết hạn vào 12/2026.","number":"12/2026","role":"MONTH_YEAR","preferred_spoken":["Hợp đồng hết hạn vào tháng mười hai năm hai nghìn không trăm hai mươi sáu."]}
+{"id":"year_date_015","raw_text":"Kế hoạch áp dụng từ quý 2/2026.","number":"2/2026","role":"QUARTER_YEAR","preferred_spoken":["Kế hoạch áp dụng từ quý hai năm hai nghìn không trăm hai mươi sáu."]}
+{"id":"year_date_016","raw_text":"Hội nghị diễn ra ngày 25-26/12/2023.","number":"25-26/12/2023","role":"DATE_RANGE","preferred_spoken":["Hội nghị diễn ra ngày hai mươi lăm đến hai mươi sáu tháng mười hai năm hai nghìn không trăm hai mươi ba.", "Hội nghị diễn ra ngày hai lăm đến hai sáu tháng mười hai năm hai không hai ba."]}
+{"id":"year_date_017","raw_text":"Tệp được tạo ngày 01.02.2026.","number":"01.02.2026","role":"DATE","preferred_spoken":["Tệp được tạo ngày mùng một tháng hai năm hai nghìn không trăm hai mươi sáu."],"acceptable_spoken":["Tệp được tạo ngày mùng một tháng hai năm hai không hai sáu."]}
+{"id":"year_date_018","raw_text":"Tôi sẽ quay lại vào ngày 7.","number":"7","role":"DAY_OF_MONTH","preferred_spoken":["Tôi sẽ quay lại vào ngày mùng bảy."]}
+{"id":"year_date_019","raw_text":"Lịch khám ghi ngày 02/03.","number":"02/03","role":"DATE","preferred_spoken":["Lịch khám ghi ngày mùng hai tháng ba."]}
+{"id":"year_date_020","raw_text":"Hạn nộp là 31/12/2026.","number":"31/12/2026","role":"DATE","preferred_spoken":["Hạn nộp là ngày ba mốt tháng mười hai năm hai nghìn không trăm hai mươi sáu.", "Hạn nộp là ngày ba mốt tháng mười hai năm hai không hai sáu."]}
+{"id":"year_date_021","raw_text":"Hệ thống lưu ngày theo định dạng 2026-07-21.","number":"2026-07-21","role":"ISO_DATE","preferred_spoken":["Hệ thống lưu ngày theo định dạng năm hai không hai sáu tháng bảy ngày hai mốt."]}
+{"id":"year_date_022","raw_text":"Kỳ thi được tổ chức vào tháng 8/2025.","number":"8/2025","role":"MONTH_YEAR","preferred_spoken":["Kỳ thi được tổ chức vào tháng tám năm hai nghìn không trăm hai mươi lăm.", "Kỳ thi được tổ chức vào tháng tám năm hai không hai lăm."]}
+{"id":"year_date_023","raw_text":"Tết năm 2027 đến khá sớm.","number":"2027","role":"YEAR","preferred_spoken":["Tết năm hai nghìn không trăm hai mươi bảy đến khá sớm.","Tết năm hai không hai bảy đến khá sớm."]}
+{"id":"year_date_024","raw_text":"Bản thảo mang ngày 05/06/1999.","number":"05/06/1999","role":"DATE","preferred_spoken":["Bản thảo mang ngày năm tháng sáu năm một nghìn chín trăm chín mươi chín."]}
+{"id":"year_date_025","raw_text":"Lịch học kéo dài từ 02-06/09/2026.","number":"02-06/09/2026","role":"DATE_RANGE","preferred_spoken":["Lịch học kéo dài từ mùng hai đến mùng sáu tháng chín năm hai nghìn không trăm hai mươi sáu."],"acceptable_spoken":["Lịch học kéo dài từ mùng hai đến mùng sáu tháng chín năm hai không hai sáu."]}
+{"id":"time_duration_001","raw_text":"Hệ thống sao lưu lúc 00:00.","number":"00:00","role":"TIME","preferred_spoken":["Hệ thống sao lưu lúc không giờ."],"acceptable_spoken":["Hệ thống sao lưu lúc mười hai giờ đêm."]}
+{"id":"time_duration_002","raw_text":"Xe khởi hành lúc 06:05.","number":"06:05","role":"TIME","preferred_spoken":["Xe khởi hành lúc sáu giờ năm phút."],"acceptable_spoken":["Xe khởi hành lúc sáu giờ linh năm phút.","Xe khởi hành lúc sáu giờ lẻ năm phút."]}
+{"id":"time_duration_003","raw_text":"Tôi ăn sáng lúc 07:30.","number":"07:30","role":"TIME","preferred_spoken":["Tôi ăn sáng lúc bảy giờ ba mươi phút.","Tôi ăn sáng lúc bảy rưỡi."]}
+{"id":"time_duration_004","raw_text":"Cuộc họp bắt đầu lúc 9h.","number":"9h","role":"TIME","preferred_spoken":["Cuộc họp bắt đầu lúc chín giờ."]}
+{"id":"time_duration_005","raw_text":"Chuông reo lúc 12:00.","number":"12:00","role":"TIME","preferred_spoken":["Chuông reo lúc mười hai giờ."]}
+{"id":"time_duration_006","raw_text":"Chúng ta nghỉ trưa lúc 12:30.","number":"12:30","role":"TIME","preferred_spoken":["Chúng ta nghỉ trưa lúc mười hai giờ ba mươi phút.","Chúng ta nghỉ trưa lúc mười hai rưỡi."]}
+{"id":"time_duration_007","raw_text":"Chuyến bay cất cánh lúc 13:45.","number":"13:45","role":"TIME","preferred_spoken":["Chuyến bay cất cánh lúc mười ba giờ bốn mươi lăm phút.", "Chuyến bay cất cánh lúc mười ba giờ bốn lăm phút."],"acceptable_spoken":["Chuyến bay cất cánh lúc hai giờ kém mười lăm phút chiều."]}
+{"id":"time_duration_008","raw_text":"Bản tin phát lúc 18h05.","number":"18h05","role":"TIME","preferred_spoken":["Bản tin phát lúc mười tám giờ năm phút."],"acceptable_spoken":["Bản tin phát lúc mười tám giờ linh năm phút."]}
+{"id":"time_duration_009","raw_text":"Cửa hàng đóng cửa lúc 23:59.","number":"23:59","role":"TIME","preferred_spoken":["Cửa hàng đóng cửa lúc hai mươi ba giờ năm chín phút."]}
+{"id":"time_duration_010","raw_text":"Buổi phỏng vấn kéo dài 2:30:00.","number":"2:30:00","role":"DURATION","preferred_spoken":["Buổi phỏng vấn kéo dài hai giờ ba mươi phút."]}
+{"id":"time_duration_011","raw_text":"Hãy tua video đến 02:30.","number":"02:30","role":"MEDIA_TIMESTAMP","preferred_spoken":["Hãy tua video đến hai phút ba mươi giây."]}
+{"id":"time_duration_012","raw_text":"Bài chạy hoàn thành trong 01:02:03.","number":"01:02:03","role":"DURATION","preferred_spoken":["Bài chạy hoàn thành trong một giờ hai phút ba giây."]}
+{"id":"time_duration_013","raw_text":"Dịch vụ hỗ trợ hoạt động 24/7.","number":"24/7","role":"AVAILABILITY","preferred_spoken":["Dịch vụ hỗ trợ hoạt động hai mươi tư trên bảy.", "Dịch vụ hỗ trợ hoạt động hai tư trên bảy."]}
+{"id":"time_duration_014","raw_text":"Văn phòng mở cửa từ 9-11h.","number":"9-11h","role":"TIME_RANGE","preferred_spoken":["Văn phòng mở cửa từ chín đến mười một giờ."]}
+{"id":"time_duration_015","raw_text":"Đồng hồ đếm ngược còn 00:05.","number":"00:05","role":"DURATION","preferred_spoken":["Đồng hồ đếm ngược còn năm giây."]}
+{"id":"phone_001","raw_text":"Số điện thoại của tôi là 0903120508.","number":"0903120508","role":"PHONE","preferred_spoken":["Số điện thoại của tôi là không chín không ba, một hai không, năm không tám."]}
+{"id":"phone_002","raw_text":"Hãy gọi 0987 654 321.","number":"0987 654 321","role":"PHONE","preferred_spoken":["Hãy gọi không chín tám bảy, sáu năm bốn, ba hai một."]}
+{"id":"phone_003","raw_text":"Số liên hệ là 0912-345-678.","number":"0912-345-678","role":"PHONE","preferred_spoken":["Số liên hệ là không chín một hai, ba bốn năm, sáu bảy tám."]}
+{"id":"phone_004","raw_text":"Từ nước ngoài, hãy gọi +84 903 120 508.","number":"+84 903 120 508","role":"PHONE","preferred_spoken":["Từ nước ngoài, hãy gọi cộng tám bốn, chín không ba, một hai không, năm không tám."],"acceptable_spoken":["Từ nước ngoài, hãy gọi cộng tám mươi tư, chín không ba, một hai không, năm không tám."]}
+{"id":"phone_005","raw_text":"Tổng đài miễn phí là 1800 1090.","number":"1800 1090","role":"PHONE","preferred_spoken":["Tổng đài miễn phí là một tám không không, một không chín không."]}
+{"id":"phone_006","raw_text":"Gọi 1900 5454 49 để được tư vấn.","number":"1900 5454 49","role":"PHONE","preferred_spoken":["Gọi một chín không không, năm bốn năm bốn, bốn chín để được tư vấn."]}
+{"id":"phone_007","raw_text":"Khi có cháy, hãy gọi 114.","number":"114","role":"EMERGENCY_PHONE","preferred_spoken":["Khi có cháy, hãy gọi một một bốn."]}
+{"id":"phone_008","raw_text":"Khi cần cấp cứu, hãy gọi 115.","number":"115","role":"EMERGENCY_PHONE","preferred_spoken":["Khi cần cấp cứu, hãy gọi một một năm."]}
+{"id":"phone_009","raw_text":"Khi cần báo công an, hãy gọi 113.","number":"113","role":"EMERGENCY_PHONE","preferred_spoken":["Khi cần báo công an, hãy gọi một một ba."]}
+{"id":"phone_010","raw_text":"Số điện thoại bàn là 024 3825 1234.","number":"024 3825 1234","role":"PHONE","preferred_spoken":["Số điện thoại bàn là không hai bốn, ba tám hai năm, một hai ba bốn."]}
+{"id":"phone_011","raw_text":"Số máy lẻ của tôi là 203.","number":"203","role":"PHONE_EXTENSION","preferred_spoken":["Số máy lẻ của tôi là hai không ba."]}
+{"id":"phone_012","raw_text":"Hãy gọi đường dây 1080.","number":"1080","role":"SERVICE_PHONE","preferred_spoken":["Hãy gọi đường dây một không tám không."]}
+{"id":"phone_013","raw_text":"Số mới của cô ấy là 0326123456.","number":"0326123456","role":"PHONE","preferred_spoken":["Số mới của cô ấy là không ba hai sáu, một hai ba, bốn năm sáu."]}
+{"id":"phone_014","raw_text":"Liên hệ qua số 0888.123.456.","number":"0888.123.456","role":"PHONE","preferred_spoken":["Liên hệ qua số không tám tám tám, một hai ba, bốn năm sáu."]}
+{"id":"phone_015","raw_text":"Số fax là (028) 3910 1234.","number":"(028) 3910 1234","role":"PHONE","preferred_spoken":["Số fax là không hai tám, ba chín một không, một hai ba bốn."]}
+{"id":"identifier_001","raw_text":"Mã xác nhận là 105.","number":"105","role":"IDENTIFIER","preferred_spoken":["Mã xác nhận là một không năm."]}
+{"id":"identifier_002","raw_text":"Mã điệp viên là 007.","number":"007","role":"IDENTIFIER","preferred_spoken":["Mã điệp viên là không không bảy."]}
+{"id":"identifier_003","raw_text":"Mã dùng một lần của bạn là 038204.","number":"038204","role":"IDENTIFIER","preferred_spoken":["Mã dùng một lần của bạn là không ba tám hai không bốn."]}
+{"id":"identifier_004","raw_text":"Mã khóa hiện tại là 0000.","number":"0000","role":"PIN","preferred_spoken":["Mã khóa hiện tại là không không không không."]}
+{"id":"identifier_005","raw_text":"Mã sinh viên của tôi là 20251234.","number":"20251234","role":"STUDENT_ID","preferred_spoken":["Mã sinh viên của tôi là hai không hai năm một hai ba bốn."]}
+{"id":"identifier_006","raw_text":"Số tài khoản là 0011002345678.","number":"0011002345678","role":"ACCOUNT_NUMBER","preferred_spoken":["Số tài khoản là không không một một không không hai ba bốn năm sáu bảy tám."]}
+{"id":"identifier_007","raw_text":"Thẻ của bạn có bốn số cuối là 4821.","number":"4821","role":"CARD_SUFFIX","preferred_spoken":["Thẻ của bạn có bốn số cuối là bốn tám hai một."]}
+{"id":"identifier_008","raw_text":"Đơn hàng mang mã 105.","number":"105","role":"ORDER_ID","preferred_spoken":["Đơn hàng mang mã một không năm."]}
+{"id":"identifier_009","raw_text":"Mã vận đơn là 0123456789.","number":"0123456789","role":"TRACKING_ID","preferred_spoken":["Mã vận đơn là không một hai ba bốn năm sáu bảy tám chín."]}
+{"id":"identifier_010","raw_text":"Mã số thuế của công ty là 0101234567.","number":"0101234567","role":"TAX_ID","preferred_spoken":["Mã số thuế của công ty là không một không một hai ba bốn năm sáu bảy."]}
+{"id":"identifier_011","raw_text":"Số căn cước là 001205012345.","number":"001205012345","role":"NATIONAL_ID","preferred_spoken":["Số căn cước là không không một hai không năm không một hai ba bốn năm."]}
+{"id":"identifier_012","raw_text":"Số hộ chiếu là B1234567.","number":"B1234567","role":"PASSPORT_ID","preferred_spoken":["Số hộ chiếu là bê một hai ba bốn năm sáu bảy."]}
+{"id":"identifier_013","raw_text":"Hóa đơn số 000123 đã được thanh toán.","number":"000123","role":"INVOICE_ID","preferred_spoken":["Hóa đơn số không không không một hai ba đã được thanh toán."]}
+{"id":"identifier_014","raw_text":"Chuyến bay VN218 đã hạ cánh.","number":"VN218","role":"FLIGHT_ID","preferred_spoken":["Chuyến bay vê en hai một tám đã hạ cánh."]}
+{"id":"identifier_015","raw_text":"Tàu SE3 sắp vào ga.","number":"SE3","role":"TRAIN_ID","preferred_spoken":["Tàu ét e ba sắp vào ga."]}
+{"id":"identifier_016","raw_text":"Tôi học lớp 12A1.","number":"12A1","role":"CLASS_ID","preferred_spoken":["Tôi học lớp mười hai a một."]}
+{"id":"identifier_017","raw_text":"Biểu mẫu ghi mã bưu chính 100000.","number":"100000","role":"POSTAL_CODE","preferred_spoken":["Biểu mẫu ghi mã bưu chính một không không không không không."],"acceptable_spoken":["Biểu mẫu ghi mã bưu chính một trăm nghìn."]}
+{"id":"identifier_018","raw_text":"Số thứ tự của bạn là A05.","number":"A05","role":"QUEUE_ID","preferred_spoken":["Số thứ tự của bạn là a không năm."]}
+{"id":"identifier_019","raw_text":"Hồ sơ bệnh án có mã 00045.","number":"00045","role":"RECORD_ID","preferred_spoken":["Hồ sơ bệnh án có mã không không không bốn năm."]}
+{"id":"identifier_020","raw_text":"Lô sản xuất mang số 240701.","number":"240701","role":"BATCH_ID","preferred_spoken":["Lô sản xuất mang số hai bốn không bảy không một."]}
+{"id":"location_route_001","raw_text":"Tôi đang ở phòng 105.","number":"105","role":"ROOM","preferred_spoken":["Tôi đang ở phòng một không năm."],"acceptable_spoken":["Tôi đang ở phòng một trăm linh năm."]}
+{"id":"location_route_002","raw_text":"Phòng 007 nằm cuối hành lang.","number":"007","role":"ROOM","preferred_spoken":["Phòng không không bảy nằm cuối hành lang."]}
+{"id":"location_route_003","raw_text":"Cuộc họp được chuyển sang phòng 12.","number":"12","role":"ROOM","preferred_spoken":["Cuộc họp được chuyển sang phòng mười hai."],"acceptable_spoken":["Cuộc họp được chuyển sang phòng một hai."]}
+{"id":"location_route_004","raw_text":"Văn phòng ở phòng B203.","number":"B203","role":"ROOM","preferred_spoken":["Văn phòng ở phòng bê hai không ba."]}
+{"id":"location_route_005","raw_text":"Tôi sống ở căn hộ 1205.","number":"1205","role":"APARTMENT","preferred_spoken":["Tôi sống ở căn hộ mười hai không năm.","Tôi sống ở căn hộ một hai không năm."]}
+{"id":"location_route_006","raw_text":"Căn P2-1508 đang được sửa chữa.","number":"P2-1508","role":"APARTMENT","preferred_spoken":["Căn pê hai, mười lăm không tám đang được sửa chữa.","Căn pê hai, một năm không tám đang được sửa chữa."]}
+{"id":"location_route_007","raw_text":"Gia đình tôi ở số nhà 27.","number":"27","role":"HOUSE_NUMBER","preferred_spoken":["Gia đình tôi ở số nhà hai mươi bảy."]}
+{"id":"location_route_008","raw_text":"Địa chỉ là 27/5 phố Huế.","number":"27/5","role":"ADDRESS","preferred_spoken":["Địa chỉ là hai mươi bảy trên năm phố Huế."],"acceptable_spoken":["Địa chỉ là hai mươi bảy gạch chéo năm phố Huế.","Địa chỉ là hai mươi bảy xẹt năm phố Huế."]}
+{"id":"location_route_009","raw_text":"Cửa hàng ở số 12A đường Láng.","number":"12A","role":"ADDRESS","preferred_spoken":["Cửa hàng ở số mười hai a đường Láng."]}
+{"id":"location_route_010","raw_text":"Rẽ vào ngõ 8 ở bên phải.","number":"8","role":"ALLEY_NUMBER","preferred_spoken":["Rẽ vào ngõ tám ở bên phải."]}
+{"id":"location_route_011","raw_text":"Tôi đi xe buýt số 32.","number":"32","role":"BUS_ROUTE","preferred_spoken":["Tôi đi xe buýt số ba mươi hai.", "Tôi đi xe buýt số ba hai"]}
+{"id":"location_route_012","raw_text":"Xe buýt số 105 sắp tới.","number":"105","role":"BUS_ROUTE","preferred_spoken":["Xe buýt số một trăm linh năm sắp tới."],"acceptable_spoken":["Xe buýt số một không năm sắp tới."]}
+{"id":"location_route_013","raw_text":"Tai nạn xảy ra trên quốc lộ 1A.","number":"1A","role":"ROAD_ROUTE","preferred_spoken":["Tai nạn xảy ra trên quốc lộ một a."]}
+{"id":"location_route_014","raw_text":"Công trường nằm tại Km 15+200.","number":"15+200","role":"KILOMETER_MARKER","preferred_spoken":["Công trường nằm tại ki lô mét mười lăm cộng hai trăm."]}
+{"id":"location_route_015","raw_text":"Biển số xe là 30A-123.45.","number":"30A-123.45","role":"LICENSE_PLATE","preferred_spoken":["Biển số xe là ba mươi a, một hai ba bốn năm."]}
+{"id":"location_route_016","raw_text":"Chiếc xe mang biển 51K-888.88.","number":"51K-888.88","role":"LICENSE_PLATE","preferred_spoken":["Chiếc xe mang biển năm mươi mốt ca, tám tám tám, tám tám."]}
+{"id":"location_route_017","raw_text":"Ghế 12A nằm cạnh cửa sổ.","number":"12A","role":"SEAT","preferred_spoken":["Ghế mười hai a nằm cạnh cửa sổ."]}
+{"id":"location_route_018","raw_text":"Hành khách ra cửa 03.","number":"03","role":"GATE","preferred_spoken":["Hành khách ra cửa không ba."],"acceptable_spoken":["Hành khách ra cửa số ba."]}
+{"id":"location_route_019","raw_text":"Nhân viên mời khách ở bàn 08.","number":"08","role":"TABLE_NUMBER","preferred_spoken":["Nhân viên mời khách ở bàn số tám."],"acceptable_spoken":["Nhân viên mời khách ở bàn không tám."]}
+{"id":"location_route_020","raw_text":"Tủ đồ 021 đang khóa.","number":"021","role":"LOCKER","preferred_spoken":["Tủ đồ không hai một đang khóa."],"acceptable_spoken":["Tủ đồ số hai mươi mốt đang khóa."]}
+{"id":"money_001","raw_text":"Cuốn sách có giá 12.000đ.","number":"12.000đ","role":"MONEY","preferred_spoken":["Cuốn sách có giá mười hai nghìn đồng."]}
+{"id":"money_002","raw_text":"Chiếc máy có giá 1.250.000₫.","number":"1.250.000₫","role":"MONEY","preferred_spoken":["Chiếc máy có giá một triệu hai trăm năm mươi nghìn đồng."]}
+{"id":"money_003","raw_text":"Vé gửi xe là 5k.","number":"5k","role":"MONEY","preferred_spoken":["Vé gửi xe là năm nghìn đồng."],"acceptable_spoken":["Vé gửi xe là năm ca."]}
+{"id":"money_004","raw_text":"Cốc cà phê này giá 50k.","number":"50k","role":"MONEY","preferred_spoken":["Cốc cà phê này giá năm mươi nghìn đồng."],"acceptable_spoken":["Cốc cà phê này giá năm mươi ca."]}
+{"id":"money_005","raw_text":"Phí dịch vụ là 1,5 triệu đồng.","number":"1,5 triệu đồng","role":"MONEY","preferred_spoken":["Phí dịch vụ là một phẩy năm triệu đồng."],"acceptable_spoken":["Phí dịch vụ là một triệu rưỡi."]}
+{"id":"money_006","raw_text":"Doanh nghiệp huy động 2 tỷ đồng.","number":"2 tỷ đồng","role":"MONEY","preferred_spoken":["Doanh nghiệp huy động hai tỷ đồng."]}
+{"id":"money_007","raw_text":"Đơn hàng này có phí vận chuyển 0đ.","number":"0đ","role":"MONEY","preferred_spoken":["Đơn hàng này có phí vận chuyển không đồng."]}
+{"id":"money_008","raw_text":"Sản phẩm được bán với giá 99.900 đồng.","number":"99.900 đồng","role":"MONEY","preferred_spoken":["Sản phẩm được bán với giá chín mươi chín nghìn chín trăm đồng."]}
+{"id":"money_009","raw_text":"Phí đăng ký là 12,5 USD.","number":"12,5 USD","role":"MONEY","preferred_spoken":["Phí đăng ký là mười hai phẩy năm đô la Mỹ."],"acceptable_spoken":["Phí đăng ký là mười hai phẩy năm u ét đê."]}
+{"id":"money_010","raw_text":"Chiếc áo có giá $25.","number":"$25","role":"MONEY","preferred_spoken":["Chiếc áo có giá hai mươi lăm đô la."]}
+{"id":"money_011","raw_text":"Tôi đổi 100 USD sang tiền Việt.","number":"100 USD","role":"MONEY","preferred_spoken":["Tôi đổi một trăm đô la Mỹ sang tiền Việt."],"acceptable_spoken":["Tôi đổi một trăm u ét đê sang tiền Việt."]}
+{"id":"money_012","raw_text":"Tiền đặt cọc là 2.000 HKD.","number":"2.000 HKD","role":"MONEY","preferred_spoken":["Tiền đặt cọc là hai nghìn đô la Hồng Kông."],"acceptable_spoken":["Tiền đặt cọc là hai nghìn hát ca đê."]}
+{"id":"money_013","raw_text":"Món đồ này có giá HK$500.","number":"HK$500","role":"MONEY","preferred_spoken":["Món đồ này có giá năm trăm đô la Hồng Kông."]}
+{"id":"money_014","raw_text":"Giá niêm yết là €19,99.","number":"€19,99","role":"MONEY","preferred_spoken":["Giá niêm yết là mười chín phẩy chín chín ơ rô."]}
+{"id":"money_015","raw_text":"Bữa trưa ở Nhật hết 1.000¥.","number":"1.000¥","role":"MONEY","preferred_spoken":["Bữa trưa ở Nhật hết một nghìn yên."]}
+{"id":"money_016","raw_text":"Tôi còn đúng 500 đồng.","number":"500 đồng","role":"MONEY","preferred_spoken":["Tôi còn đúng năm trăm đồng."]}
+{"id":"money_017","raw_text":"Mức giá dao động từ 10.000-15.000đ.","number":"10.000-15.000đ","role":"MONEY_RANGE","preferred_spoken":["Mức giá dao động từ mười nghìn đến mười lăm nghìn đồng."]}
+{"id":"money_018","raw_text":"Mức lương đề xuất là 25tr/tháng.","number":"25tr/tháng","role":"MONEY_RATE","preferred_spoken":["Mức lương đề xuất là hai mươi lăm triệu đồng mỗi tháng."],"acceptable_spoken":["Mức lương đề xuất là hai mươi lăm triệu một tháng."]}
+{"id":"money_019","raw_text":"Căn hộ được rao giá 1,2 tỉ đồng.","number":"1,2 tỉ đồng","role":"MONEY","preferred_spoken":["Căn hộ được rao giá một phẩy hai tỷ đồng."],"acceptable_spoken":["Căn hộ được rao giá một tỷ hai trăm triệu đồng."]}
+{"id":"money_020","raw_text":"Mỗi người được hoàn lại 35.500₫.","number":"35.500₫","role":"MONEY","preferred_spoken":["Mỗi người được hoàn lại ba mươi lăm nghìn năm trăm đồng."]}
+{"id":"percent_ratio_001","raw_text":"Doanh thu tăng 6,5%.","number":"6,5%","role":"PERCENT","preferred_spoken":["Doanh thu tăng sáu phẩy năm phần trăm."]}
+{"id":"percent_ratio_002","raw_text":"Lãi suất chỉ là 0,05%.","number":"0,05%","role":"PERCENT","preferred_spoken":["Lãi suất chỉ là không phẩy không năm phần trăm."]}
+{"id":"percent_ratio_003","raw_text":"Pin đã sạc đến 100%.","number":"100%","role":"PERCENT","preferred_spoken":["Pin đã sạc đến một trăm phần trăm."]}
+{"id":"percent_ratio_004","raw_text":"Cổ phiếu giảm -2,3%.","number":"-2,3%","role":"SIGNED_PERCENT","preferred_spoken":["Cổ phiếu giảm âm hai phẩy ba phần trăm."],"acceptable_spoken":["Cổ phiếu giảm hai phẩy ba phần trăm."]}
+{"id":"percent_ratio_005","raw_text":"Chỉ số thay đổi +4%.","number":"+4%","role":"SIGNED_PERCENT","preferred_spoken":["Chỉ số thay đổi dương bốn phần trăm."],"acceptable_spoken":["Chỉ số tăng bốn phần trăm."]}
+{"id":"percent_ratio_006","raw_text":"Tỷ lệ lỗi nằm trong khoảng 3-5%.","number":"3-5%","role":"PERCENT_RANGE","preferred_spoken":["Tỷ lệ lỗi nằm trong khoảng ba đến năm phần trăm."]}
+{"id":"percent_ratio_007","raw_text":"Màn hình có tỷ lệ 16:9.","number":"16:9","role":"RATIO","preferred_spoken":["Màn hình có tỷ lệ mười sáu trên chín."]}
+{"id":"percent_ratio_008","raw_text":"Hai đội đang hòa với tỷ số 1:1.","number":"1:1","role":"SCORE","preferred_spoken":["Hai đội đang hòa với tỷ số một đều."],"acceptable_spoken":["Hai đội đang hòa với tỷ số một một."]}
+{"id":"percent_ratio_009","raw_text":"Bản đồ dùng tỷ lệ 1:100.","number":"1:100","role":"RATIO","preferred_spoken":["Bản đồ dùng tỷ lệ một trên một trăm."]}
+{"id":"percent_ratio_010","raw_text":"Huyết áp của bệnh nhân là 120/80.","number":"120/80","role":"MEDICAL_RATIO","preferred_spoken":["Huyết áp của bệnh nhân là một trăm hai mươi trên tám mươi."]}
+{"id":"percent_ratio_011","raw_text":"Thị lực của cô ấy đạt 10/10.","number":"10/10","role":"MEDICAL_RATIO","preferred_spoken":["Thị lực của cô ấy đạt mười trên mười."]}
+{"id":"percent_ratio_012","raw_text":"Tỷ lệ P/E hiện là 15,2.","number":"15,2","role":"FINANCIAL_RATIO","preferred_spoken":["Tỷ lệ pê trên e hiện là mười lăm phẩy hai."]}
+{"id":"percent_ratio_013","raw_text":"Xác suất thành công được ước tính là 0,95.","number":"0,95","role":"PROBABILITY","preferred_spoken":["Xác suất thành công được ước tính là không phẩy chín năm."]}
+{"id":"percent_ratio_014","raw_text":"Điểm trung bình của bạn ấy là 3,8/4,0.","number":"3,8/4,0","role":"SCORE_SCALE","preferred_spoken":["Điểm trung bình của bạn ấy là ba phẩy tám trên bốn phẩy không."]}
+{"id":"percent_ratio_015","raw_text":"Tỷ lệ pha là 1:3.","number":"1:3","role":"RATIO","preferred_spoken":["Tỷ lệ pha là một trên ba."]}
+{"id":"measure_001","raw_text":"Chiếc vali nặng 12kg.","number":"12kg","role":"MEASURE","preferred_spoken":["Chiếc vali nặng mười hai ki lô gam."]}
+{"id":"measure_002","raw_text":"Em bé nặng 1,5 kg.","number":"1,5 kg","role":"MEASURE","preferred_spoken":["Em bé nặng một phẩy năm ki lô gam."],"acceptable_spoken":["Em bé nặng một kí rưỡi."]}
+{"id":"measure_003","raw_text":"Gói bột có khối lượng 250g.","number":"250g","role":"MEASURE","preferred_spoken":["Gói bột có khối lượng hai trăm năm mươi gam."]}
+{"id":"measure_004","raw_text":"Bình chứa 1,25 lít nước.","number":"1,25 lít","role":"MEASURE","preferred_spoken":["Bình chứa một phẩy hai năm lít nước."]}
+{"id":"measure_005","raw_text":"Chai này có dung tích 500ml.","number":"500ml","role":"MEASURE","preferred_spoken":["Chai này có dung tích năm trăm mi li lít."]}
+{"id":"measure_006","raw_text":"Quãng đường dài 12km.","number":"12km","role":"MEASURE","preferred_spoken":["Quãng đường dài mười hai ki lô mét."]}
+{"id":"measure_007","raw_text":"Xe chạy với tốc độ 120km/h.","number":"120km/h","role":"MEASURE","preferred_spoken":["Xe chạy với tốc độ một trăm hai mươi ki lô mét trên giờ."]}
+{"id":"measure_008","raw_text":"Chiều cao của cô ấy là 1,63m.","number":"1,63m","role":"MEASURE","preferred_spoken":["Chiều cao của cô ấy là một phẩy sáu ba mét."],"acceptable_spoken":["Chiều cao của cô ấy là một mét sáu mươi ba."]}
+{"id":"measure_009","raw_text":"Chiếc hộp rộng 15cm.","number":"15cm","role":"MEASURE","preferred_spoken":["Chiếc hộp rộng mười lăm xen ti mét."]}
+{"id":"measure_010","raw_text":"Căn phòng rộng 32m².","number":"32m²","role":"MEASURE","preferred_spoken":["Căn phòng rộng ba mươi hai mét vuông."]}
+{"id":"measure_011","raw_text":"Bể có thể tích 45m³.","number":"45m³","role":"MEASURE","preferred_spoken":["Bể có thể tích bốn mươi lăm mét khối."]}
+{"id":"measure_012","raw_text":"Nhiệt độ cơ thể là 37°C.","number":"37°C","role":"TEMPERATURE","preferred_spoken":["Nhiệt độ cơ thể là ba mươi bảy độ xê."]}
+{"id":"measure_013","raw_text":"Ngoài trời đang là -5°C.","number":"-5°C","role":"TEMPERATURE","preferred_spoken":["Ngoài trời đang là âm năm độ xê."]}
+{"id":"measure_014","raw_text":"Lò được đặt ở 90°F.","number":"90°F","role":"TEMPERATURE","preferred_spoken":["Lò được đặt ở chín mươi độ ép."]}
+{"id":"measure_015","raw_text":"Điện áp dân dụng là 220V.","number":"220V","role":"MEASURE","preferred_spoken":["Điện áp dân dụng là hai trăm hai mươi vôn."]}
+{"id":"measure_016","raw_text":"Dòng điện có cường độ 2A.","number":"2A","role":"MEASURE","preferred_spoken":["Dòng điện có cường độ hai am pe."]}
+{"id":"measure_017","raw_text":"Nguồn điện hoạt động ở 50Hz.","number":"50Hz","role":"MEASURE","preferred_spoken":["Nguồn điện hoạt động ở năm mươi héc."]}
+{"id":"measure_018","raw_text":"Máy có 8GB bộ nhớ.","number":"8GB","role":"DIGITAL_STORAGE","preferred_spoken":["Máy có tám ghi ga bai bộ nhớ."],"acceptable_spoken":["Máy có tám gi ga bai bộ nhớ."]}
+{"id":"measure_019","raw_text":"Tệp có dung lượng 256MB.","number":"256MB","role":"DIGITAL_STORAGE","preferred_spoken":["Tệp có dung lượng hai trăm năm mươi sáu mê ga bai."]}
+{"id":"measure_020","raw_text":"Ổ cứng có dung lượng 2TB.","number":"2TB","role":"DIGITAL_STORAGE","preferred_spoken":["Ổ cứng có dung lượng hai tê ra bai."]}
+{"id":"fraction_range_001","raw_text":"Tôi đã ăn 1/2 chiếc bánh.","number":"1/2","role":"FRACTION","preferred_spoken":["Tôi đã ăn một nửa chiếc bánh."],"acceptable_spoken":["Tôi đã ăn một phần hai chiếc bánh."]}
+{"id":"fraction_range_002","raw_text":"Bể đang đầy 3/4.","number":"3/4","role":"FRACTION","preferred_spoken":["Bể đang đầy ba phần tư."]}
+{"id":"fraction_range_003","raw_text":"Có 2/3 số người đồng ý.","number":"2/3","role":"FRACTION","preferred_spoken":["Có hai phần ba số người đồng ý."]}
+{"id":"fraction_range_004","raw_text":"Bài toán yêu cầu tính 5/8.","number":"5/8","role":"FRACTION","preferred_spoken":["Bài toán yêu cầu tính năm phần tám."]}
+{"id":"fraction_range_005","raw_text":"Tôi đợi khoảng 3/4 giờ.","number":"3/4 giờ","role":"FRACTIONAL_DURATION","preferred_spoken":["Tôi đợi khoảng ba phần tư giờ."],"acceptable_spoken":["Tôi đợi khoảng bốn mươi lăm phút."]}
+{"id":"fraction_range_006","raw_text":"Mỗi ngày dùng từ 2-3 lần.","number":"2-3 lần","role":"RANGE","preferred_spoken":["Mỗi ngày dùng từ hai đến ba lần."]}
+{"id":"fraction_range_007","raw_text":"Vui lòng đọc các trang 12–15.","number":"12–15","role":"RANGE","preferred_spoken":["Vui lòng đọc các trang mười hai đến mười lăm."]}
+{"id":"fraction_range_008","raw_text":"Dữ liệu được thu thập trong giai đoạn 2020–2025.","number":"2020–2025","role":"YEAR_RANGE","preferred_spoken":["Dữ liệu được thu thập trong giai đoạn hai nghìn không trăm hai mươi đến hai nghìn không trăm hai mươi lăm."],"acceptable_spoken":["Dữ liệu được thu thập trong giai đoạn hai nghìn hai mươi đến hai nghìn hai mươi lăm."]}
+{"id":"fraction_range_009","raw_text":"Nhiệt độ dao động từ -5–3°C.","number":"-5–3°C","role":"MEASURE_RANGE","preferred_spoken":["Nhiệt độ dao động từ âm năm đến ba độ xê."]}
+{"id":"fraction_range_010","raw_text":"Khoảng tin cậy nằm trong đoạn [0,1].","number":"[0,1]","role":"INTERVAL","preferred_spoken":["Khoảng tin cậy nằm trong đoạn từ không đến một."],"acceptable_spoken":["Khoảng tin cậy nằm trong đoạn đóng từ không đến một."]}
+{"id":"version_ordinal_sport_001","raw_text":"Ứng dụng đang chạy phiên bản 3.12.1.","number":"3.12.1","role":"VERSION","preferred_spoken":["Ứng dụng đang chạy phiên bản ba chấm mười hai chấm một."],"acceptable_spoken":["Ứng dụng đang chạy phiên bản ba chấm một hai chấm một."]}
+{"id":"version_ordinal_sport_002","raw_text":"Dự án sử dụng Python 3.12.","number":"3.12","role":"VERSION","preferred_spoken":["Dự án sử dụng Python ba chấm mười hai."],"acceptable_spoken":["Dự án sử dụng Python ba chấm một hai."]}
+{"id":"version_ordinal_sport_003","raw_text":"Trang web trả về lỗi 404.","number":"404","role":"ERROR_CODE","preferred_spoken":["Trang web trả về lỗi bốn không bốn."],"acceptable_spoken":["Trang web trả về lỗi bốn trăm linh bốn."]}
+{"id":"version_ordinal_sport_004","raw_text":"Đội chủ nhà thắng 3-1.","number":"3-1","role":"SCORE","preferred_spoken":["Đội chủ nhà thắng ba một."],"acceptable_spoken":["Đội chủ nhà thắng với tỷ số ba một."]}
+{"id":"version_ordinal_sport_005","raw_text":"Sự kiện này xảy ra vào thế kỷ XXI.","number":"XXI","role":"ORDINAL_ROMAN","preferred_spoken":["Sự kiện này xảy ra vào thế kỷ hai mươi mốt."]}

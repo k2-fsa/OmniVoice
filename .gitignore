@@ -32,3 +32,10 @@ examples/exp*
 !/experiments/unicode_audio_tests/
 !/experiments/unicode_audio_tests/run_experiment.py
 /experiments/unicode_audio_tests/results/
+!/experiments/vi_number_normalization/
+!/experiments/vi_number_normalization/data/
+!/experiments/vi_number_normalization/data/pilot.jsonl
+!/experiments/vi_number_normalization/role_groups.json
+!/experiments/vi_number_normalization/diagnostic.py
+!/experiments/vi_number_normalization/README.md
+/experiments/vi_number_normalization/generated/
