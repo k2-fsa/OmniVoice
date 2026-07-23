@@ -14,6 +14,11 @@ build/
 *.so
 /.cache*
 /exp*/
+!/experiments/
+/experiments/*
+!/experiments/vietnamese_text_normalization/
+!/experiments/vietnamese_text_normalization/**
+/experiments/vietnamese_text_normalization/__pycache__/
 /.tmp/
 /results/
 /data/
@@ -28,3 +33,13 @@ examples/exp*
 .claude/
 *.wav
 *.jsonl
+!experiments/vietnamese_text_normalization/regressions.jsonl
+!experiments/vietnamese_text_normalization/**/*.jsonl
+!experiments/vietnamese_text_normalization/results/
+!experiments/vietnamese_text_normalization/results/**
+!experiments/tn_value_gate/
+!experiments/tn_value_gate/**
+
+# Python cache
+__pycache__/
+*.py[cod]
