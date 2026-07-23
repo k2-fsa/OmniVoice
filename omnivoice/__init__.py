@@ -25,10 +25,12 @@ from omnivoice.models.omnivoice import (
     OmniVoiceGenerationConfig,
     VoiceClonePrompt,
 )
+from omnivoice.utils.text import normalize_for_inference
 
 __all__ = [
     "OmniVoice",
     "OmniVoiceConfig",
     "OmniVoiceGenerationConfig",
     "VoiceClonePrompt",
+    "normalize_for_inference",
 ]

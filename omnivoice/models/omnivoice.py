@@ -72,7 +72,7 @@ from omnivoice.utils.lang_map import LANG_IDS, LANG_NAMES
 from omnivoice.utils.text import (
     add_punctuation,
     chunk_text_punctuation,
-    normalize_text as _normalize_text,
+    normalize_for_inference,
 )
 from omnivoice.utils.voice_design import (
     _INSTRUCT_ALL_VALID,
@@ -1059,7 +1059,10 @@ class OmniVoice(PreTrainedModel):
         # before duration estimation so the estimate matches the spoken form.
         if normalize_text:
             text_list = [
-                _normalize_text(t, lang) for t, lang in zip(text_list, language_list)
+                normalize_for_inference(
+                    t, language=lang, enabled=True, field="target"
+                )
+                for t, lang in zip(text_list, language_list)
             ]
         instruct_list = self._ensure_list(instruct, batch_size)
         for i, s in enumerate(instruct_list):

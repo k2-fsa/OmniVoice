@@ -169,6 +169,7 @@ def build_demo(
         duration,
         preprocess_prompt,
         postprocess_output,
+        normalize_text,
         mode,
         ref_text=None,
     ):
@@ -186,7 +187,10 @@ def build_demo(
         lang = language if (language and language != "Auto") else None
 
         kw: Dict[str, Any] = dict(
-            text=text.strip(), language=lang, generation_config=gen_config
+            text=text.strip(),
+            language=lang,
+            generation_config=gen_config,
+            normalize_text=bool(normalize_text),
         )
 
         if speed is not None and float(speed) != 1.0:
@@ -291,7 +295,12 @@ def build_demo(
                 value=True,
                 info="Remove long silences from generated audio.",
             )
-        return ns, gs, dn, sp, du, pp, po
+            tn = gr.Checkbox(
+                label="Chuẩn hóa tiếng Việt",
+                value=False,
+                info="Chuẩn hóa target text trước khi tổng hợp. Mặc định: tắt.",
+            )
+        return ns, gs, dn, sp, du, pp, po, tn
 
     with gr.Blocks(theme=theme, css=css, title="OmniVoice Demo") as demo:
         gr.Markdown(
@@ -347,6 +356,7 @@ by Xiaomi AI Lab Next-gen Kaldi team.
                             vc_du,
                             vc_pp,
                             vc_po,
+                            vc_tn,
                         ) = _gen_settings()
                         vc_btn = gr.Button("Generate / 生成", variant="primary")
                     with gr.Column(scale=1):
@@ -357,7 +367,19 @@ by Xiaomi AI Lab Next-gen Kaldi team.
                         vc_status = gr.Textbox(label="Status / 状态", lines=2)
 
                 def _clone_fn(
-                    text, lang, ref_aud, ref_text, instruct, ns, gs, dn, sp, du, pp, po
+                    text,
+                    lang,
+                    ref_aud,
+                    ref_text,
+                    instruct,
+                    ns,
+                    gs,
+                    dn,
+                    sp,
+                    du,
+                    pp,
+                    po,
+                    tn,
                 ):
                     return _gen(
                         text,
@@ -371,6 +393,7 @@ by Xiaomi AI Lab Next-gen Kaldi team.
                         du,
                         pp,
                         po,
+                        tn,
                         mode="clone",
                         ref_text=ref_text or None,
                     )
@@ -390,6 +413,7 @@ by Xiaomi AI Lab Next-gen Kaldi team.
                         vc_du,
                         vc_pp,
                         vc_po,
+                        vc_tn,
                     ],
                     outputs=[vc_audio, vc_status],
                 )
@@ -427,6 +451,7 @@ by Xiaomi AI Lab Next-gen Kaldi team.
                             vd_du,
                             vd_pp,
                             vd_po,
+                            vd_tn,
                         ) = _gen_settings()
                         vd_btn = gr.Button("Generate / 生成", variant="primary")
                     with gr.Column(scale=1):
@@ -458,7 +483,7 @@ by Xiaomi AI Lab Next-gen Kaldi team.
                             parts.append(v)
                     return ", ".join(parts)
 
-                def _design_fn(text, lang, ns, gs, dn, sp, du, pp, po, *groups):
+                def _design_fn(text, lang, ns, gs, dn, sp, du, pp, po, tn, *groups):
                     return _gen(
                         text,
                         lang,
@@ -471,6 +496,7 @@ by Xiaomi AI Lab Next-gen Kaldi team.
                         du,
                         pp,
                         po,
+                        tn,
                         mode="design",
                     )
 
@@ -486,6 +512,7 @@ by Xiaomi AI Lab Next-gen Kaldi team.
                         vd_du,
                         vd_pp,
                         vd_po,
+                        vd_tn,
                     ]
                     + vd_groups,
                     outputs=[vd_audio, vd_status],

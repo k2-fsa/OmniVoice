@@ -1,0 +1,1 @@
+"""Reproducible VietNormalizer integration benchmark."""

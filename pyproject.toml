@@ -41,6 +41,7 @@ dependencies = [
     "numpy",
     "soundfile",
     "librosa",
+    "vietnormalizer",
 ]
 
 [project.optional-dependencies]
@@ -79,6 +80,7 @@ torch = [
 torchaudio = [
   { index = "pytorch-cuda", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
 ]
+vietnormalizer = { git = "https://github.com/khanhhuyenpham/vietnormalizer.git", rev = "c72e30168e746993006688eff42161a1b450f43e" }
 
 [[tool.uv.index]]
 name = "pytorch-cuda"

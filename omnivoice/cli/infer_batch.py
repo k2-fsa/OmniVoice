@@ -192,6 +192,11 @@ def get_parser():
         help="Language id to use when test_list JSONL entries do not contain "
         "a language_id field.",
     )
+    parser.add_argument(
+        "--normalize-text",
+        action="store_true",
+        help="Normalize target text before synthesis. Disabled by default.",
+    )
     return parser
 
 
@@ -363,6 +368,7 @@ def cluster_samples_by_batch_size(
 def run_inference_batch(
     batch_samples: List[Tuple],
     res_dir: str,
+    normalize_text: bool = False,
     **gen_kwargs,
 ) -> List[Tuple]:
     global worker_model
@@ -398,6 +404,7 @@ def run_inference_batch(
         duration=durations if any(d is not None for d in durations) else None,
         speed=speeds if any(s is not None for s in speeds) else None,
         instruct=instructs if any(i is not None for i in instructs) else None,
+        normalize_text=normalize_text,
         **gen_kwargs,
     )
     batch_synth_time = time.time() - start_time

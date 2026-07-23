@@ -19,6 +19,9 @@ build/
 !/experiments/vietnamese_text_normalization/
 !/experiments/vietnamese_text_normalization/**
 /experiments/vietnamese_text_normalization/__pycache__/
+!/experiments/vietnormalizer_integration/
+!/experiments/vietnormalizer_integration/**
+/experiments/vietnormalizer_integration/__pycache__/
 /.tmp/
 /results/
 /data/
@@ -39,6 +42,7 @@ examples/exp*
 !experiments/vietnamese_text_normalization/results/**
 !experiments/tn_value_gate/
 !experiments/tn_value_gate/**
+!experiments/vietnormalizer_integration/**/*.jsonl
 
 # Python cache
 __pycache__/

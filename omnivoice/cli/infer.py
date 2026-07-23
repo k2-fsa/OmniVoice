@@ -102,6 +102,11 @@ def get_parser() -> argparse.ArgumentParser:
     parser.add_argument("--position_temperature", type=float, default=5.0)
     parser.add_argument("--class_temperature", type=float, default=0.0)
     parser.add_argument(
+        "--normalize-text",
+        action="store_true",
+        help="Normalize target text before synthesis. Disabled by default.",
+    )
+    parser.add_argument(
         "--device",
         type=str,
         default=None,
@@ -129,6 +134,7 @@ def main():
         ref_audio=args.ref_audio,
         ref_text=args.ref_text,
         instruct=args.instruct,
+        normalize_text=args.normalize_text,
         duration=args.duration,
         num_step=args.num_step,
         guidance_scale=args.guidance_scale,
