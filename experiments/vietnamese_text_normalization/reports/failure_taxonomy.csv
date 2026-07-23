@@ -1,0 +1,69 @@
+split,method,category,count
+development,contextual_rule,contextual ambiguity,22
+development,contextual_rule,incorrect cardinal morphology,10
+development,contextual_rule,punctuation/span corruption or unsupported form,35
+development,contextual_rule,questionable gold label,1
+development,contextual_rule,structural parsing failure,15
+development,contextual_rule,unsupported semiotic class,39
+development,direct_num2words,contextual ambiguity,32
+development,direct_num2words,incorrect cardinal morphology,12
+development,direct_num2words,punctuation/span corruption or unsupported form,44
+development,direct_num2words,questionable gold label,1
+development,direct_num2words,structural parsing failure,33
+development,direct_num2words,unsupported semiotic class,39
+development,identity,contextual ambiguity,34
+development,identity,incorrect cardinal morphology,24
+development,identity,punctuation/span corruption or unsupported form,48
+development,identity,questionable gold label,1
+development,identity,structural parsing failure,35
+development,identity,unsupported semiotic class,39
+development,omnivoice_current,contextual ambiguity,22
+development,omnivoice_current,incorrect cardinal morphology,10
+development,omnivoice_current,punctuation/span corruption or unsupported form,35
+development,omnivoice_current,questionable gold label,1
+development,omnivoice_current,structural parsing failure,15
+development,omnivoice_current,unsupported semiotic class,39
+development,omnivoice_fallback,contextual ambiguity,32
+development,omnivoice_fallback,incorrect cardinal morphology,12
+development,omnivoice_fallback,punctuation/span corruption or unsupported form,44
+development,omnivoice_fallback,questionable gold label,1
+development,omnivoice_fallback,structural parsing failure,33
+development,omnivoice_fallback,unsupported semiotic class,39
+development,soe_vinorm,package/runtime failure,181
+development,vietnormalizer,contextual ambiguity,34
+development,vietnormalizer,incorrect cardinal morphology,24
+development,vietnormalizer,punctuation/span corruption or unsupported form,48
+development,vietnormalizer,questionable gold label,1
+development,vietnormalizer,structural parsing failure,35
+development,vietnormalizer,unsupported semiotic class,39
+test,contextual_rule,contextual ambiguity,2
+test,contextual_rule,incorrect cardinal morphology,1
+test,contextual_rule,punctuation/span corruption or unsupported form,1
+test,contextual_rule,structural parsing failure,6
+test,contextual_rule,unsupported semiotic class,3
+test,direct_num2words,contextual ambiguity,2
+test,direct_num2words,incorrect cardinal morphology,1
+test,direct_num2words,punctuation/span corruption or unsupported form,1
+test,direct_num2words,structural parsing failure,8
+test,direct_num2words,unsupported semiotic class,3
+test,identity,contextual ambiguity,2
+test,identity,incorrect cardinal morphology,5
+test,identity,punctuation/span corruption or unsupported form,1
+test,identity,structural parsing failure,8
+test,identity,unsupported semiotic class,3
+test,omnivoice_current,contextual ambiguity,2
+test,omnivoice_current,incorrect cardinal morphology,1
+test,omnivoice_current,punctuation/span corruption or unsupported form,1
+test,omnivoice_current,structural parsing failure,6
+test,omnivoice_current,unsupported semiotic class,3
+test,omnivoice_fallback,contextual ambiguity,2
+test,omnivoice_fallback,incorrect cardinal morphology,1
+test,omnivoice_fallback,punctuation/span corruption or unsupported form,1
+test,omnivoice_fallback,structural parsing failure,8
+test,omnivoice_fallback,unsupported semiotic class,3
+test,soe_vinorm,package/runtime failure,19
+test,vietnormalizer,contextual ambiguity,2
+test,vietnormalizer,incorrect cardinal morphology,5
+test,vietnormalizer,punctuation/span corruption or unsupported form,1
+test,vietnormalizer,structural parsing failure,8
+test,vietnormalizer,unsupported semiotic class,3

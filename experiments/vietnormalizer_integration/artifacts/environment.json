@@ -1,0 +1,32 @@
+{
+  "created_utc": "2026-07-23T06:26:46.195046+00:00",
+  "python": "3.12.3 (main, Jun 19 2026, 12:46:00) [GCC 13.3.0]",
+  "platform": "Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.39",
+  "seed": 20260721,
+  "dataset_sha256": "f845a96394f28d3bfd9ca33070af3cf6524dfbe30fc3ad06497e6356b4ad7007",
+  "upstream_python": "/tmp/omnivoice_vi_benchmark_env/bin/python",
+  "improved_python": "/tmp/vietnormalizer_numeric_env/bin/python",
+  "upstream": {
+    "repository": "https://github.com/nghimestudio/vietnormalizer",
+    "package_version": "0.2.3",
+    "python": "3.12.3",
+    "constructor": "(acronyms_path: Optional[str] = None, non_vietnamese_words_path: Optional[str] = None, data_dir: Optional[str] = None, enable_transliteration: bool = True)",
+    "normalize": "(self, text: str, enable_preprocessing: bool = True, enable_transliteration: Optional[bool] = None) -> str",
+    "has_normalize_numeric": false
+  },
+  "improved": {
+    "repository_path": "/home/pkh257/projects/vietnormalizer",
+    "base_commit": "dd38778731d6ca4e9e670a19abb2df1c901a1852",
+    "branch": "feat/robust-numeric-normalization",
+    "dirty_status": [
+      " M vietnormalizer/normalizer.py",
+      "?? test_numeric_normalizer.py",
+      "?? vietnormalizer/numeric_processor.py"
+    ],
+    "package_version": "0.2.3",
+    "python": "3.12.3",
+    "constructor": "(acronyms_path: Optional[str] = None, non_vietnamese_words_path: Optional[str] = None, data_dir: Optional[str] = None, enable_transliteration: bool = True)",
+    "normalize": "(self, text: str, enable_preprocessing: bool = True, enable_transliteration: Optional[bool] = None) -> str",
+    "has_normalize_numeric": true
+  }
+}

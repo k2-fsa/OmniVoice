@@ -1,0 +1,9 @@
+[
+  {
+    "id": "time_duration_009",
+    "original_label": "Cửa hàng đóng cửa lúc hai mươi ba giờ năm chín phút.",
+    "proposed_correction": "Cửa hàng đóng cửa lúc hai mươi ba giờ năm mươi chín phút.",
+    "reason": "59 is a clock minute and should be read as the cardinal fifty-nine.",
+    "official_scoring": "excluded pending human review"
+  }
+]

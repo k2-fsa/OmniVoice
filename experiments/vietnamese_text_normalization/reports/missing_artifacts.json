@@ -1,0 +1,9 @@
+{
+  "audited_domains": "absent; domain is null and a manual annotation template was generated",
+  "template_provenance": "absent; template_group is a derived numeric-skeleton grouping and is not audited ground truth",
+  "source_audio_paths": "absent from the canonical 200-record source",
+  "generated_audio": "absent; prior diagnostic was dry-run only",
+  "human_ratings": "absent; prior evaluation CSV is blank",
+  "old_normalized_text": "available only for the earlier 30-case dry-run manifest, not all 200 source records",
+  "genuine_held_out_data": "absent; all 200 records/golds were inspected before split creation"
+}

@@ -1,0 +1,352 @@
+{
+  "source": "/tmp/omnivoice_vi_tn_pilot.jsonl",
+  "source_sha256": "f845a96394f28d3bfd9ca33070af3cf6524dfbe30fc3ad06497e6356b4ad7007",
+  "records": 200,
+  "unique_ids": 200,
+  "duplicate_ids": [],
+  "exact_duplicate_sentences": [],
+  "template_groups_with_multiple_records": 1,
+  "missing_fields": {},
+  "malformed_records": 0,
+  "class_distribution": {
+    "ACCOUNT_NUMBER": 1,
+    "ADDRESS": 2,
+    "ALLEY_NUMBER": 1,
+    "APARTMENT": 2,
+    "AVAILABILITY": 1,
+    "BATCH_ID": 1,
+    "BUS_ROUTE": 2,
+    "CARD_SUFFIX": 1,
+    "CLASS_ID": 1,
+    "DATE": 9,
+    "DATE_RANGE": 2,
+    "DAY_OF_MONTH": 1,
+    "DECIMAL": 5,
+    "DIGITAL_STORAGE": 3,
+    "DURATION": 3,
+    "EMERGENCY_PHONE": 3,
+    "EQUATION": 3,
+    "ERROR_CODE": 1,
+    "FINANCIAL_RATIO": 1,
+    "FLIGHT_ID": 1,
+    "FRACTION": 4,
+    "FRACTIONAL_DURATION": 1,
+    "GATE": 1,
+    "HOUSE_NUMBER": 1,
+    "IDENTIFIER": 3,
+    "INTERVAL": 1,
+    "INVOICE_ID": 1,
+    "ISO_DATE": 1,
+    "KILOMETER_MARKER": 1,
+    "LICENSE_PLATE": 2,
+    "LOCKER": 1,
+    "MEASURE": 14,
+    "MEASURE_RANGE": 1,
+    "MEDIA_TIMESTAMP": 1,
+    "MEDICAL_RATIO": 2,
+    "MONEY": 18,
+    "MONEY_RANGE": 1,
+    "MONEY_RATE": 1,
+    "MONTH_YEAR": 2,
+    "NATIONAL_ID": 1,
+    "NEGATIVE_QUANTITY": 1,
+    "ORDER_ID": 1,
+    "ORDINAL_ROMAN": 1,
+    "PASSPORT_ID": 1,
+    "PERCENT": 3,
+    "PERCENT_RANGE": 1,
+    "PHONE": 10,
+    "PHONE_EXTENSION": 1,
+    "PIN": 1,
+    "POSTAL_CODE": 1,
+    "POWER": 3,
+    "PROBABILITY": 1,
+    "QUANTITY": 19,
+    "QUARTER_YEAR": 1,
+    "QUEUE_ID": 1,
+    "RADICAL": 1,
+    "RANGE": 2,
+    "RATIO": 3,
+    "RECORD_ID": 1,
+    "ROAD_ROUTE": 1,
+    "ROOM": 4,
+    "SCIENTIFIC_NOTATION": 1,
+    "SCORE": 2,
+    "SCORE_SCALE": 1,
+    "SEAT": 1,
+    "SERVICE_PHONE": 1,
+    "SIGNED_NUMBER": 2,
+    "SIGNED_PERCENT": 2,
+    "STUDENT_ID": 1,
+    "TABLE_NUMBER": 1,
+    "TAX_ID": 1,
+    "TEMPERATURE": 3,
+    "TIME": 9,
+    "TIME_RANGE": 1,
+    "TRACKING_ID": 1,
+    "TRAIN_ID": 1,
+    "VERSION": 2,
+    "YEAR": 7,
+    "YEAR_BCE": 1,
+    "YEAR_RANGE": 2
+  },
+  "domain_labels": null,
+  "audio_paths": 0,
+  "human_ratings": 0,
+  "split_seed": 20260722,
+  "split_integrity": "compromised: all records/golds were inspected before this split",
+  "split_counts": {
+    "development": 181,
+    "test": 19
+  },
+  "class_split_counts": {
+    "ACCOUNT_NUMBER": {
+      "development": 1
+    },
+    "ADDRESS": {
+      "development": 2
+    },
+    "ALLEY_NUMBER": {
+      "development": 1
+    },
+    "APARTMENT": {
+      "development": 2
+    },
+    "AVAILABILITY": {
+      "development": 1
+    },
+    "BATCH_ID": {
+      "development": 1
+    },
+    "BUS_ROUTE": {
+      "development": 2
+    },
+    "CARD_SUFFIX": {
+      "development": 1
+    },
+    "CLASS_ID": {
+      "development": 1
+    },
+    "DATE": {
+      "development": 7,
+      "test": 2
+    },
+    "DATE_RANGE": {
+      "development": 2
+    },
+    "DAY_OF_MONTH": {
+      "development": 1
+    },
+    "DECIMAL": {
+      "development": 4,
+      "test": 1
+    },
+    "DIGITAL_STORAGE": {
+      "development": 3
+    },
+    "DURATION": {
+      "development": 3
+    },
+    "EMERGENCY_PHONE": {
+      "development": 3
+    },
+    "EQUATION": {
+      "development": 3
+    },
+    "ERROR_CODE": {
+      "development": 1
+    },
+    "FINANCIAL_RATIO": {
+      "development": 1
+    },
+    "FLIGHT_ID": {
+      "development": 1
+    },
+    "FRACTION": {
+      "development": 4
+    },
+    "FRACTIONAL_DURATION": {
+      "development": 1
+    },
+    "GATE": {
+      "development": 1
+    },
+    "HOUSE_NUMBER": {
+      "development": 1
+    },
+    "IDENTIFIER": {
+      "development": 3
+    },
+    "INTERVAL": {
+      "development": 1
+    },
+    "INVOICE_ID": {
+      "development": 1
+    },
+    "ISO_DATE": {
+      "development": 1
+    },
+    "KILOMETER_MARKER": {
+      "development": 1
+    },
+    "LICENSE_PLATE": {
+      "development": 2
+    },
+    "LOCKER": {
+      "development": 1
+    },
+    "MEASURE": {
+      "development": 11,
+      "test": 3
+    },
+    "MEASURE_RANGE": {
+      "development": 1
+    },
+    "MEDIA_TIMESTAMP": {
+      "development": 1
+    },
+    "MEDICAL_RATIO": {
+      "development": 2
+    },
+    "MONEY": {
+      "development": 14,
+      "test": 4
+    },
+    "MONEY_RANGE": {
+      "development": 1
+    },
+    "MONEY_RATE": {
+      "development": 1
+    },
+    "MONTH_YEAR": {
+      "development": 2
+    },
+    "NATIONAL_ID": {
+      "development": 1
+    },
+    "NEGATIVE_QUANTITY": {
+      "development": 1
+    },
+    "ORDER_ID": {
+      "development": 1
+    },
+    "ORDINAL_ROMAN": {
+      "development": 1
+    },
+    "PASSPORT_ID": {
+      "development": 1
+    },
+    "PERCENT": {
+      "development": 3
+    },
+    "PERCENT_RANGE": {
+      "development": 1
+    },
+    "PHONE": {
+      "development": 8,
+      "test": 2
+    },
+    "PHONE_EXTENSION": {
+      "development": 1
+    },
+    "PIN": {
+      "development": 1
+    },
+    "POSTAL_CODE": {
+      "development": 1
+    },
+    "POWER": {
+      "development": 3
+    },
+    "PROBABILITY": {
+      "development": 1
+    },
+    "QUANTITY": {
+      "test": 4,
+      "development": 15
+    },
+    "QUARTER_YEAR": {
+      "development": 1
+    },
+    "QUEUE_ID": {
+      "development": 1
+    },
+    "RADICAL": {
+      "development": 1
+    },
+    "RANGE": {
+      "development": 2
+    },
+    "RATIO": {
+      "development": 3
+    },
+    "RECORD_ID": {
+      "development": 1
+    },
+    "ROAD_ROUTE": {
+      "development": 1
+    },
+    "ROOM": {
+      "development": 4
+    },
+    "SCIENTIFIC_NOTATION": {
+      "development": 1
+    },
+    "SCORE": {
+      "development": 2
+    },
+    "SCORE_SCALE": {
+      "development": 1
+    },
+    "SEAT": {
+      "development": 1
+    },
+    "SERVICE_PHONE": {
+      "development": 1
+    },
+    "SIGNED_NUMBER": {
+      "development": 2
+    },
+    "SIGNED_PERCENT": {
+      "development": 2
+    },
+    "STUDENT_ID": {
+      "development": 1
+    },
+    "TABLE_NUMBER": {
+      "development": 1
+    },
+    "TAX_ID": {
+      "development": 1
+    },
+    "TEMPERATURE": {
+      "development": 3
+    },
+    "TIME": {
+      "test": 2,
+      "development": 7
+    },
+    "TIME_RANGE": {
+      "development": 1
+    },
+    "TRACKING_ID": {
+      "development": 1
+    },
+    "TRAIN_ID": {
+      "development": 1
+    },
+    "VERSION": {
+      "development": 2
+    },
+    "YEAR": {
+      "development": 6,
+      "test": 1
+    },
+    "YEAR_BCE": {
+      "development": 1
+    },
+    "YEAR_RANGE": {
+      "development": 2
+    }
+  }
+}

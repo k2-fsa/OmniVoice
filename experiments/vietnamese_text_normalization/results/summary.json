@@ -1,0 +1,2649 @@
+{
+  "development": {
+    "contextual_rule": {
+      "total": 181,
+      "score_eligible": 180,
+      "excluded_questionable_gold": 1,
+      "available": 180,
+      "unavailable_or_error": 0,
+      "exact_match": [
+        53,
+        180
+      ],
+      "acceptable_variant_match": [
+        59,
+        180
+      ],
+      "casefold_variant_match_diagnostic": [
+        59,
+        180
+      ],
+      "changed": [
+        107,
+        180
+      ],
+      "coverage": [
+        119,
+        180
+      ],
+      "abstention_or_unsupported": [
+        61,
+        180
+      ],
+      "sentence_errors": [
+        121,
+        180
+      ],
+      "macro_accuracy_classes_n_ge_2": 0.22931547619047618,
+      "per_class": {
+        "ACCOUNT_NUMBER": {
+          "correct": 1,
+          "total": 1
+        },
+        "ADDRESS": {
+          "correct": 0,
+          "total": 2
+        },
+        "ALLEY_NUMBER": {
+          "correct": 1,
+          "total": 1
+        },
+        "APARTMENT": {
+          "correct": 0,
+          "total": 2
+        },
+        "AVAILABILITY": {
+          "correct": 0,
+          "total": 1
+        },
+        "BATCH_ID": {
+          "correct": 0,
+          "total": 1
+        },
+        "BUS_ROUTE": {
+          "correct": 2,
+          "total": 2
+        },
+        "CARD_SUFFIX": {
+          "correct": 0,
+          "total": 1
+        },
+        "CLASS_ID": {
+          "correct": 0,
+          "total": 1
+        },
+        "DATE": {
+          "correct": 3,
+          "total": 7
+        },
+        "DATE_RANGE": {
+          "correct": 0,
+          "total": 2
+        },
+        "DAY_OF_MONTH": {
+          "correct": 0,
+          "total": 1
+        },
+        "DECIMAL": {
+          "correct": 0,
+          "total": 4
+        },
+        "DIGITAL_STORAGE": {
+          "correct": 0,
+          "total": 3
+        },
+        "DURATION": {
+          "correct": 0,
+          "total": 3
+        },
+        "EMERGENCY_PHONE": {
+          "correct": 2,
+          "total": 3
+        },
+        "EQUATION": {
+          "correct": 0,
+          "total": 3
+        },
+        "ERROR_CODE": {
+          "correct": 1,
+          "total": 1
+        },
+        "FINANCIAL_RATIO": {
+          "correct": 0,
+          "total": 1
+        },
+        "FLIGHT_ID": {
+          "correct": 0,
+          "total": 1
+        },
+        "FRACTION": {
+          "correct": 3,
+          "total": 4
+        },
+        "FRACTIONAL_DURATION": {
+          "correct": 0,
+          "total": 1
+        },
+        "GATE": {
+          "correct": 1,
+          "total": 1
+        },
+        "HOUSE_NUMBER": {
+          "correct": 1,
+          "total": 1
+        },
+        "IDENTIFIER": {
+          "correct": 3,
+          "total": 3
+        },
+        "INTERVAL": {
+          "correct": 0,
+          "total": 1
+        },
+        "INVOICE_ID": {
+          "correct": 0,
+          "total": 1
+        },
+        "ISO_DATE": {
+          "correct": 1,
+          "total": 1
+        },
+        "KILOMETER_MARKER": {
+          "correct": 0,
+          "total": 1
+        },
+        "LICENSE_PLATE": {
+          "correct": 0,
+          "total": 2
+        },
+        "LOCKER": {
+          "correct": 0,
+          "total": 1
+        },
+        "MEASURE": {
+          "correct": 0,
+          "total": 11
+        },
+        "MEASURE_RANGE": {
+          "correct": 0,
+          "total": 1
+        },
+        "MEDIA_TIMESTAMP": {
+          "correct": 0,
+          "total": 1
+        },
+        "MEDICAL_RATIO": {
+          "correct": 0,
+          "total": 2
+        },
+        "MONEY": {
+          "correct": 9,
+          "total": 14
+        },
+        "MONEY_RANGE": {
+          "correct": 0,
+          "total": 1
+        },
+        "MONEY_RATE": {
+          "correct": 0,
+          "total": 1
+        },
+        "MONTH_YEAR": {
+          "correct": 0,
+          "total": 2
+        },
+        "NATIONAL_ID": {
+          "correct": 1,
+          "total": 1
+        },
+        "NEGATIVE_QUANTITY": {
+          "correct": 0,
+          "total": 1
+        },
+        "ORDER_ID": {
+          "correct": 1,
+          "total": 1
+        },
+        "ORDINAL_ROMAN": {
+          "correct": 0,
+          "total": 1
+        },
+        "PASSPORT_ID": {
+          "correct": 0,
+          "total": 1
+        },
+        "PERCENT": {
+          "correct": 0,
+          "total": 3
+        },
+        "PERCENT_RANGE": {
+          "correct": 0,
+          "total": 1
+        },
+        "PHONE": {
+          "correct": 0,
+          "total": 8
+        },
+        "PHONE_EXTENSION": {
+          "correct": 0,
+          "total": 1
+        },
+        "PIN": {
+          "correct": 1,
+          "total": 1
+        },
+        "POSTAL_CODE": {
+          "correct": 1,
+          "total": 1
+        },
+        "POWER": {
+          "correct": 0,
+          "total": 3
+        },
+        "PROBABILITY": {
+          "correct": 0,
+          "total": 1
+        },
+        "QUANTITY": {
+          "correct": 9,
+          "total": 15
+        },
+        "QUARTER_YEAR": {
+          "correct": 0,
+          "total": 1
+        },
+        "QUEUE_ID": {
+          "correct": 0,
+          "total": 1
+        },
+        "RADICAL": {
+          "correct": 1,
+          "total": 1
+        },
+        "RANGE": {
+          "correct": 0,
+          "total": 2
+        },
+        "RATIO": {
+          "correct": 0,
+          "total": 3
+        },
+        "RECORD_ID": {
+          "correct": 1,
+          "total": 1
+        },
+        "ROAD_ROUTE": {
+          "correct": 0,
+          "total": 1
+        },
+        "ROOM": {
+          "correct": 3,
+          "total": 4
+        },
+        "SCIENTIFIC_NOTATION": {
+          "correct": 0,
+          "total": 1
+        },
+        "SCORE": {
+          "correct": 0,
+          "total": 2
+        },
+        "SCORE_SCALE": {
+          "correct": 0,
+          "total": 1
+        },
+        "SEAT": {
+          "correct": 0,
+          "total": 1
+        },
+        "SERVICE_PHONE": {
+          "correct": 1,
+          "total": 1
+        },
+        "SIGNED_NUMBER": {
+          "correct": 0,
+          "total": 2
+        },
+        "SIGNED_PERCENT": {
+          "correct": 0,
+          "total": 2
+        },
+        "STUDENT_ID": {
+          "correct": 0,
+          "total": 1
+        },
+        "TABLE_NUMBER": {
+          "correct": 1,
+          "total": 1
+        },
+        "TAX_ID": {
+          "correct": 1,
+          "total": 1
+        },
+        "TEMPERATURE": {
+          "correct": 0,
+          "total": 3
+        },
+        "TIME": {
+          "correct": 4,
+          "total": 6
+        },
+        "TIME_RANGE": {
+          "correct": 0,
+          "total": 1
+        },
+        "TRACKING_ID": {
+          "correct": 1,
+          "total": 1
+        },
+        "TRAIN_ID": {
+          "correct": 0,
+          "total": 1
+        },
+        "VERSION": {
+          "correct": 0,
+          "total": 2
+        },
+        "YEAR": {
+          "correct": 5,
+          "total": 6
+        },
+        "YEAR_BCE": {
+          "correct": 0,
+          "total": 1
+        },
+        "YEAR_RANGE": {
+          "correct": 0,
+          "total": 2
+        }
+      }
+    },
+    "direct_num2words": {
+      "total": 181,
+      "score_eligible": 180,
+      "excluded_questionable_gold": 1,
+      "available": 180,
+      "unavailable_or_error": 0,
+      "exact_match": [
+        15,
+        180
+      ],
+      "acceptable_variant_match": [
+        20,
+        180
+      ],
+      "casefold_variant_match_diagnostic": [
+        20,
+        180
+      ],
+      "changed": [
+        179,
+        180
+      ],
+      "coverage": [
+        180,
+        180
+      ],
+      "abstention_or_unsupported": [
+        0,
+        180
+      ],
+      "sentence_errors": [
+        160,
+        180
+      ],
+      "macro_accuracy_classes_n_ge_2": 0.06019345238095238,
+      "per_class": {
+        "ACCOUNT_NUMBER": {
+          "correct": 0,
+          "total": 1
+        },
+        "ADDRESS": {
+          "correct": 0,
+          "total": 2
+        },
+        "ALLEY_NUMBER": {
+          "correct": 1,
+          "total": 1
+        },
+        "APARTMENT": {
+          "correct": 0,
+          "total": 2
+        },
+        "AVAILABILITY": {
+          "correct": 0,
+          "total": 1
+        },
+        "BATCH_ID": {
+          "correct": 0,
+          "total": 1
+        },
+        "BUS_ROUTE": {
+          "correct": 1,
+          "total": 2
+        },
+        "CARD_SUFFIX": {
+          "correct": 0,
+          "total": 1
+        },
+        "CLASS_ID": {
+          "correct": 0,
+          "total": 1
+        },
+        "DATE": {
+          "correct": 0,
+          "total": 7
+        },
+        "DATE_RANGE": {
+          "correct": 0,
+          "total": 2
+        },
+        "DAY_OF_MONTH": {
+          "correct": 0,
+          "total": 1
+        },
+        "DECIMAL": {
+          "correct": 0,
+          "total": 4
+        },
+        "DIGITAL_STORAGE": {
+          "correct": 0,
+          "total": 3
+        },
+        "DURATION": {
+          "correct": 0,
+          "total": 3
+        },
+        "EMERGENCY_PHONE": {
+          "correct": 0,
+          "total": 3
+        },
+        "EQUATION": {
+          "correct": 0,
+          "total": 3
+        },
+        "ERROR_CODE": {
+          "correct": 0,
+          "total": 1
+        },
+        "FINANCIAL_RATIO": {
+          "correct": 0,
+          "total": 1
+        },
+        "FLIGHT_ID": {
+          "correct": 0,
+          "total": 1
+        },
+        "FRACTION": {
+          "correct": 0,
+          "total": 4
+        },
+        "FRACTIONAL_DURATION": {
+          "correct": 0,
+          "total": 1
+        },
+        "GATE": {
+          "correct": 0,
+          "total": 1
+        },
+        "HOUSE_NUMBER": {
+          "correct": 1,
+          "total": 1
+        },
+        "IDENTIFIER": {
+          "correct": 0,
+          "total": 3
+        },
+        "INTERVAL": {
+          "correct": 0,
+          "total": 1
+        },
+        "INVOICE_ID": {
+          "correct": 0,
+          "total": 1
+        },
+        "ISO_DATE": {
+          "correct": 0,
+          "total": 1
+        },
+        "KILOMETER_MARKER": {
+          "correct": 0,
+          "total": 1
+        },
+        "LICENSE_PLATE": {
+          "correct": 0,
+          "total": 2
+        },
+        "LOCKER": {
+          "correct": 0,
+          "total": 1
+        },
+        "MEASURE": {
+          "correct": 0,
+          "total": 11
+        },
+        "MEASURE_RANGE": {
+          "correct": 0,
+          "total": 1
+        },
+        "MEDIA_TIMESTAMP": {
+          "correct": 0,
+          "total": 1
+        },
+        "MEDICAL_RATIO": {
+          "correct": 0,
+          "total": 2
+        },
+        "MONEY": {
+          "correct": 2,
+          "total": 14
+        },
+        "MONEY_RANGE": {
+          "correct": 0,
+          "total": 1
+        },
+        "MONEY_RATE": {
+          "correct": 0,
+          "total": 1
+        },
+        "MONTH_YEAR": {
+          "correct": 0,
+          "total": 2
+        },
+        "NATIONAL_ID": {
+          "correct": 0,
+          "total": 1
+        },
+        "NEGATIVE_QUANTITY": {
+          "correct": 1,
+          "total": 1
+        },
+        "ORDER_ID": {
+          "correct": 0,
+          "total": 1
+        },
+        "ORDINAL_ROMAN": {
+          "correct": 0,
+          "total": 1
+        },
+        "PASSPORT_ID": {
+          "correct": 0,
+          "total": 1
+        },
+        "PERCENT": {
+          "correct": 0,
+          "total": 3
+        },
+        "PERCENT_RANGE": {
+          "correct": 0,
+          "total": 1
+        },
+        "PHONE": {
+          "correct": 0,
+          "total": 8
+        },
+        "PHONE_EXTENSION": {
+          "correct": 0,
+          "total": 1
+        },
+        "PIN": {
+          "correct": 0,
+          "total": 1
+        },
+        "POSTAL_CODE": {
+          "correct": 1,
+          "total": 1
+        },
+        "POWER": {
+          "correct": 0,
+          "total": 3
+        },
+        "PROBABILITY": {
+          "correct": 0,
+          "total": 1
+        },
+        "QUANTITY": {
+          "correct": 8,
+          "total": 15
+        },
+        "QUARTER_YEAR": {
+          "correct": 0,
+          "total": 1
+        },
+        "QUEUE_ID": {
+          "correct": 0,
+          "total": 1
+        },
+        "RADICAL": {
+          "correct": 1,
+          "total": 1
+        },
+        "RANGE": {
+          "correct": 0,
+          "total": 2
+        },
+        "RATIO": {
+          "correct": 0,
+          "total": 3
+        },
+        "RECORD_ID": {
+          "correct": 0,
+          "total": 1
+        },
+        "ROAD_ROUTE": {
+          "correct": 0,
+          "total": 1
+        },
+        "ROOM": {
+          "correct": 1,
+          "total": 4
+        },
+        "SCIENTIFIC_NOTATION": {
+          "correct": 0,
+          "total": 1
+        },
+        "SCORE": {
+          "correct": 0,
+          "total": 2
+        },
+        "SCORE_SCALE": {
+          "correct": 0,
+          "total": 1
+        },
+        "SEAT": {
+          "correct": 0,
+          "total": 1
+        },
+        "SERVICE_PHONE": {
+          "correct": 0,
+          "total": 1
+        },
+        "SIGNED_NUMBER": {
+          "correct": 0,
+          "total": 2
+        },
+        "SIGNED_PERCENT": {
+          "correct": 0,
+          "total": 2
+        },
+        "STUDENT_ID": {
+          "correct": 0,
+          "total": 1
+        },
+        "TABLE_NUMBER": {
+          "correct": 0,
+          "total": 1
+        },
+        "TAX_ID": {
+          "correct": 0,
+          "total": 1
+        },
+        "TEMPERATURE": {
+          "correct": 0,
+          "total": 3
+        },
+        "TIME": {
+          "correct": 0,
+          "total": 6
+        },
+        "TIME_RANGE": {
+          "correct": 0,
+          "total": 1
+        },
+        "TRACKING_ID": {
+          "correct": 0,
+          "total": 1
+        },
+        "TRAIN_ID": {
+          "correct": 0,
+          "total": 1
+        },
+        "VERSION": {
+          "correct": 0,
+          "total": 2
+        },
+        "YEAR": {
+          "correct": 3,
+          "total": 6
+        },
+        "YEAR_BCE": {
+          "correct": 0,
+          "total": 1
+        },
+        "YEAR_RANGE": {
+          "correct": 0,
+          "total": 2
+        }
+      }
+    },
+    "identity": {
+      "total": 181,
+      "score_eligible": 180,
+      "excluded_questionable_gold": 1,
+      "available": 180,
+      "unavailable_or_error": 0,
+      "exact_match": [
+        0,
+        180
+      ],
+      "acceptable_variant_match": [
+        0,
+        180
+      ],
+      "casefold_variant_match_diagnostic": [
+        0,
+        180
+      ],
+      "changed": [
+        0,
+        180
+      ],
+      "coverage": [
+        180,
+        180
+      ],
+      "abstention_or_unsupported": [
+        0,
+        180
+      ],
+      "sentence_errors": [
+        180,
+        180
+      ],
+      "macro_accuracy_classes_n_ge_2": 0.0,
+      "per_class": {
+        "ACCOUNT_NUMBER": {
+          "correct": 0,
+          "total": 1
+        },
+        "ADDRESS": {
+          "correct": 0,
+          "total": 2
+        },
+        "ALLEY_NUMBER": {
+          "correct": 0,
+          "total": 1
+        },
+        "APARTMENT": {
+          "correct": 0,
+          "total": 2
+        },
+        "AVAILABILITY": {
+          "correct": 0,
+          "total": 1
+        },
+        "BATCH_ID": {
+          "correct": 0,
+          "total": 1
+        },
+        "BUS_ROUTE": {
+          "correct": 0,
+          "total": 2
+        },
+        "CARD_SUFFIX": {
+          "correct": 0,
+          "total": 1
+        },
+        "CLASS_ID": {
+          "correct": 0,
+          "total": 1
+        },
+        "DATE": {
+          "correct": 0,
+          "total": 7
+        },
+        "DATE_RANGE": {
+          "correct": 0,
+          "total": 2
+        },
+        "DAY_OF_MONTH": {
+          "correct": 0,
+          "total": 1
+        },
+        "DECIMAL": {
+          "correct": 0,
+          "total": 4
+        },
+        "DIGITAL_STORAGE": {
+          "correct": 0,
+          "total": 3
+        },
+        "DURATION": {
+          "correct": 0,
+          "total": 3
+        },
+        "EMERGENCY_PHONE": {
+          "correct": 0,
+          "total": 3
+        },
+        "EQUATION": {
+          "correct": 0,
+          "total": 3
+        },
+        "ERROR_CODE": {
+          "correct": 0,
+          "total": 1
+        },
+        "FINANCIAL_RATIO": {
+          "correct": 0,
+          "total": 1
+        },
+        "FLIGHT_ID": {
+          "correct": 0,
+          "total": 1
+        },
+        "FRACTION": {
+          "correct": 0,
+          "total": 4
+        },
+        "FRACTIONAL_DURATION": {
+          "correct": 0,
+          "total": 1
+        },
+        "GATE": {
+          "correct": 0,
+          "total": 1
+        },
+        "HOUSE_NUMBER": {
+          "correct": 0,
+          "total": 1
+        },
+        "IDENTIFIER": {
+          "correct": 0,
+          "total": 3
+        },
+        "INTERVAL": {
+          "correct": 0,
+          "total": 1
+        },
+        "INVOICE_ID": {
+          "correct": 0,
+          "total": 1
+        },
+        "ISO_DATE": {
+          "correct": 0,
+          "total": 1
+        },
+        "KILOMETER_MARKER": {
+          "correct": 0,
+          "total": 1
+        },
+        "LICENSE_PLATE": {
+          "correct": 0,
+          "total": 2
+        },
+        "LOCKER": {
+          "correct": 0,
+          "total": 1
+        },
+        "MEASURE": {
+          "correct": 0,
+          "total": 11
+        },
+        "MEASURE_RANGE": {
+          "correct": 0,
+          "total": 1
+        },
+        "MEDIA_TIMESTAMP": {
+          "correct": 0,
+          "total": 1
+        },
+        "MEDICAL_RATIO": {
+          "correct": 0,
+          "total": 2
+        },
+        "MONEY": {
+          "correct": 0,
+          "total": 14
+        },
+        "MONEY_RANGE": {
+          "correct": 0,
+          "total": 1
+        },
+        "MONEY_RATE": {
+          "correct": 0,
+          "total": 1
+        },
+        "MONTH_YEAR": {
+          "correct": 0,
+          "total": 2
+        },
+        "NATIONAL_ID": {
+          "correct": 0,
+          "total": 1
+        },
+        "NEGATIVE_QUANTITY": {
+          "correct": 0,
+          "total": 1
+        },
+        "ORDER_ID": {
+          "correct": 0,
+          "total": 1
+        },
+        "ORDINAL_ROMAN": {
+          "correct": 0,
+          "total": 1
+        },
+        "PASSPORT_ID": {
+          "correct": 0,
+          "total": 1
+        },
+        "PERCENT": {
+          "correct": 0,
+          "total": 3
+        },
+        "PERCENT_RANGE": {
+          "correct": 0,
+          "total": 1
+        },
+        "PHONE": {
+          "correct": 0,
+          "total": 8
+        },
+        "PHONE_EXTENSION": {
+          "correct": 0,
+          "total": 1
+        },
+        "PIN": {
+          "correct": 0,
+          "total": 1
+        },
+        "POSTAL_CODE": {
+          "correct": 0,
+          "total": 1
+        },
+        "POWER": {
+          "correct": 0,
+          "total": 3
+        },
+        "PROBABILITY": {
+          "correct": 0,
+          "total": 1
+        },
+        "QUANTITY": {
+          "correct": 0,
+          "total": 15
+        },
+        "QUARTER_YEAR": {
+          "correct": 0,
+          "total": 1
+        },
+        "QUEUE_ID": {
+          "correct": 0,
+          "total": 1
+        },
+        "RADICAL": {
+          "correct": 0,
+          "total": 1
+        },
+        "RANGE": {
+          "correct": 0,
+          "total": 2
+        },
+        "RATIO": {
+          "correct": 0,
+          "total": 3
+        },
+        "RECORD_ID": {
+          "correct": 0,
+          "total": 1
+        },
+        "ROAD_ROUTE": {
+          "correct": 0,
+          "total": 1
+        },
+        "ROOM": {
+          "correct": 0,
+          "total": 4
+        },
+        "SCIENTIFIC_NOTATION": {
+          "correct": 0,
+          "total": 1
+        },
+        "SCORE": {
+          "correct": 0,
+          "total": 2
+        },
+        "SCORE_SCALE": {
+          "correct": 0,
+          "total": 1
+        },
+        "SEAT": {
+          "correct": 0,
+          "total": 1
+        },
+        "SERVICE_PHONE": {
+          "correct": 0,
+          "total": 1
+        },
+        "SIGNED_NUMBER": {
+          "correct": 0,
+          "total": 2
+        },
+        "SIGNED_PERCENT": {
+          "correct": 0,
+          "total": 2
+        },
+        "STUDENT_ID": {
+          "correct": 0,
+          "total": 1
+        },
+        "TABLE_NUMBER": {
+          "correct": 0,
+          "total": 1
+        },
+        "TAX_ID": {
+          "correct": 0,
+          "total": 1
+        },
+        "TEMPERATURE": {
+          "correct": 0,
+          "total": 3
+        },
+        "TIME": {
+          "correct": 0,
+          "total": 6
+        },
+        "TIME_RANGE": {
+          "correct": 0,
+          "total": 1
+        },
+        "TRACKING_ID": {
+          "correct": 0,
+          "total": 1
+        },
+        "TRAIN_ID": {
+          "correct": 0,
+          "total": 1
+        },
+        "VERSION": {
+          "correct": 0,
+          "total": 2
+        },
+        "YEAR": {
+          "correct": 0,
+          "total": 6
+        },
+        "YEAR_BCE": {
+          "correct": 0,
+          "total": 1
+        },
+        "YEAR_RANGE": {
+          "correct": 0,
+          "total": 2
+        }
+      }
+    },
+    "omnivoice_current": {
+      "total": 181,
+      "score_eligible": 180,
+      "excluded_questionable_gold": 1,
+      "available": 180,
+      "unavailable_or_error": 0,
+      "exact_match": [
+        53,
+        180
+      ],
+      "acceptable_variant_match": [
+        59,
+        180
+      ],
+      "casefold_variant_match_diagnostic": [
+        59,
+        180
+      ],
+      "changed": [
+        107,
+        180
+      ],
+      "coverage": [
+        180,
+        180
+      ],
+      "abstention_or_unsupported": [
+        0,
+        180
+      ],
+      "sentence_errors": [
+        121,
+        180
+      ],
+      "macro_accuracy_classes_n_ge_2": 0.22931547619047618,
+      "per_class": {
+        "ACCOUNT_NUMBER": {
+          "correct": 1,
+          "total": 1
+        },
+        "ADDRESS": {
+          "correct": 0,
+          "total": 2
+        },
+        "ALLEY_NUMBER": {
+          "correct": 1,
+          "total": 1
+        },
+        "APARTMENT": {
+          "correct": 0,
+          "total": 2
+        },
+        "AVAILABILITY": {
+          "correct": 0,
+          "total": 1
+        },
+        "BATCH_ID": {
+          "correct": 0,
+          "total": 1
+        },
+        "BUS_ROUTE": {
+          "correct": 2,
+          "total": 2
+        },
+        "CARD_SUFFIX": {
+          "correct": 0,
+          "total": 1
+        },
+        "CLASS_ID": {
+          "correct": 0,
+          "total": 1
+        },
+        "DATE": {
+          "correct": 3,
+          "total": 7
+        },
+        "DATE_RANGE": {
+          "correct": 0,
+          "total": 2
+        },
+        "DAY_OF_MONTH": {
+          "correct": 0,
+          "total": 1
+        },
+        "DECIMAL": {
+          "correct": 0,
+          "total": 4
+        },
+        "DIGITAL_STORAGE": {
+          "correct": 0,
+          "total": 3
+        },
+        "DURATION": {
+          "correct": 0,
+          "total": 3
+        },
+        "EMERGENCY_PHONE": {
+          "correct": 2,
+          "total": 3
+        },
+        "EQUATION": {
+          "correct": 0,
+          "total": 3
+        },
+        "ERROR_CODE": {
+          "correct": 1,
+          "total": 1
+        },
+        "FINANCIAL_RATIO": {
+          "correct": 0,
+          "total": 1
+        },
+        "FLIGHT_ID": {
+          "correct": 0,
+          "total": 1
+        },
+        "FRACTION": {
+          "correct": 3,
+          "total": 4
+        },
+        "FRACTIONAL_DURATION": {
+          "correct": 0,
+          "total": 1
+        },
+        "GATE": {
+          "correct": 1,
+          "total": 1
+        },
+        "HOUSE_NUMBER": {
+          "correct": 1,
+          "total": 1
+        },
+        "IDENTIFIER": {
+          "correct": 3,
+          "total": 3
+        },
+        "INTERVAL": {
+          "correct": 0,
+          "total": 1
+        },
+        "INVOICE_ID": {
+          "correct": 0,
+          "total": 1
+        },
+        "ISO_DATE": {
+          "correct": 1,
+          "total": 1
+        },
+        "KILOMETER_MARKER": {
+          "correct": 0,
+          "total": 1
+        },
+        "LICENSE_PLATE": {
+          "correct": 0,
+          "total": 2
+        },
+        "LOCKER": {
+          "correct": 0,
+          "total": 1
+        },
+        "MEASURE": {
+          "correct": 0,
+          "total": 11
+        },
+        "MEASURE_RANGE": {
+          "correct": 0,
+          "total": 1
+        },
+        "MEDIA_TIMESTAMP": {
+          "correct": 0,
+          "total": 1
+        },
+        "MEDICAL_RATIO": {
+          "correct": 0,
+          "total": 2
+        },
+        "MONEY": {
+          "correct": 9,
+          "total": 14
+        },
+        "MONEY_RANGE": {
+          "correct": 0,
+          "total": 1
+        },
+        "MONEY_RATE": {
+          "correct": 0,
+          "total": 1
+        },
+        "MONTH_YEAR": {
+          "correct": 0,
+          "total": 2
+        },
+        "NATIONAL_ID": {
+          "correct": 1,
+          "total": 1
+        },
+        "NEGATIVE_QUANTITY": {
+          "correct": 0,
+          "total": 1
+        },
+        "ORDER_ID": {
+          "correct": 1,
+          "total": 1
+        },
+        "ORDINAL_ROMAN": {
+          "correct": 0,
+          "total": 1
+        },
+        "PASSPORT_ID": {
+          "correct": 0,
+          "total": 1
+        },
+        "PERCENT": {
+          "correct": 0,
+          "total": 3
+        },
+        "PERCENT_RANGE": {
+          "correct": 0,
+          "total": 1
+        },
+        "PHONE": {
+          "correct": 0,
+          "total": 8
+        },
+        "PHONE_EXTENSION": {
+          "correct": 0,
+          "total": 1
+        },
+        "PIN": {
+          "correct": 1,
+          "total": 1
+        },
+        "POSTAL_CODE": {
+          "correct": 1,
+          "total": 1
+        },
+        "POWER": {
+          "correct": 0,
+          "total": 3
+        },
+        "PROBABILITY": {
+          "correct": 0,
+          "total": 1
+        },
+        "QUANTITY": {
+          "correct": 9,
+          "total": 15
+        },
+        "QUARTER_YEAR": {
+          "correct": 0,
+          "total": 1
+        },
+        "QUEUE_ID": {
+          "correct": 0,
+          "total": 1
+        },
+        "RADICAL": {
+          "correct": 1,
+          "total": 1
+        },
+        "RANGE": {
+          "correct": 0,
+          "total": 2
+        },
+        "RATIO": {
+          "correct": 0,
+          "total": 3
+        },
+        "RECORD_ID": {
+          "correct": 1,
+          "total": 1
+        },
+        "ROAD_ROUTE": {
+          "correct": 0,
+          "total": 1
+        },
+        "ROOM": {
+          "correct": 3,
+          "total": 4
+        },
+        "SCIENTIFIC_NOTATION": {
+          "correct": 0,
+          "total": 1
+        },
+        "SCORE": {
+          "correct": 0,
+          "total": 2
+        },
+        "SCORE_SCALE": {
+          "correct": 0,
+          "total": 1
+        },
+        "SEAT": {
+          "correct": 0,
+          "total": 1
+        },
+        "SERVICE_PHONE": {
+          "correct": 1,
+          "total": 1
+        },
+        "SIGNED_NUMBER": {
+          "correct": 0,
+          "total": 2
+        },
+        "SIGNED_PERCENT": {
+          "correct": 0,
+          "total": 2
+        },
+        "STUDENT_ID": {
+          "correct": 0,
+          "total": 1
+        },
+        "TABLE_NUMBER": {
+          "correct": 1,
+          "total": 1
+        },
+        "TAX_ID": {
+          "correct": 1,
+          "total": 1
+        },
+        "TEMPERATURE": {
+          "correct": 0,
+          "total": 3
+        },
+        "TIME": {
+          "correct": 4,
+          "total": 6
+        },
+        "TIME_RANGE": {
+          "correct": 0,
+          "total": 1
+        },
+        "TRACKING_ID": {
+          "correct": 1,
+          "total": 1
+        },
+        "TRAIN_ID": {
+          "correct": 0,
+          "total": 1
+        },
+        "VERSION": {
+          "correct": 0,
+          "total": 2
+        },
+        "YEAR": {
+          "correct": 5,
+          "total": 6
+        },
+        "YEAR_BCE": {
+          "correct": 0,
+          "total": 1
+        },
+        "YEAR_RANGE": {
+          "correct": 0,
+          "total": 2
+        }
+      }
+    },
+    "omnivoice_fallback": {
+      "total": 181,
+      "score_eligible": 180,
+      "excluded_questionable_gold": 1,
+      "available": 180,
+      "unavailable_or_error": 0,
+      "exact_match": [
+        15,
+        180
+      ],
+      "acceptable_variant_match": [
+        20,
+        180
+      ],
+      "casefold_variant_match_diagnostic": [
+        20,
+        180
+      ],
+      "changed": [
+        179,
+        180
+      ],
+      "coverage": [
+        180,
+        180
+      ],
+      "abstention_or_unsupported": [
+        0,
+        180
+      ],
+      "sentence_errors": [
+        160,
+        180
+      ],
+      "macro_accuracy_classes_n_ge_2": 0.06019345238095238,
+      "per_class": {
+        "ACCOUNT_NUMBER": {
+          "correct": 0,
+          "total": 1
+        },
+        "ADDRESS": {
+          "correct": 0,
+          "total": 2
+        },
+        "ALLEY_NUMBER": {
+          "correct": 1,
+          "total": 1
+        },
+        "APARTMENT": {
+          "correct": 0,
+          "total": 2
+        },
+        "AVAILABILITY": {
+          "correct": 0,
+          "total": 1
+        },
+        "BATCH_ID": {
+          "correct": 0,
+          "total": 1
+        },
+        "BUS_ROUTE": {
+          "correct": 1,
+          "total": 2
+        },
+        "CARD_SUFFIX": {
+          "correct": 0,
+          "total": 1
+        },
+        "CLASS_ID": {
+          "correct": 0,
+          "total": 1
+        },
+        "DATE": {
+          "correct": 0,
+          "total": 7
+        },
+        "DATE_RANGE": {
+          "correct": 0,
+          "total": 2
+        },
+        "DAY_OF_MONTH": {
+          "correct": 0,
+          "total": 1
+        },
+        "DECIMAL": {
+          "correct": 0,
+          "total": 4
+        },
+        "DIGITAL_STORAGE": {
+          "correct": 0,
+          "total": 3
+        },
+        "DURATION": {
+          "correct": 0,
+          "total": 3
+        },
+        "EMERGENCY_PHONE": {
+          "correct": 0,
+          "total": 3
+        },
+        "EQUATION": {
+          "correct": 0,
+          "total": 3
+        },
+        "ERROR_CODE": {
+          "correct": 0,
+          "total": 1
+        },
+        "FINANCIAL_RATIO": {
+          "correct": 0,
+          "total": 1
+        },
+        "FLIGHT_ID": {
+          "correct": 0,
+          "total": 1
+        },
+        "FRACTION": {
+          "correct": 0,
+          "total": 4
+        },
+        "FRACTIONAL_DURATION": {
+          "correct": 0,
+          "total": 1
+        },
+        "GATE": {
+          "correct": 0,
+          "total": 1
+        },
+        "HOUSE_NUMBER": {
+          "correct": 1,
+          "total": 1
+        },
+        "IDENTIFIER": {
+          "correct": 0,
+          "total": 3
+        },
+        "INTERVAL": {
+          "correct": 0,
+          "total": 1
+        },
+        "INVOICE_ID": {
+          "correct": 0,
+          "total": 1
+        },
+        "ISO_DATE": {
+          "correct": 0,
+          "total": 1
+        },
+        "KILOMETER_MARKER": {
+          "correct": 0,
+          "total": 1
+        },
+        "LICENSE_PLATE": {
+          "correct": 0,
+          "total": 2
+        },
+        "LOCKER": {
+          "correct": 0,
+          "total": 1
+        },
+        "MEASURE": {
+          "correct": 0,
+          "total": 11
+        },
+        "MEASURE_RANGE": {
+          "correct": 0,
+          "total": 1
+        },
+        "MEDIA_TIMESTAMP": {
+          "correct": 0,
+          "total": 1
+        },
+        "MEDICAL_RATIO": {
+          "correct": 0,
+          "total": 2
+        },
+        "MONEY": {
+          "correct": 2,
+          "total": 14
+        },
+        "MONEY_RANGE": {
+          "correct": 0,
+          "total": 1
+        },
+        "MONEY_RATE": {
+          "correct": 0,
+          "total": 1
+        },
+        "MONTH_YEAR": {
+          "correct": 0,
+          "total": 2
+        },
+        "NATIONAL_ID": {
+          "correct": 0,
+          "total": 1
+        },
+        "NEGATIVE_QUANTITY": {
+          "correct": 1,
+          "total": 1
+        },
+        "ORDER_ID": {
+          "correct": 0,
+          "total": 1
+        },
+        "ORDINAL_ROMAN": {
+          "correct": 0,
+          "total": 1
+        },
+        "PASSPORT_ID": {
+          "correct": 0,
+          "total": 1
+        },
+        "PERCENT": {
+          "correct": 0,
+          "total": 3
+        },
+        "PERCENT_RANGE": {
+          "correct": 0,
+          "total": 1
+        },
+        "PHONE": {
+          "correct": 0,
+          "total": 8
+        },
+        "PHONE_EXTENSION": {
+          "correct": 0,
+          "total": 1
+        },
+        "PIN": {
+          "correct": 0,
+          "total": 1
+        },
+        "POSTAL_CODE": {
+          "correct": 1,
+          "total": 1
+        },
+        "POWER": {
+          "correct": 0,
+          "total": 3
+        },
+        "PROBABILITY": {
+          "correct": 0,
+          "total": 1
+        },
+        "QUANTITY": {
+          "correct": 8,
+          "total": 15
+        },
+        "QUARTER_YEAR": {
+          "correct": 0,
+          "total": 1
+        },
+        "QUEUE_ID": {
+          "correct": 0,
+          "total": 1
+        },
+        "RADICAL": {
+          "correct": 1,
+          "total": 1
+        },
+        "RANGE": {
+          "correct": 0,
+          "total": 2
+        },
+        "RATIO": {
+          "correct": 0,
+          "total": 3
+        },
+        "RECORD_ID": {
+          "correct": 0,
+          "total": 1
+        },
+        "ROAD_ROUTE": {
+          "correct": 0,
+          "total": 1
+        },
+        "ROOM": {
+          "correct": 1,
+          "total": 4
+        },
+        "SCIENTIFIC_NOTATION": {
+          "correct": 0,
+          "total": 1
+        },
+        "SCORE": {
+          "correct": 0,
+          "total": 2
+        },
+        "SCORE_SCALE": {
+          "correct": 0,
+          "total": 1
+        },
+        "SEAT": {
+          "correct": 0,
+          "total": 1
+        },
+        "SERVICE_PHONE": {
+          "correct": 0,
+          "total": 1
+        },
+        "SIGNED_NUMBER": {
+          "correct": 0,
+          "total": 2
+        },
+        "SIGNED_PERCENT": {
+          "correct": 0,
+          "total": 2
+        },
+        "STUDENT_ID": {
+          "correct": 0,
+          "total": 1
+        },
+        "TABLE_NUMBER": {
+          "correct": 0,
+          "total": 1
+        },
+        "TAX_ID": {
+          "correct": 0,
+          "total": 1
+        },
+        "TEMPERATURE": {
+          "correct": 0,
+          "total": 3
+        },
+        "TIME": {
+          "correct": 0,
+          "total": 6
+        },
+        "TIME_RANGE": {
+          "correct": 0,
+          "total": 1
+        },
+        "TRACKING_ID": {
+          "correct": 0,
+          "total": 1
+        },
+        "TRAIN_ID": {
+          "correct": 0,
+          "total": 1
+        },
+        "VERSION": {
+          "correct": 0,
+          "total": 2
+        },
+        "YEAR": {
+          "correct": 3,
+          "total": 6
+        },
+        "YEAR_BCE": {
+          "correct": 0,
+          "total": 1
+        },
+        "YEAR_RANGE": {
+          "correct": 0,
+          "total": 2
+        }
+      }
+    },
+    "soe_vinorm": {
+      "total": 181,
+      "score_eligible": 180,
+      "excluded_questionable_gold": 1,
+      "available": 0,
+      "unavailable_or_error": 180,
+      "exact_match": [
+        0,
+        0
+      ],
+      "acceptable_variant_match": [
+        0,
+        0
+      ],
+      "casefold_variant_match_diagnostic": [
+        0,
+        0
+      ],
+      "changed": [
+        0,
+        0
+      ],
+      "coverage": [
+        0,
+        180
+      ],
+      "abstention_or_unsupported": [
+        180,
+        180
+      ],
+      "sentence_errors": [
+        0,
+        0
+      ],
+      "macro_accuracy_classes_n_ge_2": null,
+      "per_class": {}
+    },
+    "vietnormalizer": {
+      "total": 181,
+      "score_eligible": 180,
+      "excluded_questionable_gold": 1,
+      "available": 180,
+      "unavailable_or_error": 0,
+      "exact_match": [
+        0,
+        180
+      ],
+      "acceptable_variant_match": [
+        0,
+        180
+      ],
+      "casefold_variant_match_diagnostic": [
+        52,
+        180
+      ],
+      "changed": [
+        180,
+        180
+      ],
+      "coverage": [
+        180,
+        180
+      ],
+      "abstention_or_unsupported": [
+        0,
+        180
+      ],
+      "sentence_errors": [
+        180,
+        180
+      ],
+      "macro_accuracy_classes_n_ge_2": 0.0,
+      "per_class": {
+        "ACCOUNT_NUMBER": {
+          "correct": 0,
+          "total": 1
+        },
+        "ADDRESS": {
+          "correct": 0,
+          "total": 2
+        },
+        "ALLEY_NUMBER": {
+          "correct": 0,
+          "total": 1
+        },
+        "APARTMENT": {
+          "correct": 0,
+          "total": 2
+        },
+        "AVAILABILITY": {
+          "correct": 0,
+          "total": 1
+        },
+        "BATCH_ID": {
+          "correct": 0,
+          "total": 1
+        },
+        "BUS_ROUTE": {
+          "correct": 0,
+          "total": 2
+        },
+        "CARD_SUFFIX": {
+          "correct": 0,
+          "total": 1
+        },
+        "CLASS_ID": {
+          "correct": 0,
+          "total": 1
+        },
+        "DATE": {
+          "correct": 0,
+          "total": 7
+        },
+        "DATE_RANGE": {
+          "correct": 0,
+          "total": 2
+        },
+        "DAY_OF_MONTH": {
+          "correct": 0,
+          "total": 1
+        },
+        "DECIMAL": {
+          "correct": 0,
+          "total": 4
+        },
+        "DIGITAL_STORAGE": {
+          "correct": 0,
+          "total": 3
+        },
+        "DURATION": {
+          "correct": 0,
+          "total": 3
+        },
+        "EMERGENCY_PHONE": {
+          "correct": 0,
+          "total": 3
+        },
+        "EQUATION": {
+          "correct": 0,
+          "total": 3
+        },
+        "ERROR_CODE": {
+          "correct": 0,
+          "total": 1
+        },
+        "FINANCIAL_RATIO": {
+          "correct": 0,
+          "total": 1
+        },
+        "FLIGHT_ID": {
+          "correct": 0,
+          "total": 1
+        },
+        "FRACTION": {
+          "correct": 0,
+          "total": 4
+        },
+        "FRACTIONAL_DURATION": {
+          "correct": 0,
+          "total": 1
+        },
+        "GATE": {
+          "correct": 0,
+          "total": 1
+        },
+        "HOUSE_NUMBER": {
+          "correct": 0,
+          "total": 1
+        },
+        "IDENTIFIER": {
+          "correct": 0,
+          "total": 3
+        },
+        "INTERVAL": {
+          "correct": 0,
+          "total": 1
+        },
+        "INVOICE_ID": {
+          "correct": 0,
+          "total": 1
+        },
+        "ISO_DATE": {
+          "correct": 0,
+          "total": 1
+        },
+        "KILOMETER_MARKER": {
+          "correct": 0,
+          "total": 1
+        },
+        "LICENSE_PLATE": {
+          "correct": 0,
+          "total": 2
+        },
+        "LOCKER": {
+          "correct": 0,
+          "total": 1
+        },
+        "MEASURE": {
+          "correct": 0,
+          "total": 11
+        },
+        "MEASURE_RANGE": {
+          "correct": 0,
+          "total": 1
+        },
+        "MEDIA_TIMESTAMP": {
+          "correct": 0,
+          "total": 1
+        },
+        "MEDICAL_RATIO": {
+          "correct": 0,
+          "total": 2
+        },
+        "MONEY": {
+          "correct": 0,
+          "total": 14
+        },
+        "MONEY_RANGE": {
+          "correct": 0,
+          "total": 1
+        },
+        "MONEY_RATE": {
+          "correct": 0,
+          "total": 1
+        },
+        "MONTH_YEAR": {
+          "correct": 0,
+          "total": 2
+        },
+        "NATIONAL_ID": {
+          "correct": 0,
+          "total": 1
+        },
+        "NEGATIVE_QUANTITY": {
+          "correct": 0,
+          "total": 1
+        },
+        "ORDER_ID": {
+          "correct": 0,
+          "total": 1
+        },
+        "ORDINAL_ROMAN": {
+          "correct": 0,
+          "total": 1
+        },
+        "PASSPORT_ID": {
+          "correct": 0,
+          "total": 1
+        },
+        "PERCENT": {
+          "correct": 0,
+          "total": 3
+        },
+        "PERCENT_RANGE": {
+          "correct": 0,
+          "total": 1
+        },
+        "PHONE": {
+          "correct": 0,
+          "total": 8
+        },
+        "PHONE_EXTENSION": {
+          "correct": 0,
+          "total": 1
+        },
+        "PIN": {
+          "correct": 0,
+          "total": 1
+        },
+        "POSTAL_CODE": {
+          "correct": 0,
+          "total": 1
+        },
+        "POWER": {
+          "correct": 0,
+          "total": 3
+        },
+        "PROBABILITY": {
+          "correct": 0,
+          "total": 1
+        },
+        "QUANTITY": {
+          "correct": 0,
+          "total": 15
+        },
+        "QUARTER_YEAR": {
+          "correct": 0,
+          "total": 1
+        },
+        "QUEUE_ID": {
+          "correct": 0,
+          "total": 1
+        },
+        "RADICAL": {
+          "correct": 0,
+          "total": 1
+        },
+        "RANGE": {
+          "correct": 0,
+          "total": 2
+        },
+        "RATIO": {
+          "correct": 0,
+          "total": 3
+        },
+        "RECORD_ID": {
+          "correct": 0,
+          "total": 1
+        },
+        "ROAD_ROUTE": {
+          "correct": 0,
+          "total": 1
+        },
+        "ROOM": {
+          "correct": 0,
+          "total": 4
+        },
+        "SCIENTIFIC_NOTATION": {
+          "correct": 0,
+          "total": 1
+        },
+        "SCORE": {
+          "correct": 0,
+          "total": 2
+        },
+        "SCORE_SCALE": {
+          "correct": 0,
+          "total": 1
+        },
+        "SEAT": {
+          "correct": 0,
+          "total": 1
+        },
+        "SERVICE_PHONE": {
+          "correct": 0,
+          "total": 1
+        },
+        "SIGNED_NUMBER": {
+          "correct": 0,
+          "total": 2
+        },
+        "SIGNED_PERCENT": {
+          "correct": 0,
+          "total": 2
+        },
+        "STUDENT_ID": {
+          "correct": 0,
+          "total": 1
+        },
+        "TABLE_NUMBER": {
+          "correct": 0,
+          "total": 1
+        },
+        "TAX_ID": {
+          "correct": 0,
+          "total": 1
+        },
+        "TEMPERATURE": {
+          "correct": 0,
+          "total": 3
+        },
+        "TIME": {
+          "correct": 0,
+          "total": 6
+        },
+        "TIME_RANGE": {
+          "correct": 0,
+          "total": 1
+        },
+        "TRACKING_ID": {
+          "correct": 0,
+          "total": 1
+        },
+        "TRAIN_ID": {
+          "correct": 0,
+          "total": 1
+        },
+        "VERSION": {
+          "correct": 0,
+          "total": 2
+        },
+        "YEAR": {
+          "correct": 0,
+          "total": 6
+        },
+        "YEAR_BCE": {
+          "correct": 0,
+          "total": 1
+        },
+        "YEAR_RANGE": {
+          "correct": 0,
+          "total": 2
+        }
+      }
+    }
+  },
+  "test": {
+    "contextual_rule": {
+      "total": 19,
+      "score_eligible": 19,
+      "excluded_questionable_gold": 0,
+      "available": 19,
+      "unavailable_or_error": 0,
+      "exact_match": [
+        5,
+        19
+      ],
+      "acceptable_variant_match": [
+        6,
+        19
+      ],
+      "casefold_variant_match_diagnostic": [
+        6,
+        19
+      ],
+      "changed": [
+        11,
+        19
+      ],
+      "coverage": [
+        14,
+        19
+      ],
+      "abstention_or_unsupported": [
+        5,
+        19
+      ],
+      "sentence_errors": [
+        13,
+        19
+      ],
+      "macro_accuracy_classes_n_ge_2": 0.20833333333333334,
+      "per_class": {
+        "DATE": {
+          "correct": 0,
+          "total": 2
+        },
+        "DECIMAL": {
+          "correct": 0,
+          "total": 1
+        },
+        "MEASURE": {
+          "correct": 0,
+          "total": 3
+        },
+        "MONEY": {
+          "correct": 2,
+          "total": 4
+        },
+        "PHONE": {
+          "correct": 0,
+          "total": 2
+        },
+        "QUANTITY": {
+          "correct": 3,
+          "total": 4
+        },
+        "TIME": {
+          "correct": 0,
+          "total": 2
+        },
+        "YEAR": {
+          "correct": 1,
+          "total": 1
+        }
+      }
+    },
+    "direct_num2words": {
+      "total": 19,
+      "score_eligible": 19,
+      "excluded_questionable_gold": 0,
+      "available": 19,
+      "unavailable_or_error": 0,
+      "exact_match": [
+        3,
+        19
+      ],
+      "acceptable_variant_match": [
+        4,
+        19
+      ],
+      "casefold_variant_match_diagnostic": [
+        4,
+        19
+      ],
+      "changed": [
+        19,
+        19
+      ],
+      "coverage": [
+        19,
+        19
+      ],
+      "abstention_or_unsupported": [
+        0,
+        19
+      ],
+      "sentence_errors": [
+        15,
+        19
+      ],
+      "macro_accuracy_classes_n_ge_2": 0.125,
+      "per_class": {
+        "DATE": {
+          "correct": 0,
+          "total": 2
+        },
+        "DECIMAL": {
+          "correct": 0,
+          "total": 1
+        },
+        "MEASURE": {
+          "correct": 0,
+          "total": 3
+        },
+        "MONEY": {
+          "correct": 0,
+          "total": 4
+        },
+        "PHONE": {
+          "correct": 0,
+          "total": 2
+        },
+        "QUANTITY": {
+          "correct": 3,
+          "total": 4
+        },
+        "TIME": {
+          "correct": 0,
+          "total": 2
+        },
+        "YEAR": {
+          "correct": 1,
+          "total": 1
+        }
+      }
+    },
+    "identity": {
+      "total": 19,
+      "score_eligible": 19,
+      "excluded_questionable_gold": 0,
+      "available": 19,
+      "unavailable_or_error": 0,
+      "exact_match": [
+        0,
+        19
+      ],
+      "acceptable_variant_match": [
+        0,
+        19
+      ],
+      "casefold_variant_match_diagnostic": [
+        0,
+        19
+      ],
+      "changed": [
+        0,
+        19
+      ],
+      "coverage": [
+        19,
+        19
+      ],
+      "abstention_or_unsupported": [
+        0,
+        19
+      ],
+      "sentence_errors": [
+        19,
+        19
+      ],
+      "macro_accuracy_classes_n_ge_2": 0.0,
+      "per_class": {
+        "DATE": {
+          "correct": 0,
+          "total": 2
+        },
+        "DECIMAL": {
+          "correct": 0,
+          "total": 1
+        },
+        "MEASURE": {
+          "correct": 0,
+          "total": 3
+        },
+        "MONEY": {
+          "correct": 0,
+          "total": 4
+        },
+        "PHONE": {
+          "correct": 0,
+          "total": 2
+        },
+        "QUANTITY": {
+          "correct": 0,
+          "total": 4
+        },
+        "TIME": {
+          "correct": 0,
+          "total": 2
+        },
+        "YEAR": {
+          "correct": 0,
+          "total": 1
+        }
+      }
+    },
+    "omnivoice_current": {
+      "total": 19,
+      "score_eligible": 19,
+      "excluded_questionable_gold": 0,
+      "available": 19,
+      "unavailable_or_error": 0,
+      "exact_match": [
+        5,
+        19
+      ],
+      "acceptable_variant_match": [
+        6,
+        19
+      ],
+      "casefold_variant_match_diagnostic": [
+        6,
+        19
+      ],
+      "changed": [
+        11,
+        19
+      ],
+      "coverage": [
+        19,
+        19
+      ],
+      "abstention_or_unsupported": [
+        0,
+        19
+      ],
+      "sentence_errors": [
+        13,
+        19
+      ],
+      "macro_accuracy_classes_n_ge_2": 0.20833333333333334,
+      "per_class": {
+        "DATE": {
+          "correct": 0,
+          "total": 2
+        },
+        "DECIMAL": {
+          "correct": 0,
+          "total": 1
+        },
+        "MEASURE": {
+          "correct": 0,
+          "total": 3
+        },
+        "MONEY": {
+          "correct": 2,
+          "total": 4
+        },
+        "PHONE": {
+          "correct": 0,
+          "total": 2
+        },
+        "QUANTITY": {
+          "correct": 3,
+          "total": 4
+        },
+        "TIME": {
+          "correct": 0,
+          "total": 2
+        },
+        "YEAR": {
+          "correct": 1,
+          "total": 1
+        }
+      }
+    },
+    "omnivoice_fallback": {
+      "total": 19,
+      "score_eligible": 19,
+      "excluded_questionable_gold": 0,
+      "available": 19,
+      "unavailable_or_error": 0,
+      "exact_match": [
+        3,
+        19
+      ],
+      "acceptable_variant_match": [
+        4,
+        19
+      ],
+      "casefold_variant_match_diagnostic": [
+        4,
+        19
+      ],
+      "changed": [
+        19,
+        19
+      ],
+      "coverage": [
+        19,
+        19
+      ],
+      "abstention_or_unsupported": [
+        0,
+        19
+      ],
+      "sentence_errors": [
+        15,
+        19
+      ],
+      "macro_accuracy_classes_n_ge_2": 0.125,
+      "per_class": {
+        "DATE": {
+          "correct": 0,
+          "total": 2
+        },
+        "DECIMAL": {
+          "correct": 0,
+          "total": 1
+        },
+        "MEASURE": {
+          "correct": 0,
+          "total": 3
+        },
+        "MONEY": {
+          "correct": 0,
+          "total": 4
+        },
+        "PHONE": {
+          "correct": 0,
+          "total": 2
+        },
+        "QUANTITY": {
+          "correct": 3,
+          "total": 4
+        },
+        "TIME": {
+          "correct": 0,
+          "total": 2
+        },
+        "YEAR": {
+          "correct": 1,
+          "total": 1
+        }
+      }
+    },
+    "soe_vinorm": {
+      "total": 19,
+      "score_eligible": 19,
+      "excluded_questionable_gold": 0,
+      "available": 0,
+      "unavailable_or_error": 19,
+      "exact_match": [
+        0,
+        0
+      ],
+      "acceptable_variant_match": [
+        0,
+        0
+      ],
+      "casefold_variant_match_diagnostic": [
+        0,
+        0
+      ],
+      "changed": [
+        0,
+        0
+      ],
+      "coverage": [
+        0,
+        19
+      ],
+      "abstention_or_unsupported": [
+        19,
+        19
+      ],
+      "sentence_errors": [
+        0,
+        0
+      ],
+      "macro_accuracy_classes_n_ge_2": null,
+      "per_class": {}
+    },
+    "vietnormalizer": {
+      "total": 19,
+      "score_eligible": 19,
+      "excluded_questionable_gold": 0,
+      "available": 19,
+      "unavailable_or_error": 0,
+      "exact_match": [
+        0,
+        19
+      ],
+      "acceptable_variant_match": [
+        0,
+        19
+      ],
+      "casefold_variant_match_diagnostic": [
+        8,
+        19
+      ],
+      "changed": [
+        19,
+        19
+      ],
+      "coverage": [
+        19,
+        19
+      ],
+      "abstention_or_unsupported": [
+        0,
+        19
+      ],
+      "sentence_errors": [
+        19,
+        19
+      ],
+      "macro_accuracy_classes_n_ge_2": 0.0,
+      "per_class": {
+        "DATE": {
+          "correct": 0,
+          "total": 2
+        },
+        "DECIMAL": {
+          "correct": 0,
+          "total": 1
+        },
+        "MEASURE": {
+          "correct": 0,
+          "total": 3
+        },
+        "MONEY": {
+          "correct": 0,
+          "total": 4
+        },
+        "PHONE": {
+          "correct": 0,
+          "total": 2
+        },
+        "QUANTITY": {
+          "correct": 0,
+          "total": 4
+        },
+        "TIME": {
+          "correct": 0,
+          "total": 2
+        },
+        "YEAR": {
+          "correct": 0,
+          "total": 1
+        }
+      }
+    }
+  },
+  "integrity_warning": "test is mechanically split but contaminated by prior inspection/evaluation"
+}
