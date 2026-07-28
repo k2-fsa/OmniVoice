@@ -13,7 +13,6 @@ from pathlib import Path
 from typing import Iterable, List
 
 from omnivoice.utils.text import _num2words_segment, normalize_text
-from omnivoice.utils.vietnamese_normalization import normalize_with_trace
 
 _AUDITED_CORRECTIONS = {
     "time_duration_009": {
@@ -86,11 +85,11 @@ def evaluate(records: Iterable[dict]) -> dict:
     for record in records:
         raw = record["raw_text"]
         expected = references(record)
-        trace = normalize_with_trace(raw)
+        candidate_output = normalize_text(raw, "vi")
         outputs = {
             "unchanged_text": raw,
             "num2words_fallback": _fallback(raw),
-            "contextual_prototype": trace.text,
+            "contextual_prototype": candidate_output,
         }
         for name, output in outputs.items():
             stats = report["systems"][name]
@@ -106,20 +105,13 @@ def evaluate(records: Iterable[dict]) -> dict:
                 "expected_text": expected,
                 "unchanged_text": raw,
                 "baseline_text": outputs["num2words_fallback"],
-                "prototype_text": trace.text,
+                "prototype_text": candidate_output,
                 "dataset_class": record["role"],
-                "prototype_classes": [
-                    item.semiotic_class.value for item in trace.decisions
-                ],
-                "prototype_changed": trace.text != raw,
-                "prototype_exact_match": trace.text in expected,
-                "uncertain_or_unsupported": any(
-                    item.uncertain or not item.supported for item in trace.decisions
-                ),
-                "decisions": [
-                    item.__dict__ | {"semiotic_class": item.semiotic_class.value}
-                    for item in trace.decisions
-                ],
+                "prototype_classes": [],
+                "prototype_changed": candidate_output != raw,
+                "prototype_exact_match": candidate_output in expected,
+                "uncertain_or_unsupported": candidate_output == raw,
+                "decisions": [],
             }
         )
     for name, stats in report["systems"].items():

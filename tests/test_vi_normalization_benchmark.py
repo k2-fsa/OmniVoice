@@ -1,6 +1,7 @@
 """Focused integrity tests for the Vietnamese TN benchmark harness."""
 
 import unittest
+from unittest.mock import patch
 
 from experiments.vietnamese_text_normalization.adapters import (
     contextual_rule,
@@ -57,12 +58,37 @@ class AdapterTest(unittest.TestCase):
         self.assertEqual(direct.output_text, wrapped.output_text)
 
     def test_contextual_adapter_reports_abstention(self):
-        supported = contextual_rule("Phòng 105.")
-        self.assertEqual(supported.output_text, "Phòng một không năm.")
-        self.assertFalse(supported.uncertain)
-        unsupported = contextual_rule("Thị lực đạt 10/10.")
-        self.assertEqual(unsupported.output_text, "Thị lực đạt 10/10.")
-        self.assertTrue(unsupported.uncertain)
+        def fake_detector(text):
+            if "105" in text:
+                start = text.index("105")
+                return [
+                    {
+                        "start": start,
+                        "end": start + 3,
+                        "label": "CARDINAL",
+                        "text": "105",
+                    }
+                ]
+            start = text.index("10/10")
+            return [
+                {
+                    "start": start,
+                    "end": start + 5,
+                    "label": "RANGE",
+                    "text": "10/10",
+                }
+            ]
+
+        with patch(
+            "experiments.vietnamese_text_normalization.adapters.get_bamibert_detector",
+            return_value=fake_detector,
+        ):
+            supported = contextual_rule("Phòng 105.")
+            self.assertEqual(supported.output_text, "Phòng một không năm.")
+            self.assertFalse(supported.uncertain)
+            unsupported = contextual_rule("Thị lực đạt 10/10.")
+            self.assertEqual(unsupported.output_text, "Thị lực đạt 10/10.")
+            self.assertTrue(unsupported.uncertain)
 
 
 if __name__ == "__main__":

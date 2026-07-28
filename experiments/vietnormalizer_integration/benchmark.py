@@ -288,7 +288,10 @@ def main() -> None:
     if any(value is None for value in required):
         parser.error("driver mode requires dataset, smoke cases, both Python paths, and artifacts")
 
-    from omnivoice.utils.vietnamese_normalization import normalize as custom_normalize
+    from omnivoice.utils.text import normalize_text
+
+    def custom_normalize(text: str) -> str:
+        return normalize_text(text, "vi")
 
     dataset_path = args.dataset.resolve()
     smoke_path = args.smoke_cases.resolve()

@@ -6,8 +6,11 @@ from typing import Any, Callable
 
 from num2words import num2words
 
+from omnivoice.text_normalization import (
+    get_bamibert_detector,
+    normalize_from_ner,
+)
 from omnivoice.utils.text import _num2words_segment, normalize_text
-from omnivoice.utils.vietnamese_normalization import normalize_with_trace
 
 
 @dataclass(frozen=True)
@@ -68,19 +71,16 @@ def direct_num2words(text: str, language: str = "vi") -> NormalizationResult:
 
 
 def contextual_rule(text: str, language: str = "vi") -> NormalizationResult:
-    traced = normalize_with_trace(text)
-    uncertain = any(item.uncertain or not item.supported for item in traced.decisions)
+    result = normalize_from_ner(text, get_bamibert_detector())
+    uncertain = any(item.action == "preserved" for item in result.diagnostics)
     return NormalizationResult(
-        traced.text,
-        changed=traced.text != text,
+        result.text,
+        changed=result.text != text,
         uncertain=uncertain,
         metadata={
-            "version": "frozen-poc-20260722",
-            "classes": [item.semiotic_class.value for item in traced.decisions],
-            "decisions": [
-                item.__dict__ | {"semiotic_class": item.semiotic_class.value}
-                for item in traced.decisions
-            ],
+            "version": "candidate-pipeline",
+            "call": "omnivoice.text_normalization.normalize_from_ner",
+            "decisions": [asdict(item) for item in result.diagnostics],
         },
     )
 

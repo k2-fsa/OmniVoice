@@ -1,11 +1,29 @@
 """JSONL schemas and strict validators for Vietnamese TN development data."""
 
 from dataclasses import asdict, dataclass, field
+from enum import Enum
 import json
 from pathlib import Path
 from typing import Any, Iterable, Optional
 
-from omnivoice.utils.vietnamese_normalization.types import CandidateLabel
+class CandidateLabel(str, Enum):
+    """Frozen experiment taxonomy; not a production backend dependency."""
+
+    CARDINAL = "CARDINAL"
+    YEAR = "YEAR"
+    IDENTIFIER = "IDENTIFIER"
+    DECIMAL = "DECIMAL"
+    FRACTION = "FRACTION"
+    DATE = "DATE"
+    TIME = "TIME"
+    VERSION = "VERSION"
+    SCORE = "SCORE"
+    RANGE = "RANGE"
+    CURRENCY = "CURRENCY"
+    MEASUREMENT = "MEASUREMENT"
+    PERCENT = "PERCENT"
+    ROMAN = "ROMAN"
+    KEEP = "KEEP"
 
 TAXONOMY_V1 = frozenset(label.value for label in CandidateLabel)
 

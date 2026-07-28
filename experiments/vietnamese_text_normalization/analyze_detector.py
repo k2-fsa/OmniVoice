@@ -5,7 +5,7 @@ import json
 from collections import Counter
 from pathlib import Path
 
-from omnivoice.utils.vietnamese_normalization.detector import detect
+from omnivoice.text_normalization import get_bamibert_detector
 
 from .schema import load_cases
 
@@ -14,10 +14,11 @@ def analyze(path: Path) -> dict:
     if "held" in path.name.lower() or "test" in path.name.lower():
         raise ValueError("refusing a held-out/test-looking input; pass dev-only JSONL")
     cases = load_cases(path)
+    detector = get_bamibert_detector()
     counts = Counter()
     errors = []
     for case in cases:
-        predicted = list(detect(case.text))
+        predicted = list(detector(case.text))
         exact = {(span.start, span.end) for span in predicted}
         for gold in case.spans:
             counts["gold_spans"] += 1
@@ -55,7 +56,7 @@ def analyze(path: Path) -> dict:
 
 
 def as_span(span) -> dict:
-    return {"start": span.start, "end": span.end, "surface": span.surface}
+    return {"start": span.start, "end": span.end, "surface": span.text}
 
 
 def main() -> None:
