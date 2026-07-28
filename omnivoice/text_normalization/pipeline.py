@@ -5,7 +5,7 @@ import math
 import re
 from collections.abc import Iterable
 
-from .parsers import parse
+from .parsers import CurrencyMarkerMissingError, parse, parse_number
 from .types import (
     CandidateSpan,
     Diagnostic,
@@ -127,6 +127,43 @@ def _normalize_candidates(
             diagnostics.append(Diagnostic(candidate, "normalized", reason, effective.value,
                                           replacement, value))
         except (ValueError, OverflowError) as error:
+            if effective == EntityLabel.MONEY and isinstance(
+                error, CurrencyMarkerMissingError
+            ):
+                try:
+                    value = parse_number(semantic)
+                    replacement = verbalize(
+                        value,
+                        effective,
+                        surface=semantic,
+                    )
+                except (ValueError, OverflowError) as fallback_error:
+                    logger.debug(
+                        "Preserving %r after numeric-only money fallback: %s",
+                        semantic,
+                        fallback_error,
+                    )
+                    diagnostics.append(
+                        Diagnostic(
+                            candidate,
+                            "preserved",
+                            f"{error}; numeric-only fallback failed: {fallback_error}",
+                            effective.value,
+                        )
+                    )
+                    continue
+                replacements.append((start, end, replacement))
+                diagnostics.append(
+                    Diagnostic(
+                        candidate,
+                        "normalized",
+                        "currency marker missing; numeric-only fallback applied",
+                        effective.value,
+                        replacement,
+                        value,
+                    )
+                )
+                continue
             logger.debug("Preserving %r: %s", semantic, error)
             diagnostics.append(Diagnostic(candidate, "preserved", str(error), effective.value))
 

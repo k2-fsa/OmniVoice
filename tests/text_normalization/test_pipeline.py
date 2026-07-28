@@ -42,6 +42,111 @@ def test_observed_leading_whitespace_span_preserved():
     assert result.text == "Tôi có hai mươi lăm quyển sách."
 
 
+@pytest.mark.parametrize(
+    ("text", "surface", "expected", "expected_integer", "expected_fractional"),
+    [
+        (
+            "Doanh thu đạt 12,5 tỷ đồng.",
+            " 12,5",
+            "Doanh thu đạt mười hai phẩy năm tỷ đồng.",
+            "12",
+            "5",
+        ),
+        (
+            "Giá trị là 150.000 đồng.",
+            " 150.000",
+            "Giá trị là một trăm năm mươi nghìn đồng.",
+            "150000",
+            None,
+        ),
+    ],
+)
+def test_numeric_only_money_candidate_falls_back_to_complete_number(
+    text,
+    surface,
+    expected,
+    expected_integer,
+    expected_fractional,
+):
+    result = normalize_candidates(text, [span(text, surface, "MONEY")])
+
+    assert result.text == expected
+    diagnostic = result.diagnostics[0]
+    assert diagnostic.action == "normalized"
+    assert diagnostic.effective_label == "MONEY"
+    assert diagnostic.reason == (
+        "currency marker missing; numeric-only fallback applied"
+    )
+    assert diagnostic.value.integer == expected_integer
+    assert diagnostic.value.fractional == expected_fractional
+
+
+@pytest.mark.parametrize(
+    ("text", "surface", "expected"),
+    [
+        (
+            "Giá là 150.000 đồng.",
+            " 150.000 đồng",
+            "Giá là một trăm năm mươi nghìn đồng.",
+        ),
+        (
+            "Giá là 1.234.567,89 đồng.",
+            " 1.234.567,89 đồng",
+            (
+                "Giá là một triệu hai trăm ba mươi tư nghìn năm trăm "
+                "sáu mươi bảy phẩy tám chín đồng."
+            ),
+        ),
+    ],
+)
+def test_complete_money_candidate_keeps_normal_money_behavior(
+    text,
+    surface,
+    expected,
+):
+    result = normalize_candidates(text, [span(text, surface, "MONEY")])
+
+    assert result.text == expected
+    assert result.diagnostics[0].reason == "model label accepted"
+
+
+@pytest.mark.parametrize(
+    ("surface", "reason"),
+    [
+        (
+            "12..5",
+            (
+                "currency marker missing; numeric-only fallback failed: "
+                "malformed integer component"
+            ),
+        ),
+        ("12abc", "malformed or unsupported money"),
+        ("không phải tiền", "malformed or unsupported money"),
+    ],
+)
+def test_invalid_numeric_only_money_candidate_is_preserved(surface, reason):
+    text = f"Giữ nguyên [{surface}] nhé."
+    result = normalize_candidates(text, [span(text, surface, "MONEY")])
+
+    assert result.text == text
+    diagnostic = result.diagnostics[0]
+    assert diagnostic.action == "preserved"
+    assert diagnostic.effective_label == "MONEY"
+    assert diagnostic.reason == reason
+
+
+def test_numeric_only_money_fallback_preserves_candidate_whitespace_and_punctuation():
+    text = "Doanh thu ( 12,5 ) tỷ đồng 🙂."
+    result = normalize_candidates(text, [span(text, " 12,5 ", "MONEY")])
+
+    assert result.text == "Doanh thu ( mười hai phẩy năm ) tỷ đồng 🙂."
+
+
+@pytest.mark.parametrize("text", ["", "Tiếng Việt bình thường.", "Unicode αβγ 🙂"])
+def test_text_without_candidates_is_preserved(text):
+    assert normalize_candidates(text, []).text == text
+
+
 def test_identifier_context_overrides_phone_and_keeps_zeroes():
     text = "Mã sinh viên của tôi là 3036123456."
     candidate = span(text, "3036123456", "PHONE")

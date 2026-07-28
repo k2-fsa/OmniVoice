@@ -71,6 +71,10 @@ UNITS = {
 MAX_DIGITS = 18
 
 
+class CurrencyMarkerMissingError(ValueError):
+    """A money-shaped value contained no currency marker."""
+
+
 def _sign(raw: str) -> str:
     return "-" if raw in {"-", "−"} else raw
 
@@ -122,6 +126,16 @@ def parse_decimal(surface: str) -> NumberValue:
     if len(integer) > MAX_DIGITS:
         raise ValueError("decimal integer component too large")
     return NumberValue(sign, integer, fractional)
+
+
+def parse_number(surface: str) -> NumberValue:
+    """Parse one complete plain integer, grouped integer, or decimal."""
+    if re.search(r"[.,]", surface) and not re.fullmatch(
+        r"[+\-−]?\d{1,3}(?:[.\s\u00a0\u202f]\d{3})+",
+        surface,
+    ):
+        return parse_decimal(surface)
+    return parse_cardinal(surface)
 
 
 def parse_year(surface: str) -> NumberValue:
@@ -208,10 +222,8 @@ def parse_money(surface: str) -> MoneyValue:
     )
     marker = prefix or suffix
     if not marker:
-        raise ValueError("currency marker missing")
-    amount = parse_decimal(number) if re.search(r"[.,]", number) and not (
-        re.fullmatch(r"[+\-−]?\d{1,3}(?:[.\s\u00a0\u202f]\d{3})+", number)
-    ) else parse_cardinal(number)
+        raise CurrencyMarkerMissingError("currency marker missing")
+    amount = parse_number(number)
     currencies = {"₫": "đồng", "đ": "đồng", "vnd": "đồng", "đồng": "đồng",
                   "$": "đô la Mỹ", "usd": "đô la Mỹ", "€": "euro", "eur": "euro"}
     return MoneyValue(amount, multiplier.lower() if multiplier else None,
