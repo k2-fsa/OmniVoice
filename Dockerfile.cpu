@@ -1,0 +1,29 @@
+FROM python:3.12-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    OMNIVOICE_BAMIBERT_MODEL=/models/bamibert \
+    OMNIVOICE_BAMIBERT_DEVICE=cpu
+
+RUN apt-get update \
+    && apt-get install --no-install-recommends -y ffmpeg libsndfile1 \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+COPY pyproject.toml README.md LICENSE ./
+COPY omnivoice ./omnivoice
+COPY scripts ./scripts
+
+# Install CPU PyTorch first. The project install then sees these satisfying
+# the runtime constraints and does not pull CUDA wheels.
+RUN python -m pip install \
+      --index-url https://download.pytorch.org/whl/cpu \
+      "torch==2.8.0" "torchaudio==2.8.0" \
+    && python -m pip install .
+
+EXPOSE 7860
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+    CMD python -c "import omnivoice; print('ok')" || exit 1
+
+CMD ["omnivoice-demo", "--ip", "0.0.0.0", "--port", "7860", "--no-asr"]

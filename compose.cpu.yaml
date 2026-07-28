@@ -1,0 +1,17 @@
+services:
+  omnivoice:
+    build:
+      context: .
+      dockerfile: Dockerfile.cpu
+    environment:
+      OMNIVOICE_BAMIBERT_MODEL: /models/bamibert
+      OMNIVOICE_BAMIBERT_DEVICE: cpu
+      HF_HOME: /cache/huggingface
+    volumes:
+      - ${OMNIVOICE_BAMIBERT_HOST_PATH:-./artifacts/models/bamibert_augmented_best}:/models/bamibert:ro
+      - omnivoice-hf-cache:/cache/huggingface
+    ports:
+      - "${OMNIVOICE_PORT:-7860}:7860"
+
+volumes:
+  omnivoice-hf-cache:

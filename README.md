@@ -378,6 +378,26 @@ does not claim local BamiBERT loading, real OmniVoice synthesis/audio
 verification, or Docker runtime validation; those remain environment-specific
 follow-up checks.
 
+### CPU Docker
+
+The CPU image does not bake in local weights. Mount BamiBERT and keep the
+Hugging Face cache persistent:
+
+```bash
+OMNIVOICE_BAMIBERT_HOST_PATH="$PWD/artifacts/models/bamibert_augmented_best" \
+  docker compose -f compose.cpu.yaml up --build
+```
+
+The mounted directory appears as `/models/bamibert`; the health check imports
+the package but deliberately does not load BamiBERT. A missing/broken mount
+causes an enabled request to preserve the original target and log a useful
+load diagnostic. The text-only probe is available inside the container:
+
+```bash
+docker compose -f compose.cpu.yaml exec omnivoice \
+  python scripts/try_text_normalizer.py "Tôi có 25 quyển sách."
+```
+
 ---
 
 ## Training & Evaluation

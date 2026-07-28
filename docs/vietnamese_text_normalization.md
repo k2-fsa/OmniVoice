@@ -107,6 +107,14 @@ isolation, failure recovery through a different valid configuration,
 deterministic spans/verbalizers, complete-input fallback, target-only handoff,
 entry-point flags, and unchanged reference/instruction fields.
 
+## CPU container
+
+`Dockerfile.cpu` installs CPU PyTorch. `compose.cpu.yaml` mounts BamiBERT at
+`/models/bamibert`, persists the Hugging Face cache, and configures the detector
+through environment variables. Model files are excluded by `.dockerignore` and
+must not be baked into the source image. Its health check imports `omnivoice`
+only and therefore cannot trigger model loading.
+
 Real BamiBERT behavior was validated separately on Kaggle. No local real-model
 load or inference is part of Step 1, and Step 1 does not claim a real
 BamiBERT-to-normalizer run, real OmniVoice synthesis/audio artifact, or Docker
