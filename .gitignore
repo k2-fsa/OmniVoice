@@ -9,6 +9,19 @@ build/
 .env
 .DS_Store
 .pytest_cache/
+
+# Local/generated datasets and model artifacts
+DATA/
+artifacts/
+checkpoints/
+*.pt
+*.pth
+*.bin
+*.safetensors
+*.ckpt
+*.onnx
+*.h5
+*.pkl
 .mypy_cache/
 .ruff_cache/
 *.so
@@ -47,3 +60,6 @@ examples/exp*
 # Python cache
 __pycache__/
 *.py[cod]
+
+# Local trained models
+artifacts/models/

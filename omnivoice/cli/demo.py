@@ -32,6 +32,7 @@ import numpy as np
 import torch
 
 from omnivoice import OmniVoice, OmniVoiceGenerationConfig
+from omnivoice.text_normalization import configure_bamibert
 from omnivoice.utils.common import get_best_device
 from omnivoice.utils.lang_map import LANG_NAMES, lang_display_name
 
@@ -141,6 +142,29 @@ def build_parser() -> argparse.ArgumentParser:
         help="ASR model path or HuggingFace repo id"
         " (default: openai/whisper-large-v3-turbo).",
     )
+    parser.add_argument(
+        "--normalize-text",
+        dest="normalize_text",
+        action="store_true",
+        help="Start Gradio with Vietnamese target normalization enabled.",
+    )
+    parser.add_argument(
+        "--no-normalize-text",
+        dest="normalize_text",
+        action="store_false",
+        help="Start Gradio with target normalization disabled.",
+    )
+    parser.set_defaults(normalize_text=False)
+    parser.add_argument(
+        "--bamibert-model-path",
+        default=None,
+        help="BamiBERT directory (or set OMNIVOICE_BAMIBERT_MODEL).",
+    )
+    parser.add_argument(
+        "--bamibert-device",
+        default=None,
+        help="BamiBERT device (or set OMNIVOICE_BAMIBERT_DEVICE; default: cpu).",
+    )
     return parser
 
 
@@ -153,6 +177,7 @@ def build_demo(
     model: OmniVoice,
     checkpoint: str,
     generate_fn=None,
+    normalize_text_default: bool = False,
 ) -> gr.Blocks:
     sampling_rate = model.sampling_rate
 
@@ -187,7 +212,7 @@ def build_demo(
         lang = language if (language and language != "Auto") else None
 
         kw: Dict[str, Any] = dict(
-            text=text.strip(),
+            text=text,
             language=lang,
             generation_config=gen_config,
             normalize_text=bool(normalize_text),
@@ -297,7 +322,7 @@ def build_demo(
             )
             tn = gr.Checkbox(
                 label="Chuẩn hóa tiếng Việt",
-                value=False,
+                value=normalize_text_default,
                 info="Chuẩn hóa target text trước khi tổng hợp. Mặc định: tắt.",
             )
         return ns, gs, dn, sp, du, pp, po, tn
@@ -533,6 +558,7 @@ def main(argv=None) -> int:
     )
     parser = build_parser()
     args = parser.parse_args(argv)
+    configure_bamibert(args.bamibert_model_path, args.bamibert_device)
 
     device = args.device or get_best_device()
 
@@ -550,7 +576,11 @@ def main(argv=None) -> int:
     )
     print("Model loaded.")
 
-    demo = build_demo(model, checkpoint)
+    demo = build_demo(
+        model,
+        checkpoint,
+        normalize_text_default=args.normalize_text,
+    )
 
     demo.queue().launch(
         server_name=args.ip,

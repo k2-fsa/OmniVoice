@@ -21,12 +21,12 @@ Usage:
 
 import argparse
 import logging
-
 import torch
 
 import soundfile as sf
 
 from omnivoice.models.omnivoice import OmniVoice
+from omnivoice.text_normalization import configure_bamibert
 from omnivoice.utils.common import get_best_device, str2bool
 
 
@@ -103,8 +103,26 @@ def get_parser() -> argparse.ArgumentParser:
     parser.add_argument("--class_temperature", type=float, default=0.0)
     parser.add_argument(
         "--normalize-text",
+        dest="normalize_text",
         action="store_true",
         help="Normalize target text before synthesis. Disabled by default.",
+    )
+    parser.add_argument(
+        "--no-normalize-text",
+        dest="normalize_text",
+        action="store_false",
+        help="Disable target text normalization before synthesis.",
+    )
+    parser.set_defaults(normalize_text=False)
+    parser.add_argument(
+        "--bamibert-model-path",
+        default=None,
+        help="BamiBERT directory (or set OMNIVOICE_BAMIBERT_MODEL).",
+    )
+    parser.add_argument(
+        "--bamibert-device",
+        default=None,
+        help="BamiBERT device (or set OMNIVOICE_BAMIBERT_DEVICE; default: cpu).",
     )
     parser.add_argument(
         "--device",
@@ -120,6 +138,7 @@ def main():
     logging.basicConfig(format=formatter, level=logging.INFO, force=True)
 
     args = get_parser().parse_args()
+    configure_bamibert(args.bamibert_model_path, args.bamibert_device)
 
     device = args.device or get_best_device()
     logging.info(f"Loading model from {args.model} on {device} ...")

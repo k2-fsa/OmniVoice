@@ -45,6 +45,7 @@ import torch
 from tqdm import tqdm
 
 from omnivoice.models.omnivoice import OmniVoice
+from omnivoice.text_normalization import configure_bamibert
 import soundfile as sf
 
 from omnivoice.utils.audio import load_audio
@@ -194,8 +195,26 @@ def get_parser():
     )
     parser.add_argument(
         "--normalize-text",
+        dest="normalize_text",
         action="store_true",
         help="Normalize target text before synthesis. Disabled by default.",
+    )
+    parser.add_argument(
+        "--no-normalize-text",
+        dest="normalize_text",
+        action="store_false",
+        help="Disable target text normalization before synthesis.",
+    )
+    parser.set_defaults(normalize_text=False)
+    parser.add_argument(
+        "--bamibert-model-path",
+        default=None,
+        help="BamiBERT directory (or set OMNIVOICE_BAMIBERT_MODEL).",
+    )
+    parser.add_argument(
+        "--bamibert-device",
+        default=None,
+        help="BamiBERT device (or set OMNIVOICE_BAMIBERT_DEVICE; default: cpu).",
     )
     return parser
 
@@ -432,6 +451,7 @@ def main():
     mp.set_start_method("spawn", force=True)
 
     args = get_parser().parse_args()
+    configure_bamibert(args.bamibert_model_path, args.bamibert_device)
     os.makedirs(args.res_dir, exist_ok=True)
 
     device_type, num_devices = get_best_device_with_count()
@@ -506,7 +526,9 @@ def main():
                         )
                     )
 
-            args_dict = vars(args)
+            args_dict = vars(args).copy()
+            args_dict.pop("bamibert_model_path")
+            args_dict.pop("bamibert_device")
 
             for batch in batches:
                 futures.append(

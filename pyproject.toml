@@ -41,7 +41,6 @@ dependencies = [
     "numpy",
     "soundfile",
     "librosa",
-    "vietnormalizer",
 ]
 
 [project.optional-dependencies]
@@ -80,8 +79,6 @@ torch = [
 torchaudio = [
   { index = "pytorch-cuda", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
 ]
-vietnormalizer = { git = "https://github.com/khanhhuyenpham/vietnormalizer.git", rev = "c72e30168e746993006688eff42161a1b450f43e" }
-
 [[tool.uv.index]]
 name = "pytorch-cuda"
 # Use PyTorch built for NVIDIA Toolkit version 12.8.
@@ -99,8 +96,19 @@ constraint-dependencies = [
 [tool.ruff.lint]
 ignore = ["F401", "E402", "F403", "F841", "E741"]
 
+[tool.pytest.ini_options]
+addopts = "-m 'not integration'"
+markers = [
+    "integration: tests that load local model artifacts",
+]
+
 [tool.hatch.build.targets.sdist]
 include = ["omnivoice"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["omnivoice"]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+]

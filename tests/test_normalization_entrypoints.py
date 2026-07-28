@@ -1,10 +1,13 @@
 """CLI, batch CLI, and Gradio forwarding for target normalization."""
 
+import os
 import sys
 import unittest
 from unittest.mock import patch
 
 import numpy as np
+
+os.environ["GRADIO_ANALYTICS_ENABLED"] = "False"
 
 from omnivoice.cli import demo, infer, infer_batch
 
@@ -18,7 +21,8 @@ class FakeModel:
 
     def generate(self, **kwargs):
         self.generate_calls.append(kwargs)
-        return [np.zeros(24, dtype=np.float32)]
+        texts = kwargs["text"] if isinstance(kwargs["text"], list) else [kwargs["text"]]
+        return [np.zeros(24, dtype=np.float32) for _ in texts]
 
     def create_voice_clone_prompt(self, **kwargs):
         self.prompt_calls.append(kwargs)
@@ -31,6 +35,8 @@ class SingleCliTest(unittest.TestCase):
         base = ["--text", "Có 2 hộp", "--output", "out.wav"]
         self.assertFalse(parser.parse_args(base).normalize_text)
         self.assertTrue(parser.parse_args(base + ["--normalize-text"]).normalize_text)
+        self.assertFalse(parser.parse_args(base + ["--no-normalize-text"]).normalize_text)
+        self.assertIsNone(parser.parse_args(base).bamibert_model_path)
 
     def test_main_forwards_boolean_without_touching_other_text_fields(self):
         for enabled in (False, True):
@@ -50,6 +56,8 @@ class SingleCliTest(unittest.TestCase):
             ]
             if enabled:
                 argv.append("--normalize-text")
+            else:
+                argv.append("--no-normalize-text")
             with (
                 self.subTest(enabled=enabled),
                 patch.object(sys, "argv", argv),
@@ -64,12 +72,38 @@ class SingleCliTest(unittest.TestCase):
             self.assertEqual(call["instruct"], "female, low pitch")
 
 
+class ConfigurationConsistencyTest(unittest.TestCase):
+    def test_all_entrypoints_share_defaults_and_have_no_backend_selector(self):
+        parsers_and_args = (
+            (
+                infer.get_parser(),
+                ["--text", "Có 2 hộp", "--output", "out.wav"],
+            ),
+            (
+                infer_batch.get_parser(),
+                ["--test_list", "input.jsonl", "--res_dir", "results"],
+            ),
+            (demo.build_parser(), []),
+        )
+        for parser, argv in parsers_and_args:
+            with self.subTest(prog=parser.prog):
+                args = parser.parse_args(argv)
+                self.assertFalse(args.normalize_text)
+                self.assertIsNone(args.bamibert_model_path)
+                self.assertIsNone(args.bamibert_device)
+                self.assertFalse(
+                    any("backend" in action.dest for action in parser._actions)
+                )
+
+
 class BatchCliTest(unittest.TestCase):
     def test_parser_defaults_off_and_flag_enables(self):
         parser = infer_batch.get_parser()
         base = ["--test_list", "input.jsonl", "--res_dir", "results"]
         self.assertFalse(parser.parse_args(base).normalize_text)
         self.assertTrue(parser.parse_args(base + ["--normalize-text"]).normalize_text)
+        self.assertFalse(parser.parse_args(base + ["--no-normalize-text"]).normalize_text)
+        self.assertIsNone(parser.parse_args(base).bamibert_device)
 
     def test_worker_forwards_boolean_without_touching_other_text_fields(self):
         sample = (
@@ -102,8 +136,58 @@ class BatchCliTest(unittest.TestCase):
         finally:
             infer_batch.worker_model = original
 
+    def test_multiple_batch_items_forward_exact_fields_consistently(self):
+        samples = [
+            (
+                "case-1",
+                "Mẫu\u00a0có 1 hộp",
+                "ref-1.wav",
+                "  Có 2 hộp  ",
+                "vi",
+                None,
+                None,
+                "female",
+            ),
+            (
+                "case-2",
+                "Mẫu có 3 túi",
+                "ref-2.wav",
+                "Có 4 túi",
+                "vi",
+                None,
+                None,
+                "low pitch",
+            ),
+        ]
+        original = infer_batch.worker_model
+        try:
+            model = FakeModel()
+            infer_batch.worker_model = model
+            with patch.object(infer_batch.sf, "write"):
+                infer_batch.run_inference_batch(
+                    samples,
+                    "results",
+                    normalize_text=True,
+                )
+            call = model.generate_calls[-1]
+            self.assertEqual(call["text"], ["  Có 2 hộp  ", "Có 4 túi"])
+            self.assertEqual(
+                call["ref_text"],
+                ["Mẫu\u00a0có 1 hộp", "Mẫu có 3 túi"],
+            )
+            self.assertEqual(call["instruct"], ["female", "low pitch"])
+            self.assertIs(call["normalize_text"], True)
+        finally:
+            infer_batch.worker_model = original
+
 
 class GradioTest(unittest.TestCase):
+    def test_parser_default_and_flags(self):
+        parser = demo.build_parser()
+        self.assertFalse(parser.parse_args([]).normalize_text)
+        self.assertTrue(parser.parse_args(["--normalize-text"]).normalize_text)
+        self.assertFalse(parser.parse_args(["--no-normalize-text"]).normalize_text)
+
     def test_checkbox_defaults_off_and_clone_event_forwards_value(self):
         model = FakeModel()
         app = demo.build_demo(model, "test")
@@ -146,6 +230,42 @@ class GradioTest(unittest.TestCase):
                 self.assertEqual(
                     model.prompt_calls[-1]["ref_text"], "Mẫu có 1 hộp"
                 )
+
+    def test_configured_checkbox_default_is_enabled(self):
+        app = demo.build_demo(
+            FakeModel(),
+            "test",
+            normalize_text_default=True,
+        )
+        checkboxes = [
+            component
+            for component in app.config["components"]
+            if component.get("props", {}).get("label") == "Chuẩn hóa tiếng Việt"
+        ]
+        self.assertEqual(len(checkboxes), 2)
+        self.assertTrue(all(item["props"]["value"] is True for item in checkboxes))
+
+    def test_disabled_gradio_normalization_preserves_target_whitespace(self):
+        model = FakeModel()
+        app = demo.build_demo(model, "test")
+        design_fn = next(
+            block_fn.fn
+            for block_fn in app.fns.values()
+            if getattr(block_fn.fn, "__name__", "") == "_design_fn"
+        )
+        design_fn(
+            "  Có 2 hộp  ",
+            "vi",
+            32,
+            2.0,
+            True,
+            1.0,
+            None,
+            True,
+            True,
+            False,
+        )
+        self.assertEqual(model.generate_calls[-1]["text"], "  Có 2 hộp  ")
 
 
 if __name__ == "__main__":

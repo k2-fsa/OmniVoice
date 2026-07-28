@@ -1,101 +1,127 @@
 # Vietnamese text normalization
 
-OmniVoice routes `vi`, `vie`, and `vietnamese` through the numeric-only
-VietNormalizer adapter when `normalize_text=True`. This backend preserves
-non-numeric text, casing, and punctuation, disables transliteration and lexical
-rewriting, and uses Unicode Letter/Mark boundaries for short units and currency
-markers.
+## Runtime contract and default
 
-Four-digit years use a cardinal reading in conventional dates; ISO years use
-digit-by-digit reading because that is the audited project label, not a claim of
-universal preference. Comma decimals are supported only inside money and use
-*phẩy* followed by digits. Recognized currencies include Vietnamese đồng,
-US/Hong Kong dollars, euro, and yen; other natural regional readings may differ.
-
-## Production and research architecture
-
-The production path is:
+Vietnamese normalization is opt-in and **off by default** in the Python API,
+single/batch CLI, and Gradio. When enabled, only target text is eligible:
 
 ```text
-API / CLI / batch / Gradio
-        -> normalize_for_inference (target only)
-        -> VietNormalizerAdapter
-        -> VietnameseNormalizer.normalize_numeric
-        -> tokenizer/model
+target text       -> BamiBERT -> deterministic normalization -> TTS
+reference text    -> unchanged (must remain aligned with reference audio)
+instruction text  -> unchanged (validated control vocabulary)
 ```
 
-There is no fallback from VietNormalizer to the custom normalizer. A missing or
-incompatible dependency raises a clear error. A recognized per-input runtime
-failure preserves the complete raw target and emits a warning; partial output is
-never returned.
+There is no backend selector and no legacy fallback. If detector loading,
+prediction, prediction conversion, or deterministic orchestration fails, the
+complete original target is handed onward.
 
-The earlier custom implementation remains under
-`omnivoice/utils/vietnamese_normalization/` for regression research. It has four
-explicit boundaries: a
-high-recall detector emits non-overlapping candidate spans, a conservative
-contextual classifier either selects a reading or abstains, `values.py` parses
-the selected span without float conversion, and `verbalizers.py` renders the
-typed value deterministically. There is no learned model or global decoder.
+## Candidate-driven BamiBERT pipeline
 
-The parser/verbalizer layer covers the complete v1 taxonomy: CARDINAL, YEAR,
-IDENTIFIER, DECIMAL, FRACTION, DATE, TIME, VERSION, SCORE, RANGE, CURRENCY,
-MEASUREMENT, PERCENT, ROMAN, and KEEP. This does not mean every detected form is
-automatically rewritten. The current rule classifier only routes cases with
-strong structural/context cues; ambiguous decimals, slash forms, scores, ranges,
-and codes are preserved until a contextual router is available.
+`omnivoice.text_normalization` is the conservative boundary for externally
+supplied BamiBERT spans. It deliberately does not load a model at import time:
+callers inject a detector into `normalize_from_ner`, or pass deterministic
+`CandidateSpan` objects to `normalize_candidates`.
 
-The sole stable inference boundary is
-`omnivoice.normalize_for_inference(...)`. Only target text is eligible for
-normalization. Reference transcripts remain byte-aligned in meaning with their
-reference audio, and voice-design instructions remain in their validated control
-vocabulary. `OmniVoice.generate(normalize_text=True)` invokes the boundary once,
-before duration estimation and tokenization; the default remains opt-in.
-
-The research backend remains directly inspectable:
-
-```python
-from omnivoice.utils.vietnamese_normalization import normalize_with_trace
-
-result = normalize_with_trace("Mã xác nhận là 105.")
-print(result.text)
-print(result.decisions[0].semiotic_class, result.decisions[0].reason)
+```text
+NER candidates -> trim/verify spans -> label parser -> validation
+ -> contextual override -> typed canonical value -> verbalizer
+ -> right-to-left replacement
 ```
 
-Its classifier is isolated behind typed spans, so a future learned scorer could
-replace it without changing detection or verbalization. Roughly
-200 curated seed sentences (and only 30 audio-rated cases) are inadequate for
-training or claiming robust generalization from a PhoBERT classifier: they do
-not cover enough lexical, domain, or ambiguity variation and lack a held-out
-statistical evaluation of useful size.
+Every candidate produces a structured diagnostic (`normalized` or
+`preserved`, reason, effective label, canonical value, and replacement).
+Invalid offsets, mismatched external surface text, unknown labels, parsing
+failures, and losing overlaps leave the source unchanged. Whitespace captured
+around the semantic span remains byte-for-byte intact. Overlap resolution is
+deterministic: higher confidence, then longer span, then detector order.
 
-## Evaluation
+`get_bamibert_detector` constructs BamiBERT only on the first enabled
+Vietnamese request. A lock makes concurrent Gradio initialization single-copy;
+prediction is serialized because tokenizer/pipeline mutation is not documented
+as thread-safe. The one-entry cache is keyed by resolved model path and device.
+A failed configuration is cached to avoid retrying a large broken load on every
+request; a different valid configuration can still replace it, while retrying
+the failed configuration requires a restart. The underlying model is put in
+`eval()` mode and prediction uses `torch.inference_mode()`.
 
-Run tests and the four-condition integration benchmark:
+The default model directory is
+`artifacts/models/bamibert_augmented_best`, resolved relative to the repository.
+Override it with `OMNIVOICE_BAMIBERT_MODEL` or
+`--bamibert-model-path`. The default detector device is CPU; override it with
+`OMNIVOICE_BAMIBERT_DEVICE` or `--bamibert-device`.
+
+## Supported labels and conservative formats
+
+The deterministic layer accepts `CARDINAL`, `DECIMAL`, `YEAR`, `DATE`, `TIME`,
+`MONEY`, `MEASUREMENT`/`UNIT`, `PERCENT`, `PHONE`, `ID`/`IDENTIFIER`,
+`FRACTION`, `SCORE`, and `ORDINAL`. It validates calendar/time bounds, digit
+limits, grouping, supported units, required currency markers, fraction
+denominators, offsets, external surface text, and overlaps before verbalizing.
+
+Intentionally ambiguous forms remain unchanged. Examples include a lone
+`1.234` labeled as a decimal, impossible `31/02/2026`, invalid `25:70`,
+unsupported labels, malformed/out-of-range spans, and external surfaces that
+do not match the original source. Leading/trailing Unicode whitespace captured
+by a span is excluded from replacement so surrounding words cannot concatenate.
+
+## Usage and diagnostics
 
 ```bash
-python -m unittest tests.test_vietnamese_normalization -v
-.venv/bin/python -m experiments.vietnormalizer_integration.benchmark \
-  --dataset experiments/tn_value_gate/data/vi_tn_pilot_v1.jsonl \
-  --smoke-cases experiments/vietnormalizer_integration/smoke_cases.jsonl \
-  --upstream-python /tmp/omnivoice_vi_benchmark_env/bin/python \
-  --improved-python /tmp/vietnormalizer_numeric_env/bin/python \
-  --improved-repo /home/pkh257/projects/vietnormalizer \
-  --artifacts experiments/vietnormalizer_integration/artifacts
+omnivoice-infer --language vi --normalize-text \
+  --text "Tôi có 25 quyển sách." --output out.wav
+
+omnivoice-infer-batch --normalize-text \
+  --test_list cases.jsonl --res_dir results
+
+omnivoice-demo --normalize-text
+
+python scripts/try_text_normalizer.py \
+  "Hẹn lúc 08:30 ngày 27/07/2026."
 ```
 
-The benchmark records case-level outputs for identity, the custom research
-normalizer, official VietNormalizer 0.2.3, and the improved numeric-only fork.
-The editable fork install is for local development only; production packaging
-must wait for review, commit, push, and an immutable dependency revision.
+The probe prints original text, raw candidates (label, half-open offsets,
+surface, score), normalized text, and structured decisions. Use
+`--no-diagnostics` to hide the last section. Model/configuration failures
+preserve input and return exit status 2.
+`scripts/benchmark_text_normalization.py` reports cold loading, warm prediction,
+deterministic time, total time, and RSS for representative workloads.
 
-The supplied time oracle `23:59 -> hai mươi ba giờ năm chín phút` was corrected
-in the separate regression fixture to *hai mươi ba giờ năm mươi chín phút*.
-Digits in a clock minute form a number, not an identifier.
+## Step 1 lightweight verification
 
-## Known limitations
+The default pytest configuration excludes tests marked `integration`, and the
+real BamiBERT test also requires the explicit
+`OMNIVOICE_RUN_REAL_MODEL_TESTS=1` opt-in. The Step 1 command is therefore safe
+for a local environment with limited memory:
 
-The pilot data and known regressions were already inspected while designing the
-rules, so their scores are development evidence, not held-out generalization.
-No local artifact contains completed human audio ratings or reliable old audio
-paths. Unsupported input is preserved so downstream TTS does not receive an
-invented interpretation.
+```bash
+. .venv/bin/activate
+python -m pytest -q \
+  tests/text_normalization \
+  tests/test_normalization_entrypoints.py \
+  tests/test_inference_normalization_boundary.py
+```
+
+These tests use fake detector factories, predictions, tokenizers, and TTS
+outputs. They cover lazy single-copy initialization, warm reuse, cache
+isolation, failure recovery through a different valid configuration,
+deterministic spans/verbalizers, complete-input fallback, target-only handoff,
+entry-point flags, and unchanged reference/instruction fields.
+
+Real BamiBERT behavior was validated separately on Kaggle. No local real-model
+load or inference is part of Step 1, and Step 1 does not claim a real
+BamiBERT-to-normalizer run, real OmniVoice synthesis/audio artifact, or Docker
+runtime result. Those checks remain intentionally deferred to a suitable
+environment.
+
+## Known limitations and regression process
+
+BamiBERT uses its configured tokenizer length; an overlong input that the
+pipeline cannot handle fails closed rather than being silently split with
+potentially incorrect offsets. Entity confidence and labeling quality remain
+model-dependent. Deterministic support is intentionally narrower than the
+detector taxonomy.
+
+For a production failure, add the exact source string plus original half-open
+candidate offsets to `tests/text_normalization/test_pipeline.py`. Put parser or
+verbalizer cases in the corresponding focused test, and use the marked
+real-model test only when behavior depends on model prediction.

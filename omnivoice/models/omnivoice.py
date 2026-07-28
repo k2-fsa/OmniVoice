@@ -634,14 +634,17 @@ class OmniVoice(PreTrainedModel):
                 slower. If a list, one value per item. ``None`` (default) uses
                 the model's default estimation.
             normalize_text: If ``True``, run text normalization on the target
-                text before synthesis (numbers, dates, currency, etc. are
-                converted to their spoken form, e.g. ``"2345"`` ->
-                ``"twenty three forty five"``). Default ``False`` (paper
-                reproducibility is unaffected). Chinese/English require the
-                optional ``omnivoice[tn]`` dependency (WeTextProcessing); other
+                text once, before duration estimation and tokenization.
+                Default ``False`` (paper reproducibility is unaffected).
+                Vietnamese uses the lazy local BamiBERT detector followed by
+                deterministic verbalization and preserves the full target on
+                failure. Chinese/English require the optional
+                ``omnivoice[tn]`` dependency (WeTextProcessing); remaining
                 languages use ``num2words`` for bare integers when installed.
+                Reference transcripts and instructions are not normalized.
                 Inline control syntax (``[laughter]``, ``[B EY1 S]``, pinyin
-                tone markers) is preserved. See :func:`omnivoice.utils.text.normalize_text`.
+                tone markers) is preserved. See
+                :func:`omnivoice.utils.text.normalize_text`.
             generation_config: Explicit config object. If provided, takes
                 precedence over ``**kwargs``.
             **kwargs: Generation config or its fields:

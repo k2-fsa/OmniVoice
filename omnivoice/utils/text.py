@@ -267,7 +267,6 @@ _TN_INSTALL_MSG = (
 # are cached per language for the lifetime of the process.
 _ZH_NORMALIZER = None
 _EN_NORMALIZER = None
-_VI_NORMALIZER = None
 
 
 def _get_zh_normalizer():
@@ -290,16 +289,11 @@ def _get_zh_normalizer():
     return _ZH_NORMALIZER
 
 
-def _get_vi_normalizer():
-    """Lazily construct the sole Vietnamese production adapter."""
-    global _VI_NORMALIZER
-    if _VI_NORMALIZER is None:
-        from omnivoice.utils.vietnamese_normalization.adapters import (
-            VietNormalizerAdapter,
-        )
+def _get_bamibert_detector(model_path=None, device=None):
+    """Compatibility seam for injecting/mocking the lazy detector lifecycle."""
+    from omnivoice.text_normalization.detector import get_bamibert_detector
 
-        _VI_NORMALIZER = VietNormalizerAdapter()
-    return _VI_NORMALIZER
+    return get_bamibert_detector(model_path, device)
 
 
 def _get_en_normalizer():
@@ -421,31 +415,20 @@ def _apply_vi_with_protection(text: str, fn: Callable[[str], str]) -> str:
     return normalized
 
 
-def normalize_text(text: str, language: Optional[str] = None) -> str:
-    """Normalize numbers, dates, currency, etc. into their spoken form.
+def normalize_text(
+    text: str,
+    language: Optional[str] = None,
+    *,
+    detector=None,
+    model_path=None,
+    device: Optional[str] = None,
+) -> str:
+    """Normalize Vietnamese text via the BamiBERT candidate-driven pipeline.
 
-    Chinese is routed to WeTextProcessing's ``ZhNormalizer``, English to its
-    ``EnNormalizer``, and Vietnamese to the numeric-only VietNormalizer fork.
-    Any other language falls back to ``num2words`` for bare integers when it is
-    installed; otherwise the text is returned unchanged.
-
-    Inline OmniVoice control syntax is preserved: bracketed non-verbal tags
-    (``[laughter]``) and CMU pronunciation overrides (``[B EY1 S]``) are passed
-    through untouched, and Chinese pinyin tone markers (uppercase pinyin +
-    tone digit) are protected so the tone digit is not read as a number.
-
-    Args:
-        text: Input text.
-        language: Language code (``"en"``/``"zh"``) or full name (``"English"``).
-            ``None`` auto-detects Chinese vs. English by script.
-
-    Returns:
-        The normalized text.
-
-    Raises:
-        ImportError: When the selected normalization backend is not installed.
-        RuntimeError: When Vietnamese normalization is enabled with an upstream
-            package that does not provide the required numeric-only API.
+    The public normalization boundary now routes Vietnamese text through the
+    candidate-driven NER pipeline in :mod:`omnivoice.text_normalization`, while
+    other languages remain unchanged by default and fall back to the existing
+    best-effort logic.
     """
     if not text or not text.strip():
         return text
@@ -458,7 +441,16 @@ def normalize_text(text: str, language: Optional[str] = None) -> str:
         normalizer = _get_en_normalizer()
         return _apply_with_protection(text, normalizer.normalize, protect_pinyin=False)
     if code in {"vi", "vie", "vietnamese"}:
-        return _apply_vi_with_protection(text, _get_vi_normalizer().normalize)
+        try:
+            from omnivoice.text_normalization import normalize_from_ner
+        except Exception:
+            return text
+
+        try:
+            active_detector = detector or _get_bamibert_detector(model_path, device)
+            return normalize_from_ner(text, active_detector).text
+        except Exception:
+            return text
     # Other languages: best-effort integer conversion via num2words.
     return _apply_with_protection(
         text, lambda s: _num2words_segment(s, code), protect_pinyin=False
