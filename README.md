@@ -336,7 +336,7 @@ Only `id` and `text` are mandatory fields. `ref_audio` and `ref_text` are used i
 
 ### FlashInfer Acceleration
 
-Inference can be accelerated ~2-2.9x losslessly with [FlashInfer](https://github.com/flashinfer-ai/flashinfer) kernels (sequence packing for the CFG cond/uncond pair, fused RMSNorm/RoPE/GEMM kernels, and optional CUDA graphs). See [optimize.md](optimize.md) for the full analysis.
+Inference can be accelerated ~2-2.9x losslessly with [FlashInfer](https://github.com/flashinfer-ai/flashinfer) kernels (sequence packing for the CFG cond/uncond pair, fused RMSNorm/RoPE/GEMM kernels, and optional CUDA graphs).
 
 **Installation** (NVIDIA GPUs; pick the index matching your CUDA version, e.g. cu128 for PyTorch built with CUDA 12.8):
 
