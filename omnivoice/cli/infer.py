@@ -21,13 +21,14 @@ Usage:
 
 import argparse
 import logging
-
 import torch
 
 import soundfile as sf
 
 from omnivoice.models.omnivoice import OmniVoice
+from omnivoice.text_normalization import configure_bamibert
 from omnivoice.utils.common import get_best_device, str2bool
+from omnivoice.utils.text import normalize_text_input
 
 
 def get_parser() -> argparse.ArgumentParser:
@@ -102,6 +103,29 @@ def get_parser() -> argparse.ArgumentParser:
     parser.add_argument("--position_temperature", type=float, default=5.0)
     parser.add_argument("--class_temperature", type=float, default=0.0)
     parser.add_argument(
+        "--normalize-text",
+        dest="normalize_text",
+        action="store_true",
+        help="Normalize target text before synthesis. Disabled by default.",
+    )
+    parser.add_argument(
+        "--no-normalize-text",
+        dest="normalize_text",
+        action="store_false",
+        help="Disable target text normalization before synthesis.",
+    )
+    parser.set_defaults(normalize_text=False)
+    parser.add_argument(
+        "--bamibert-model-path",
+        default=None,
+        help="BamiBERT directory (or set OMNIVOICE_BAMIBERT_MODEL).",
+    )
+    parser.add_argument(
+        "--bamibert-device",
+        default=None,
+        help="BamiBERT device (or set OMNIVOICE_BAMIBERT_DEVICE; default: cpu).",
+    )
+    parser.add_argument(
         "--device",
         type=str,
         default=None,
@@ -114,7 +138,14 @@ def main():
     formatter = "%(asctime)s %(levelname)s [%(filename)s:%(lineno)d] %(message)s"
     logging.basicConfig(format=formatter, level=logging.INFO, force=True)
 
-    args = get_parser().parse_args()
+    parser = get_parser()
+    args = parser.parse_args()
+    configure_bamibert(args.bamibert_model_path, args.bamibert_device)
+    args.text = normalize_text_input(args.text)
+    if not args.text:
+        parser.error("--text is empty after Unicode normalization")
+    if args.ref_text is not None:
+        args.ref_text = normalize_text_input(args.ref_text)
 
     device = args.device or get_best_device()
     logging.info(f"Loading model from {args.model} on {device} ...")
@@ -129,6 +160,7 @@ def main():
         ref_audio=args.ref_audio,
         ref_text=args.ref_text,
         instruct=args.instruct,
+        normalize_text=args.normalize_text,
         duration=args.duration,
         num_step=args.num_step,
         guidance_scale=args.guidance_scale,

@@ -1,0 +1,8 @@
+{
+  "absolute_path": "/tmp/omnivoice_vi_tn_pilot.jsonl",
+  "file_size_bytes": 43663,
+  "record_count": 200,
+  "sha256": "f845a96394f28d3bfd9ca33070af3cf6524dfbe30fc3ad06497e6356b4ad7007",
+  "source": "git 7053b50:experiments/vi_number_normalization/data/pilot.jsonl",
+  "designation": "pilot development set"
+}

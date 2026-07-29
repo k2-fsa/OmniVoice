@@ -1,0 +1,200 @@
+{"id": "cardinal_001", "split": "test", "semiotic_class": "QUANTITY", "template_group": "số hồ sơ bị lỗi là <NUM>."}
+{"id": "cardinal_002", "split": "development", "semiotic_class": "QUANTITY", "template_group": "tôi mua <NUM> quyển sách."}
+{"id": "cardinal_003", "split": "test", "semiotic_class": "QUANTITY", "template_group": "bàn này có <NUM> chân."}
+{"id": "cardinal_004", "split": "development", "semiotic_class": "QUANTITY", "template_group": "nhóm có <NUM> thành viên."}
+{"id": "cardinal_005", "split": "development", "semiotic_class": "QUANTITY", "template_group": "tôi cần <NUM> chiếc hộp."}
+{"id": "cardinal_006", "split": "development", "semiotic_class": "QUANTITY", "template_group": "lớp có <NUM> sinh viên."}
+{"id": "cardinal_007", "split": "test", "semiotic_class": "QUANTITY", "template_group": "cửa hàng còn <NUM> sản phẩm."}
+{"id": "cardinal_008", "split": "development", "semiotic_class": "QUANTITY", "template_group": "tôi đã đọc <NUM> trang."}
+{"id": "cardinal_009", "split": "development", "semiotic_class": "QUANTITY", "template_group": "đội có <NUM> người."}
+{"id": "cardinal_010", "split": "development", "semiotic_class": "QUANTITY", "template_group": "thư viện nhận <NUM> cuốn sách."}
+{"id": "cardinal_011", "split": "development", "semiotic_class": "QUANTITY", "template_group": "kho hiện có <NUM> hộp."}
+{"id": "cardinal_012", "split": "development", "semiotic_class": "QUANTITY", "template_group": "trường tuyển <NUM> học sinh."}
+{"id": "cardinal_013", "split": "development", "semiotic_class": "QUANTITY", "template_group": "cuộc khảo sát có <NUM> người tham gia."}
+{"id": "cardinal_014", "split": "development", "semiotic_class": "QUANTITY", "template_group": "hệ thống ghi nhận <NUM> yêu cầu."}
+{"id": "cardinal_015", "split": "development", "semiotic_class": "QUANTITY", "template_group": "nhà máy sản xuất <NUM> linh kiện."}
+{"id": "cardinal_016", "split": "development", "semiotic_class": "QUANTITY", "template_group": "thành phố trồng thêm <NUM> cây xanh."}
+{"id": "cardinal_017", "split": "development", "semiotic_class": "QUANTITY", "template_group": "sân vận động có <NUM> chỗ ngồi."}
+{"id": "cardinal_018", "split": "test", "semiotic_class": "QUANTITY", "template_group": "ứng dụng đạt <NUM> lượt tải."}
+{"id": "cardinal_019", "split": "development", "semiotic_class": "QUANTITY", "template_group": "dân số khu vực là <NUM> người."}
+{"id": "cardinal_020", "split": "development", "semiotic_class": "NEGATIVE_QUANTITY", "template_group": "tài khoản đang có số dư âm <NUM> điểm."}
+{"id": "decimal_math_001", "split": "development", "semiotic_class": "DECIMAL", "template_group": "xác suất bằng <NUM>."}
+{"id": "decimal_math_002", "split": "development", "semiotic_class": "DECIMAL", "template_group": "kết quả đo là <NUM>."}
+{"id": "decimal_math_003", "split": "development", "semiotic_class": "DECIMAL", "template_group": "giá trị trung bình là <NUM>."}
+{"id": "decimal_math_004", "split": "development", "semiotic_class": "SIGNED_NUMBER", "template_group": "nghiệm của phương trình là -<NUM>."}
+{"id": "decimal_math_005", "split": "development", "semiotic_class": "SIGNED_NUMBER", "template_group": "sai số hiệu chỉnh là +<NUM>."}
+{"id": "decimal_math_006", "split": "test", "semiotic_class": "DECIMAL", "template_group": "tổng doanh thu là <NUM> triệu đồng."}
+{"id": "decimal_math_007", "split": "development", "semiotic_class": "DECIMAL", "template_group": "hằng số pi xấp xỉ <NUM>."}
+{"id": "decimal_math_008", "split": "development", "semiotic_class": "POWER", "template_group": "một triệu có thể viết là <NUM>^<NUM>."}
+{"id": "decimal_math_009", "split": "development", "semiotic_class": "POWER", "template_group": "diện tích hình vuông được tính bằng <NUM>²."}
+{"id": "decimal_math_010", "split": "development", "semiotic_class": "RADICAL", "template_group": "căn bậc hai của <NUM> là một số vô tỉ."}
+{"id": "decimal_math_011", "split": "development", "semiotic_class": "SCIENTIFIC_NOTATION", "template_group": "giá trị bằng <NUM>×<NUM>^-<NUM>."}
+{"id": "decimal_math_012", "split": "development", "semiotic_class": "EQUATION", "template_group": "ta có <NUM> + <NUM> = <NUM>."}
+{"id": "decimal_math_013", "split": "development", "semiotic_class": "EQUATION", "template_group": "phép tính <NUM> ÷ <NUM> = <NUM>."}
+{"id": "decimal_math_014", "split": "development", "semiotic_class": "EQUATION", "template_group": "biểu thức <NUM> = <NUM> rất đơn giản."}
+{"id": "decimal_math_015", "split": "development", "semiotic_class": "POWER", "template_group": "độ chính xác đạt <NUM>⁻⁶."}
+{"id": "year_date_001", "split": "development", "semiotic_class": "YEAR", "template_group": "tôi sinh năm <NUM>."}
+{"id": "year_date_002", "split": "development", "semiotic_class": "YEAR", "template_group": "công ty được thành lập năm <NUM>."}
+{"id": "year_date_003", "split": "development", "semiotic_class": "YEAR", "template_group": "tôi sinh năm <NUM>."}
+{"id": "year_date_004", "split": "development", "semiotic_class": "YEAR", "template_group": "dự án bắt đầu từ năm <NUM>."}
+{"id": "year_date_005", "split": "development", "semiotic_class": "YEAR", "template_group": "báo cáo được công bố năm <NUM>."}
+{"id": "year_date_006", "split": "development", "semiotic_class": "YEAR_BCE", "template_group": "sự kiện diễn ra vào năm <NUM> tcn."}
+{"id": "year_date_007", "split": "development", "semiotic_class": "YEAR_RANGE", "template_group": "khóa học thuộc niên khóa <NUM>."}
+{"id": "year_date_008", "split": "test", "semiotic_class": "YEAR", "template_group": "tài liệu này có từ năm <NUM>."}
+{"id": "year_date_009", "split": "development", "semiotic_class": "DATE", "template_group": "cuộc hẹn là ngày <NUM>."}
+{"id": "year_date_010", "split": "development", "semiotic_class": "DATE", "template_group": "hóa đơn được lập ngày <NUM>."}
+{"id": "year_date_011", "split": "development", "semiotic_class": "DATE", "template_group": "ngày <NUM> là ngày nhuận."}
+{"id": "year_date_012", "split": "development", "semiotic_class": "DATE", "template_group": "chúng tôi nghỉ vào ngày <NUM>."}
+{"id": "year_date_013", "split": "test", "semiotic_class": "DATE", "template_group": "ngày <NUM> là ngày lễ."}
+{"id": "year_date_014", "split": "development", "semiotic_class": "MONTH_YEAR", "template_group": "hợp đồng hết hạn vào <NUM>."}
+{"id": "year_date_015", "split": "development", "semiotic_class": "QUARTER_YEAR", "template_group": "kế hoạch áp dụng từ quý <NUM>."}
+{"id": "year_date_016", "split": "development", "semiotic_class": "DATE_RANGE", "template_group": "hội nghị diễn ra ngày <NUM>."}
+{"id": "year_date_017", "split": "test", "semiotic_class": "DATE", "template_group": "tệp được tạo ngày <NUM>."}
+{"id": "year_date_018", "split": "development", "semiotic_class": "DAY_OF_MONTH", "template_group": "tôi sẽ quay lại vào ngày <NUM>."}
+{"id": "year_date_019", "split": "development", "semiotic_class": "DATE", "template_group": "lịch khám ghi ngày <NUM>."}
+{"id": "year_date_020", "split": "development", "semiotic_class": "DATE", "template_group": "hạn nộp là <NUM>."}
+{"id": "year_date_021", "split": "development", "semiotic_class": "ISO_DATE", "template_group": "hệ thống lưu ngày theo định dạng <NUM>."}
+{"id": "year_date_022", "split": "development", "semiotic_class": "MONTH_YEAR", "template_group": "kỳ thi được tổ chức vào tháng <NUM>."}
+{"id": "year_date_023", "split": "development", "semiotic_class": "YEAR", "template_group": "tết năm <NUM> đến khá sớm."}
+{"id": "year_date_024", "split": "development", "semiotic_class": "DATE", "template_group": "bản thảo mang ngày <NUM>."}
+{"id": "year_date_025", "split": "development", "semiotic_class": "DATE_RANGE", "template_group": "lịch học kéo dài từ <NUM>."}
+{"id": "time_duration_001", "split": "test", "semiotic_class": "TIME", "template_group": "hệ thống sao lưu lúc <NUM>."}
+{"id": "time_duration_002", "split": "development", "semiotic_class": "TIME", "template_group": "xe khởi hành lúc <NUM>."}
+{"id": "time_duration_003", "split": "development", "semiotic_class": "TIME", "template_group": "tôi ăn sáng lúc <NUM>."}
+{"id": "time_duration_004", "split": "development", "semiotic_class": "TIME", "template_group": "cuộc họp bắt đầu lúc <NUM>h."}
+{"id": "time_duration_005", "split": "development", "semiotic_class": "TIME", "template_group": "chuông reo lúc <NUM>."}
+{"id": "time_duration_006", "split": "development", "semiotic_class": "TIME", "template_group": "chúng ta nghỉ trưa lúc <NUM>."}
+{"id": "time_duration_007", "split": "development", "semiotic_class": "TIME", "template_group": "chuyến bay cất cánh lúc <NUM>."}
+{"id": "time_duration_008", "split": "test", "semiotic_class": "TIME", "template_group": "bản tin phát lúc <NUM>h<NUM>."}
+{"id": "time_duration_009", "split": "development", "semiotic_class": "TIME", "template_group": "cửa hàng đóng cửa lúc <NUM>."}
+{"id": "time_duration_010", "split": "development", "semiotic_class": "DURATION", "template_group": "buổi phỏng vấn kéo dài <NUM>."}
+{"id": "time_duration_011", "split": "development", "semiotic_class": "MEDIA_TIMESTAMP", "template_group": "hãy tua video đến <NUM>."}
+{"id": "time_duration_012", "split": "development", "semiotic_class": "DURATION", "template_group": "bài chạy hoàn thành trong <NUM>."}
+{"id": "time_duration_013", "split": "development", "semiotic_class": "AVAILABILITY", "template_group": "dịch vụ hỗ trợ hoạt động <NUM>."}
+{"id": "time_duration_014", "split": "development", "semiotic_class": "TIME_RANGE", "template_group": "văn phòng mở cửa từ <NUM>h."}
+{"id": "time_duration_015", "split": "development", "semiotic_class": "DURATION", "template_group": "đồng hồ đếm ngược còn <NUM>."}
+{"id": "phone_001", "split": "development", "semiotic_class": "PHONE", "template_group": "số điện thoại của tôi là <NUM>."}
+{"id": "phone_002", "split": "development", "semiotic_class": "PHONE", "template_group": "hãy gọi <NUM>."}
+{"id": "phone_003", "split": "test", "semiotic_class": "PHONE", "template_group": "số liên hệ là <NUM>."}
+{"id": "phone_004", "split": "development", "semiotic_class": "PHONE", "template_group": "từ nước ngoài, hãy gọi +<NUM>."}
+{"id": "phone_005", "split": "development", "semiotic_class": "PHONE", "template_group": "tổng đài miễn phí là <NUM>."}
+{"id": "phone_006", "split": "test", "semiotic_class": "PHONE", "template_group": "gọi <NUM> để được tư vấn."}
+{"id": "phone_007", "split": "development", "semiotic_class": "EMERGENCY_PHONE", "template_group": "khi có cháy, hãy gọi <NUM>."}
+{"id": "phone_008", "split": "development", "semiotic_class": "EMERGENCY_PHONE", "template_group": "khi cần cấp cứu, hãy gọi <NUM>."}
+{"id": "phone_009", "split": "development", "semiotic_class": "EMERGENCY_PHONE", "template_group": "khi cần báo công an, hãy gọi <NUM>."}
+{"id": "phone_010", "split": "development", "semiotic_class": "PHONE", "template_group": "số điện thoại bàn là <NUM>."}
+{"id": "phone_011", "split": "development", "semiotic_class": "PHONE_EXTENSION", "template_group": "số máy lẻ của tôi là <NUM>."}
+{"id": "phone_012", "split": "development", "semiotic_class": "SERVICE_PHONE", "template_group": "hãy gọi đường dây <NUM>."}
+{"id": "phone_013", "split": "development", "semiotic_class": "PHONE", "template_group": "số mới của cô ấy là <NUM>."}
+{"id": "phone_014", "split": "development", "semiotic_class": "PHONE", "template_group": "liên hệ qua số <NUM>."}
+{"id": "phone_015", "split": "development", "semiotic_class": "PHONE", "template_group": "số fax là (<NUM>."}
+{"id": "identifier_001", "split": "development", "semiotic_class": "IDENTIFIER", "template_group": "mã xác nhận là <NUM>."}
+{"id": "identifier_002", "split": "development", "semiotic_class": "IDENTIFIER", "template_group": "mã điệp viên là <NUM>."}
+{"id": "identifier_003", "split": "development", "semiotic_class": "IDENTIFIER", "template_group": "mã dùng một lần của bạn là <NUM>."}
+{"id": "identifier_004", "split": "development", "semiotic_class": "PIN", "template_group": "mã khóa hiện tại là <NUM>."}
+{"id": "identifier_005", "split": "development", "semiotic_class": "STUDENT_ID", "template_group": "mã sinh viên của tôi là <NUM>."}
+{"id": "identifier_006", "split": "development", "semiotic_class": "ACCOUNT_NUMBER", "template_group": "số tài khoản là <NUM>."}
+{"id": "identifier_007", "split": "development", "semiotic_class": "CARD_SUFFIX", "template_group": "thẻ của bạn có bốn số cuối là <NUM>."}
+{"id": "identifier_008", "split": "development", "semiotic_class": "ORDER_ID", "template_group": "đơn hàng mang mã <NUM>."}
+{"id": "identifier_009", "split": "development", "semiotic_class": "TRACKING_ID", "template_group": "mã vận đơn là <NUM>."}
+{"id": "identifier_010", "split": "development", "semiotic_class": "TAX_ID", "template_group": "mã số thuế của công ty là <NUM>."}
+{"id": "identifier_011", "split": "development", "semiotic_class": "NATIONAL_ID", "template_group": "số căn cước là <NUM>."}
+{"id": "identifier_012", "split": "development", "semiotic_class": "PASSPORT_ID", "template_group": "số hộ chiếu là b<NUM>."}
+{"id": "identifier_013", "split": "development", "semiotic_class": "INVOICE_ID", "template_group": "hóa đơn số <NUM> đã được thanh toán."}
+{"id": "identifier_014", "split": "development", "semiotic_class": "FLIGHT_ID", "template_group": "chuyến bay vn<NUM> đã hạ cánh."}
+{"id": "identifier_015", "split": "development", "semiotic_class": "TRAIN_ID", "template_group": "tàu se<NUM> sắp vào ga."}
+{"id": "identifier_016", "split": "development", "semiotic_class": "CLASS_ID", "template_group": "tôi học lớp <NUM>a<NUM>."}
+{"id": "identifier_017", "split": "development", "semiotic_class": "POSTAL_CODE", "template_group": "biểu mẫu ghi mã bưu chính <NUM>."}
+{"id": "identifier_018", "split": "development", "semiotic_class": "QUEUE_ID", "template_group": "số thứ tự của bạn là a<NUM>."}
+{"id": "identifier_019", "split": "development", "semiotic_class": "RECORD_ID", "template_group": "hồ sơ bệnh án có mã <NUM>."}
+{"id": "identifier_020", "split": "development", "semiotic_class": "BATCH_ID", "template_group": "lô sản xuất mang số <NUM>."}
+{"id": "location_route_001", "split": "development", "semiotic_class": "ROOM", "template_group": "tôi đang ở phòng <NUM>."}
+{"id": "location_route_002", "split": "development", "semiotic_class": "ROOM", "template_group": "phòng <NUM> nằm cuối hành lang."}
+{"id": "location_route_003", "split": "development", "semiotic_class": "ROOM", "template_group": "cuộc họp được chuyển sang phòng <NUM>."}
+{"id": "location_route_004", "split": "development", "semiotic_class": "ROOM", "template_group": "văn phòng ở phòng b<NUM>."}
+{"id": "location_route_005", "split": "development", "semiotic_class": "APARTMENT", "template_group": "tôi sống ở căn hộ <NUM>."}
+{"id": "location_route_006", "split": "development", "semiotic_class": "APARTMENT", "template_group": "căn p<NUM> đang được sửa chữa."}
+{"id": "location_route_007", "split": "development", "semiotic_class": "HOUSE_NUMBER", "template_group": "gia đình tôi ở số nhà <NUM>."}
+{"id": "location_route_008", "split": "development", "semiotic_class": "ADDRESS", "template_group": "địa chỉ là <NUM> phố huế."}
+{"id": "location_route_009", "split": "development", "semiotic_class": "ADDRESS", "template_group": "cửa hàng ở số <NUM>a đường láng."}
+{"id": "location_route_010", "split": "development", "semiotic_class": "ALLEY_NUMBER", "template_group": "rẽ vào ngõ <NUM> ở bên phải."}
+{"id": "location_route_011", "split": "development", "semiotic_class": "BUS_ROUTE", "template_group": "tôi đi xe buýt số <NUM>."}
+{"id": "location_route_012", "split": "development", "semiotic_class": "BUS_ROUTE", "template_group": "xe buýt số <NUM> sắp tới."}
+{"id": "location_route_013", "split": "development", "semiotic_class": "ROAD_ROUTE", "template_group": "tai nạn xảy ra trên quốc lộ <NUM>a."}
+{"id": "location_route_014", "split": "development", "semiotic_class": "KILOMETER_MARKER", "template_group": "công trường nằm tại km <NUM>+<NUM>."}
+{"id": "location_route_015", "split": "development", "semiotic_class": "LICENSE_PLATE", "template_group": "biển số xe là <NUM>a-<NUM>."}
+{"id": "location_route_016", "split": "development", "semiotic_class": "LICENSE_PLATE", "template_group": "chiếc xe mang biển <NUM>k-<NUM>."}
+{"id": "location_route_017", "split": "development", "semiotic_class": "SEAT", "template_group": "ghế <NUM>a nằm cạnh cửa sổ."}
+{"id": "location_route_018", "split": "development", "semiotic_class": "GATE", "template_group": "hành khách ra cửa <NUM>."}
+{"id": "location_route_019", "split": "development", "semiotic_class": "TABLE_NUMBER", "template_group": "nhân viên mời khách ở bàn <NUM>."}
+{"id": "location_route_020", "split": "development", "semiotic_class": "LOCKER", "template_group": "tủ đồ <NUM> đang khóa."}
+{"id": "money_001", "split": "development", "semiotic_class": "MONEY", "template_group": "cuốn sách có giá <NUM>đ."}
+{"id": "money_002", "split": "development", "semiotic_class": "MONEY", "template_group": "chiếc máy có giá <NUM>₫."}
+{"id": "money_003", "split": "test", "semiotic_class": "MONEY", "template_group": "vé gửi xe là <NUM>k."}
+{"id": "money_004", "split": "test", "semiotic_class": "MONEY", "template_group": "cốc cà phê này giá <NUM>k."}
+{"id": "money_005", "split": "development", "semiotic_class": "MONEY", "template_group": "phí dịch vụ là <NUM> triệu đồng."}
+{"id": "money_006", "split": "development", "semiotic_class": "MONEY", "template_group": "doanh nghiệp huy động <NUM> tỷ đồng."}
+{"id": "money_007", "split": "development", "semiotic_class": "MONEY", "template_group": "đơn hàng này có phí vận chuyển <NUM>đ."}
+{"id": "money_008", "split": "development", "semiotic_class": "MONEY", "template_group": "sản phẩm được bán với giá <NUM> đồng."}
+{"id": "money_009", "split": "development", "semiotic_class": "MONEY", "template_group": "phí đăng ký là <NUM> usd."}
+{"id": "money_010", "split": "test", "semiotic_class": "MONEY", "template_group": "chiếc áo có giá $<NUM>."}
+{"id": "money_011", "split": "development", "semiotic_class": "MONEY", "template_group": "tôi đổi <NUM> usd sang tiền việt."}
+{"id": "money_012", "split": "test", "semiotic_class": "MONEY", "template_group": "tiền đặt cọc là <NUM> hkd."}
+{"id": "money_013", "split": "development", "semiotic_class": "MONEY", "template_group": "món đồ này có giá hk$<NUM>."}
+{"id": "money_014", "split": "development", "semiotic_class": "MONEY", "template_group": "giá niêm yết là €<NUM>."}
+{"id": "money_015", "split": "development", "semiotic_class": "MONEY", "template_group": "bữa trưa ở nhật hết <NUM>¥."}
+{"id": "money_016", "split": "development", "semiotic_class": "MONEY", "template_group": "tôi còn đúng <NUM> đồng."}
+{"id": "money_017", "split": "development", "semiotic_class": "MONEY_RANGE", "template_group": "mức giá dao động từ <NUM>đ."}
+{"id": "money_018", "split": "development", "semiotic_class": "MONEY_RATE", "template_group": "mức lương đề xuất là <NUM>tr/tháng."}
+{"id": "money_019", "split": "development", "semiotic_class": "MONEY", "template_group": "căn hộ được rao giá <NUM> tỉ đồng."}
+{"id": "money_020", "split": "development", "semiotic_class": "MONEY", "template_group": "mỗi người được hoàn lại <NUM>₫."}
+{"id": "percent_ratio_001", "split": "development", "semiotic_class": "PERCENT", "template_group": "doanh thu tăng <NUM>%."}
+{"id": "percent_ratio_002", "split": "development", "semiotic_class": "PERCENT", "template_group": "lãi suất chỉ là <NUM>%."}
+{"id": "percent_ratio_003", "split": "development", "semiotic_class": "PERCENT", "template_group": "pin đã sạc đến <NUM>%."}
+{"id": "percent_ratio_004", "split": "development", "semiotic_class": "SIGNED_PERCENT", "template_group": "cổ phiếu giảm -<NUM>%."}
+{"id": "percent_ratio_005", "split": "development", "semiotic_class": "SIGNED_PERCENT", "template_group": "chỉ số thay đổi +<NUM>%."}
+{"id": "percent_ratio_006", "split": "development", "semiotic_class": "PERCENT_RANGE", "template_group": "tỷ lệ lỗi nằm trong khoảng <NUM>%."}
+{"id": "percent_ratio_007", "split": "development", "semiotic_class": "RATIO", "template_group": "màn hình có tỷ lệ <NUM>."}
+{"id": "percent_ratio_008", "split": "development", "semiotic_class": "SCORE", "template_group": "hai đội đang hòa với tỷ số <NUM>."}
+{"id": "percent_ratio_009", "split": "development", "semiotic_class": "RATIO", "template_group": "bản đồ dùng tỷ lệ <NUM>."}
+{"id": "percent_ratio_010", "split": "development", "semiotic_class": "MEDICAL_RATIO", "template_group": "huyết áp của bệnh nhân là <NUM>."}
+{"id": "percent_ratio_011", "split": "development", "semiotic_class": "MEDICAL_RATIO", "template_group": "thị lực của cô ấy đạt <NUM>."}
+{"id": "percent_ratio_012", "split": "development", "semiotic_class": "FINANCIAL_RATIO", "template_group": "tỷ lệ p/e hiện là <NUM>."}
+{"id": "percent_ratio_013", "split": "development", "semiotic_class": "PROBABILITY", "template_group": "xác suất thành công được ước tính là <NUM>."}
+{"id": "percent_ratio_014", "split": "development", "semiotic_class": "SCORE_SCALE", "template_group": "điểm trung bình của bạn ấy là <NUM>."}
+{"id": "percent_ratio_015", "split": "development", "semiotic_class": "RATIO", "template_group": "tỷ lệ pha là <NUM>."}
+{"id": "measure_001", "split": "development", "semiotic_class": "MEASURE", "template_group": "chiếc vali nặng <NUM>kg."}
+{"id": "measure_002", "split": "test", "semiotic_class": "MEASURE", "template_group": "em bé nặng <NUM> kg."}
+{"id": "measure_003", "split": "development", "semiotic_class": "MEASURE", "template_group": "gói bột có khối lượng <NUM>g."}
+{"id": "measure_004", "split": "development", "semiotic_class": "MEASURE", "template_group": "bình chứa <NUM> lít nước."}
+{"id": "measure_005", "split": "development", "semiotic_class": "MEASURE", "template_group": "chai này có dung tích <NUM>ml."}
+{"id": "measure_006", "split": "development", "semiotic_class": "MEASURE", "template_group": "quãng đường dài <NUM>km."}
+{"id": "measure_007", "split": "development", "semiotic_class": "MEASURE", "template_group": "xe chạy với tốc độ <NUM>km/h."}
+{"id": "measure_008", "split": "test", "semiotic_class": "MEASURE", "template_group": "chiều cao của cô ấy là <NUM>m."}
+{"id": "measure_009", "split": "development", "semiotic_class": "MEASURE", "template_group": "chiếc hộp rộng <NUM>cm."}
+{"id": "measure_010", "split": "test", "semiotic_class": "MEASURE", "template_group": "căn phòng rộng <NUM>m²."}
+{"id": "measure_011", "split": "development", "semiotic_class": "MEASURE", "template_group": "bể có thể tích <NUM>m³."}
+{"id": "measure_012", "split": "development", "semiotic_class": "TEMPERATURE", "template_group": "nhiệt độ cơ thể là <NUM>°c."}
+{"id": "measure_013", "split": "development", "semiotic_class": "TEMPERATURE", "template_group": "ngoài trời đang là -<NUM>°c."}
+{"id": "measure_014", "split": "development", "semiotic_class": "TEMPERATURE", "template_group": "lò được đặt ở <NUM>°f."}
+{"id": "measure_015", "split": "development", "semiotic_class": "MEASURE", "template_group": "điện áp dân dụng là <NUM>v."}
+{"id": "measure_016", "split": "development", "semiotic_class": "MEASURE", "template_group": "dòng điện có cường độ <NUM>a."}
+{"id": "measure_017", "split": "development", "semiotic_class": "MEASURE", "template_group": "nguồn điện hoạt động ở <NUM>hz."}
+{"id": "measure_018", "split": "development", "semiotic_class": "DIGITAL_STORAGE", "template_group": "máy có <NUM>gb bộ nhớ."}
+{"id": "measure_019", "split": "development", "semiotic_class": "DIGITAL_STORAGE", "template_group": "tệp có dung lượng <NUM>mb."}
+{"id": "measure_020", "split": "development", "semiotic_class": "DIGITAL_STORAGE", "template_group": "ổ cứng có dung lượng <NUM>tb."}
+{"id": "fraction_range_001", "split": "development", "semiotic_class": "FRACTION", "template_group": "tôi đã ăn <NUM> chiếc bánh."}
+{"id": "fraction_range_002", "split": "development", "semiotic_class": "FRACTION", "template_group": "bể đang đầy <NUM>."}
+{"id": "fraction_range_003", "split": "development", "semiotic_class": "FRACTION", "template_group": "có <NUM> số người đồng ý."}
+{"id": "fraction_range_004", "split": "development", "semiotic_class": "FRACTION", "template_group": "bài toán yêu cầu tính <NUM>."}
+{"id": "fraction_range_005", "split": "development", "semiotic_class": "FRACTIONAL_DURATION", "template_group": "tôi đợi khoảng <NUM> giờ."}
+{"id": "fraction_range_006", "split": "development", "semiotic_class": "RANGE", "template_group": "mỗi ngày dùng từ <NUM> lần."}
+{"id": "fraction_range_007", "split": "development", "semiotic_class": "RANGE", "template_group": "vui lòng đọc các trang <NUM>."}
+{"id": "fraction_range_008", "split": "development", "semiotic_class": "YEAR_RANGE", "template_group": "dữ liệu được thu thập trong giai đoạn <NUM>."}
+{"id": "fraction_range_009", "split": "development", "semiotic_class": "MEASURE_RANGE", "template_group": "nhiệt độ dao động từ -<NUM>°c."}
+{"id": "fraction_range_010", "split": "development", "semiotic_class": "INTERVAL", "template_group": "khoảng tin cậy nằm trong đoạn [<NUM>]."}
+{"id": "version_ordinal_sport_001", "split": "development", "semiotic_class": "VERSION", "template_group": "ứng dụng đang chạy phiên bản <NUM>."}
+{"id": "version_ordinal_sport_002", "split": "development", "semiotic_class": "VERSION", "template_group": "dự án sử dụng python <NUM>."}
+{"id": "version_ordinal_sport_003", "split": "development", "semiotic_class": "ERROR_CODE", "template_group": "trang web trả về lỗi <NUM>."}
+{"id": "version_ordinal_sport_004", "split": "development", "semiotic_class": "SCORE", "template_group": "đội chủ nhà thắng <NUM>."}
+{"id": "version_ordinal_sport_005", "split": "development", "semiotic_class": "ORDINAL_ROMAN", "template_group": "sự kiện này xảy ra vào thế kỷ xxi."}

@@ -192,14 +192,22 @@ audio = model.generate(text="Hello again!", voice_clone_prompt=prompt)
 >
 > - Use a 3–10 seconds reference audio clip. Longer audio slows down inference and may degrade cloning quality.
 > - For standard pronunciation, use a reference audio in the **same language** as the target speech. In cross-lingual voice cloning (i.e., the reference audio and target speech are in different languages), the generated speech will carry an accent from the reference audio's language.
-> - For better results with Arabic numerals, normalize them to words first (e.g., "123" → "one hundred twenty-three"). You can pass `normalize_text=True` to `generate()` to do this automatically (opt-in; install the extra with `pip install "omnivoice[tn]"`, which pulls in [WeTextProcessing](https://github.com/wenet-e2e/WeTextProcessing)):
+> - For Vietnamese target text, you can opt in to the BamiBERT candidate-driven normalizer with `normalize_text=True`. The normalization path is limited to the main target text and preserves the full original input on detector or normalization failure.
 >
 >   ```python
->   # "I have 2345 apples." is read correctly instead of digit-by-digit.
->   audio = model.generate(text="I have 2345 apples.", normalize_text=True)
+>   audio = model.generate(text="Tôi có 25 quyển sách.", normalize_text=True)
 >   ```
 >
->   Chinese and English use WeTextProcessing; other languages fall back to `num2words` for integers. Inline control syntax (`[laughter]`, `[B EY1 S]`, pinyin tone markers) is preserved. On macOS (Apple Silicon), `pynini` has no wheel — install it via `conda install -c conda-forge pynini` first.
+>   Normalization is off by default. BamiBERT loads lazily on the first enabled
+>   Vietnamese request and is reused in that process. Configure its local model
+>   with `OMNIVOICE_BAMIBERT_MODEL` (default:
+>   `artifacts/models/bamibert_augmented_best`) and device with
+>   `OMNIVOICE_BAMIBERT_DEVICE` (default: `cpu`). Reference transcripts and
+>   voice-design instructions are never normalized.
+>
+>   When normalization is enabled for other languages, the existing routes
+>   remain available: Chinese/English use the optional WeTextProcessing extra,
+>   and other languages retain the best-effort `num2words` fallback.
 >
 > For more tips, see [docs/tips.md](docs/tips.md).
 
@@ -289,6 +297,8 @@ omnivoice-demo --ip 0.0.0.0 --port 8001
 ```
 
 Provides a web UI for voice cloning and voice design. See `omnivoice-demo --help` for all options.
+The Vietnamese checkbox is off by default; `--normalize-text` can make it
+initially checked. It changes target text only.
 
 ### Single Inference
 
@@ -313,6 +323,13 @@ omnivoice-infer \
     --model k2-fsa/OmniVoice \
     --text "This is a test for text to speech."\
     --output hello.wav
+
+# Opt-in Vietnamese target normalization
+omnivoice-infer \
+    --text "Hẹn lúc 08:30 ngày 27/07/2026." \
+    --language vi --normalize-text \
+    --bamibert-model-path artifacts/models/bamibert_augmented_best \
+    --output vi.wav
 ```
 
 ### Batch Inference
@@ -333,6 +350,53 @@ The test list is a JSONL file where each line is a JSON object:
 Only `id` and `text` are mandatory fields. `ref_audio` and `ref_text` are used in voice cloning mode. `instruct` is used in voice design mode. If no reference audio or instruct are provided, the model will generate text in a random voice.
 
 `language_id`, `duration`, and `speed` are optional. `duration` (in seconds) fixes the output length; `speed` controls the speaking rate. If `duration` and `speed` are both provided, `speed` will be ignored.
+
+Single, batch, and demo entry points all support `--normalize-text` and
+`--no-normalize-text`; the default is off. There is no backend selector:
+enabled Vietnamese normalization always means BamiBERT candidates followed by
+the deterministic pipeline. The model path/device flags are configuration, not
+backend choices.
+
+The normalizer is applied once inside `OmniVoice.generate()`, before duration
+estimation and tokenization. It never rewrites reference transcripts,
+voice-design instructions, prompts, or metadata. A detector/load/pipeline
+failure hands the complete original target to TTS.
+
+Lightweight integration tests use fake detectors and a fake TTS boundary; they
+do not load weights:
+
+```bash
+. .venv/bin/activate
+python -m pytest -q \
+  tests/text_normalization \
+  tests/test_normalization_entrypoints.py \
+  tests/test_inference_normalization_boundary.py
+```
+
+Real BamiBERT output was validated separately on Kaggle. Step 1 deliberately
+does not claim local BamiBERT loading, real OmniVoice synthesis/audio
+verification, or Docker runtime validation; those remain environment-specific
+follow-up checks.
+
+### CPU Docker
+
+The CPU image does not bake in local weights. Mount BamiBERT and keep the
+Hugging Face cache persistent:
+
+```bash
+OMNIVOICE_BAMIBERT_HOST_PATH="$PWD/artifacts/models/bamibert_augmented_best" \
+  docker compose -f compose.cpu.yaml up --build
+```
+
+The mounted directory appears as `/models/bamibert`; the health check imports
+the package but deliberately does not load BamiBERT. A missing/broken mount
+causes an enabled request to preserve the original target and log a useful
+load diagnostic. The text-only probe is available inside the container:
+
+```bash
+docker compose -f compose.cpu.yaml exec omnivoice \
+  python scripts/try_text_normalizer.py "Tôi có 25 quyển sách."
+```
 
 ---
 

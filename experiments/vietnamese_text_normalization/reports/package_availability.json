@@ -1,0 +1,14 @@
+{
+  "identity": {"available": true, "version": "identity"},
+  "omnivoice_current": {"available": true, "version": "dirty workspace", "call": "omnivoice.utils.text.normalize_text(text, 'vi')", "note": "Routes to the contextual prototype in this workspace and is expected to match contextual_rule."},
+  "omnivoice_fallback": {"available": true, "version": "num2words 0.5.14", "call": "omnivoice.utils.text._num2words_segment(text, 'vi')"},
+  "direct_num2words": {"available": true, "version": "0.5.14", "call": "num2words(int(span), lang='vi')"},
+  "vietnormalizer": {"available": true, "version": "0.2.3", "environment": "/tmp/omnivoice_vi_benchmark_env", "dependencies": []},
+  "soe_vinorm": {
+    "available": false,
+    "version": "0.3.2",
+    "reason": "Public SoeNormalizer initialization calls huggingface_hub.snapshot_download for vinhdq842/soe-vinorm CRF weights; model downloads were prohibited.",
+    "direct_dependencies": ["huggingface-hub>=0.33,<1", "numpy>=1.20,<2", "onnxruntime>=1.16,<1.20", "sklearn-crfsuite>=0.5,<1", "unidecode>=1.3,<2"],
+    "resolved_packages": 31
+  }
+}

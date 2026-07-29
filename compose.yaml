@@ -1,0 +1,48 @@
+services:
+  omnivoice:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ${OMNIVOICE_IMAGE:-omnivoice-ui:latest}
+    container_name: omnivoice-ui
+    init: true
+    restart: unless-stopped
+    stop_grace_period: 30s
+    ports:
+      - "${OMNIVOICE_PUBLISH_HOST:-0.0.0.0}:${OMNIVOICE_PORT:-8001}:${OMNIVOICE_PORT:-8001}"
+    environment:
+      HF_HOME: /cache/huggingface
+      HF_HUB_DISABLE_TELEMETRY: "1"
+      GRADIO_ANALYTICS_ENABLED: "false"
+      GRADIO_TEMP_DIR: /app/outputs
+      OMNIVOICE_BAMIBERT_DEVICE: ${OMNIVOICE_BAMIBERT_DEVICE:-cpu}
+      OMNIVOICE_BAMIBERT_MODEL: /models/bamibert
+      OMNIVOICE_DEVICE: ${OMNIVOICE_DEVICE:-}
+      OMNIVOICE_HOST: ${OMNIVOICE_HOST:-0.0.0.0}
+      OMNIVOICE_MODEL: ${OMNIVOICE_MODEL:-k2-fsa/OmniVoice}
+      OMNIVOICE_NORMALIZE_TEXT: ${OMNIVOICE_NORMALIZE_TEXT:-false}
+      OMNIVOICE_OUTPUT_DIR: /app/outputs
+      OMNIVOICE_PORT: ${OMNIVOICE_PORT:-8001}
+      OMNIVOICE_ROOT_PATH: ${OMNIVOICE_ROOT_PATH:-}
+      TOKENIZERS_PARALLELISM: "false"
+    volumes:
+      - huggingface-cache:/cache/huggingface
+      - omnivoice-outputs:/app/outputs
+      - ${OMNIVOICE_BAMIBERT_HOST_PATH:-./artifacts/models/bamibert_augmented_best}:/models/bamibert:ro
+    shm_size: "2gb"
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import os, urllib.request; port=os.environ.get('OMNIVOICE_PORT', '8001'); urllib.request.urlopen(f'http://127.0.0.1:{port}/', timeout=5)"
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: ${OMNIVOICE_HEALTH_START_PERIOD:-20m}
+
+volumes:
+  huggingface-cache:
+    name: omnivoice_huggingface-cache
+  omnivoice-outputs:
+    name: omnivoice_outputs

@@ -1,0 +1,16 @@
+services:
+  omnivoice:
+    build:
+      args:
+        OMNIVOICE_LOCKFILE: uv.lock
+    image: ${OMNIVOICE_GPU_IMAGE:-omnivoice-ui:gpu}
+    environment:
+      OMNIVOICE_DEVICE: ${OMNIVOICE_DEVICE:-cuda}
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities:
+                - gpu

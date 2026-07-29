@@ -45,12 +45,14 @@ import torch
 from tqdm import tqdm
 
 from omnivoice.models.omnivoice import OmniVoice
+from omnivoice.text_normalization import configure_bamibert
 import soundfile as sf
 
 from omnivoice.utils.audio import load_audio
 from omnivoice.utils.common import get_best_device_with_count, str2bool
 from omnivoice.utils.data_utils import read_test_list
 from omnivoice.utils.duration import RuleDurationEstimator
+from omnivoice.utils.text import normalize_text_input
 
 
 worker_model = None
@@ -191,6 +193,29 @@ def get_parser():
         default=None,
         help="Language id to use when test_list JSONL entries do not contain "
         "a language_id field.",
+    )
+    parser.add_argument(
+        "--normalize-text",
+        dest="normalize_text",
+        action="store_true",
+        help="Normalize target text before synthesis. Disabled by default.",
+    )
+    parser.add_argument(
+        "--no-normalize-text",
+        dest="normalize_text",
+        action="store_false",
+        help="Disable target text normalization before synthesis.",
+    )
+    parser.set_defaults(normalize_text=False)
+    parser.add_argument(
+        "--bamibert-model-path",
+        default=None,
+        help="BamiBERT directory (or set OMNIVOICE_BAMIBERT_MODEL).",
+    )
+    parser.add_argument(
+        "--bamibert-device",
+        default=None,
+        help="BamiBERT device (or set OMNIVOICE_BAMIBERT_DEVICE; default: cpu).",
     )
     return parser
 
@@ -363,6 +388,7 @@ def cluster_samples_by_batch_size(
 def run_inference_batch(
     batch_samples: List[Tuple],
     res_dir: str,
+    normalize_text: bool = False,
     **gen_kwargs,
 ) -> List[Tuple]:
     global worker_model
@@ -398,6 +424,7 @@ def run_inference_batch(
         duration=durations if any(d is not None for d in durations) else None,
         speed=speeds if any(s is not None for s in speeds) else None,
         instruct=instructs if any(i is not None for i in instructs) else None,
+        normalize_text=normalize_text,
         **gen_kwargs,
     )
     batch_synth_time = time.time() - start_time
@@ -425,6 +452,7 @@ def main():
     mp.set_start_method("spawn", force=True)
 
     args = get_parser().parse_args()
+    configure_bamibert(args.bamibert_model_path, args.bamibert_device)
     os.makedirs(args.res_dir, exist_ok=True)
 
     device_type, num_devices = get_best_device_with_count()
@@ -447,13 +475,21 @@ def main():
     samples_raw = read_test_list(args.test_list)
     samples = []
     for s in samples_raw:
+        text = normalize_text_input(s["text"])
+        if not text:
+            raise ValueError(
+                f"Sample {s['id']!r} has empty text after Unicode normalization."
+            )
+        ref_text = s.get("ref_text")
+        if ref_text is not None:
+            ref_text = normalize_text_input(ref_text)
         lang_id = args.lang_id if args.lang_id is not None else s.get("language_id")
         samples.append(
             (
                 s["id"],
-                s.get("ref_text"),
+                ref_text,
                 s.get("ref_audio"),
-                s["text"],
+                text,
                 lang_id,
                 s.get("duration"),
                 s.get("speed"),
@@ -499,7 +535,9 @@ def main():
                         )
                     )
 
-            args_dict = vars(args)
+            args_dict = vars(args).copy()
+            args_dict.pop("bamibert_model_path")
+            args_dict.pop("bamibert_device")
 
             for batch in batches:
                 futures.append(

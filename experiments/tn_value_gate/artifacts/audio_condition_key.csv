@@ -1,0 +1,73 @@
+blind_sample_id,source_case_id,condition,target_text,role,best_existing_system,audio_path
+S001,version_ordinal_sport_001,GOLD,Ứng dụng đang chạy phiên bản ba chấm mười hai chấm một.,VERSION,soe_vinorm,audio/S001.wav
+S002,location_route_008,RAW,Địa chỉ là 27/5 phố Huế.,ADDRESS,soe_vinorm,audio/S002.wav
+S003,time_duration_004,BEST_EXISTING,Cuộc họp bắt đầu lúc chín giờ .,TIME,soe_vinorm,audio/S003.wav
+S004,phone_012,BEST_EXISTING,Hãy gọi đường dây một nghìn không trăm tám mươi .,SERVICE_PHONE,soe_vinorm,audio/S004.wav
+S005,version_ordinal_sport_001,BEST_EXISTING,Ứng dụng đang chạy phiên bản ba . mười hai . một .,VERSION,soe_vinorm,audio/S005.wav
+S006,identifier_001,BEST_EXISTING,Mã xác nhận là một trăm linh năm .,IDENTIFIER,soe_vinorm,audio/S006.wav
+S007,measure_011,BEST_EXISTING,Bể có thể tích bốn mươi lăm mét .,MEASURE,soe_vinorm,audio/S007.wav
+S008,year_date_012,RAW,Chúng tôi nghỉ vào ngày 1/5.,DATE,soe_vinorm,audio/S008.wav
+S009,decimal_math_007,GOLD,Hằng số pi xấp xỉ ba phẩy một bốn một năm chín.,DECIMAL,soe_vinorm,audio/S009.wav
+S010,money_015,BEST_EXISTING,Bữa trưa ở Nhật hết một nghìn yên .,MONEY,soe_vinorm,audio/S010.wav
+S011,version_ordinal_sport_001,RAW,Ứng dụng đang chạy phiên bản 3.12.1.,VERSION,soe_vinorm,audio/S011.wav
+S012,location_route_009,RAW,Cửa hàng ở số 12A đường Láng.,ADDRESS,soe_vinorm,audio/S012.wav
+S013,location_route_001,GOLD,Tôi đang ở phòng một không năm.,ROOM,soe_vinorm,audio/S013.wav
+S014,decimal_math_007,RAW,"Hằng số pi xấp xỉ 3,14159.",DECIMAL,soe_vinorm,audio/S014.wav
+S015,decimal_math_007,BEST_EXISTING,Hằng số pi xấp xỉ ba phẩy một bốn một năm chín .,DECIMAL,soe_vinorm,audio/S015.wav
+S016,identifier_008,RAW,Đơn hàng mang mã 105.,ORDER_ID,soe_vinorm,audio/S016.wav
+S017,location_route_001,RAW,Tôi đang ở phòng 105.,ROOM,soe_vinorm,audio/S017.wav
+S018,cardinal_004,BEST_EXISTING,Nhóm có năm thành viên .,QUANTITY,soe_vinorm,audio/S018.wav
+S019,measure_011,GOLD,Bể có thể tích bốn mươi lăm mét khối.,MEASURE,soe_vinorm,audio/S019.wav
+S020,percent_ratio_010,BEST_EXISTING,Huyết áp của bệnh nhân là một trăm hai mươi trên tám mươi .,MEDICAL_RATIO,soe_vinorm,audio/S020.wav
+S021,location_route_016,BEST_EXISTING,Chiếc xe mang biển năm mươi mốt Ca - tám trăm tám mươi tám . tám mươi tám .,LICENSE_PLATE,soe_vinorm,audio/S021.wav
+S022,location_route_009,BEST_EXISTING,Cửa hàng ở số mười hai A đường Láng .,ADDRESS,soe_vinorm,audio/S022.wav
+S023,year_date_012,GOLD,Chúng tôi nghỉ vào ngày mùng một tháng năm.,DATE,soe_vinorm,audio/S023.wav
+S024,location_route_008,BEST_EXISTING,Địa chỉ là hai mươi bảy trên năm phố Huế .,ADDRESS,soe_vinorm,audio/S024.wav
+S025,percent_ratio_008,GOLD,Hai đội đang hòa với tỷ số một đều.,SCORE,soe_vinorm,audio/S025.wav
+S026,location_route_016,GOLD,"Chiếc xe mang biển năm mươi mốt ca, tám tám tám, tám tám.",LICENSE_PLATE,soe_vinorm,audio/S026.wav
+S027,percent_ratio_015,GOLD,Tỷ lệ pha là một trên ba.,RATIO,soe_vinorm,audio/S027.wav
+S028,fraction_range_010,BEST_EXISTING,Khoảng tin cậy nằm trong đoạn [ không phẩy một ] .,INTERVAL,soe_vinorm,audio/S028.wav
+S029,phone_003,RAW,Số liên hệ là 0912-345-678.,PHONE,soe_vinorm,audio/S029.wav
+S030,money_015,GOLD,Bữa trưa ở Nhật hết một nghìn yên.,MONEY,soe_vinorm,audio/S030.wav
+S031,time_duration_004,RAW,Cuộc họp bắt đầu lúc 9h.,TIME,soe_vinorm,audio/S031.wav
+S032,percent_ratio_015,RAW,Tỷ lệ pha là 1:3.,RATIO,soe_vinorm,audio/S032.wav
+S033,cardinal_004,GOLD,Nhóm có năm thành viên.,QUANTITY,soe_vinorm,audio/S033.wav
+S034,percent_ratio_010,RAW,Huyết áp của bệnh nhân là 120/80.,MEDICAL_RATIO,soe_vinorm,audio/S034.wav
+S035,location_route_008,GOLD,Địa chỉ là hai mươi bảy trên năm phố Huế.,ADDRESS,soe_vinorm,audio/S035.wav
+S036,phone_009,BEST_EXISTING,"Khi cần báo công an , hãy gọi một trăm mười ba .",EMERGENCY_PHONE,soe_vinorm,audio/S036.wav
+S037,identifier_001,RAW,Mã xác nhận là 105.,IDENTIFIER,soe_vinorm,audio/S037.wav
+S038,money_015,RAW,Bữa trưa ở Nhật hết 1.000¥.,MONEY,soe_vinorm,audio/S038.wav
+S039,cardinal_004,RAW,Nhóm có 5 thành viên.,QUANTITY,soe_vinorm,audio/S039.wav
+S040,identifier_008,GOLD,Đơn hàng mang mã một không năm.,ORDER_ID,soe_vinorm,audio/S040.wav
+S041,percent_ratio_015,BEST_EXISTING,Tỷ lệ pha là một ba .,RATIO,soe_vinorm,audio/S041.wav
+S042,identifier_011,BEST_EXISTING,Số căn cước là không không một hai không năm không một hai ba bốn năm .,NATIONAL_ID,soe_vinorm,audio/S042.wav
+S043,phone_012,RAW,Hãy gọi đường dây 1080.,SERVICE_PHONE,soe_vinorm,audio/S043.wav
+S044,identifier_008,BEST_EXISTING,Đơn hàng mang mã một trăm linh năm .,ORDER_ID,soe_vinorm,audio/S044.wav
+S045,identifier_011,RAW,Số căn cước là 001205012345.,NATIONAL_ID,soe_vinorm,audio/S045.wav
+S046,time_duration_004,GOLD,Cuộc họp bắt đầu lúc chín giờ.,TIME,soe_vinorm,audio/S046.wav
+S047,fraction_range_002,RAW,Bể đang đầy 3/4.,FRACTION,soe_vinorm,audio/S047.wav
+S048,measure_011,RAW,Bể có thể tích 45m³.,MEASURE,soe_vinorm,audio/S048.wav
+S049,location_route_009,GOLD,Cửa hàng ở số mười hai a đường Láng.,ADDRESS,soe_vinorm,audio/S049.wav
+S050,fraction_range_002,GOLD,Bể đang đầy ba phần tư.,FRACTION,soe_vinorm,audio/S050.wav
+S051,percent_ratio_008,BEST_EXISTING,Hai đội đang hòa với tỷ số một một .,SCORE,soe_vinorm,audio/S051.wav
+S052,decimal_math_006,BEST_EXISTING,Tổng doanh thu là một nghìn hai trăm ba mươi tư phẩy năm sáu triệu đồng .,DECIMAL,soe_vinorm,audio/S052.wav
+S053,percent_ratio_010,GOLD,Huyết áp của bệnh nhân là một trăm hai mươi trên tám mươi.,MEDICAL_RATIO,soe_vinorm,audio/S053.wav
+S054,percent_ratio_008,RAW,Hai đội đang hòa với tỷ số 1:1.,SCORE,soe_vinorm,audio/S054.wav
+S055,phone_003,GOLD,"Số liên hệ là không chín một hai, ba bốn năm, sáu bảy tám.",PHONE,soe_vinorm,audio/S055.wav
+S056,location_route_016,RAW,Chiếc xe mang biển 51K-888.88.,LICENSE_PLATE,soe_vinorm,audio/S056.wav
+S057,year_date_008,RAW,Tài liệu này có từ năm 1873.,YEAR,soe_vinorm,audio/S057.wav
+S058,fraction_range_010,GOLD,Khoảng tin cậy nằm trong đoạn từ không đến một.,INTERVAL,soe_vinorm,audio/S058.wav
+S059,year_date_012,BEST_EXISTING,Chúng tôi nghỉ vào ngày một tháng năm .,DATE,soe_vinorm,audio/S059.wav
+S060,phone_012,GOLD,Hãy gọi đường dây một không tám không.,SERVICE_PHONE,soe_vinorm,audio/S060.wav
+S061,identifier_011,GOLD,Số căn cước là không không một hai không năm không một hai ba bốn năm.,NATIONAL_ID,soe_vinorm,audio/S061.wav
+S062,fraction_range_010,RAW,"Khoảng tin cậy nằm trong đoạn [0,1].",INTERVAL,soe_vinorm,audio/S062.wav
+S063,location_route_001,BEST_EXISTING,Tôi đang ở phòng một trăm linh năm .,ROOM,soe_vinorm,audio/S063.wav
+S064,decimal_math_006,GOLD,Tổng doanh thu là một nghìn hai trăm ba mươi tư phẩy năm sáu triệu đồng.,DECIMAL,soe_vinorm,audio/S064.wav
+S065,fraction_range_002,BEST_EXISTING,Bể đang đầy ba trên bốn .,FRACTION,soe_vinorm,audio/S065.wav
+S066,identifier_001,GOLD,Mã xác nhận là một không năm.,IDENTIFIER,soe_vinorm,audio/S066.wav
+S067,phone_003,BEST_EXISTING,Số liên hệ là chín trăm mười hai ba trăm bốn mươi lăm sáu trăm bảy mươi tám .,PHONE,soe_vinorm,audio/S067.wav
+S068,phone_009,RAW,"Khi cần báo công an, hãy gọi 113.",EMERGENCY_PHONE,soe_vinorm,audio/S068.wav
+S069,year_date_008,GOLD,Tài liệu này có từ năm một nghìn tám trăm bảy mươi ba.,YEAR,soe_vinorm,audio/S069.wav
+S070,phone_009,GOLD,"Khi cần báo công an, hãy gọi một một ba.",EMERGENCY_PHONE,soe_vinorm,audio/S070.wav
+S071,decimal_math_006,RAW,"Tổng doanh thu là 1.234,56 triệu đồng.",DECIMAL,soe_vinorm,audio/S071.wav
+S072,year_date_008,BEST_EXISTING,Tài liệu này có từ năm một nghìn tám trăm bảy mươi ba .,YEAR,soe_vinorm,audio/S072.wav

@@ -72,7 +72,8 @@ from omnivoice.utils.lang_map import LANG_IDS, LANG_NAMES
 from omnivoice.utils.text import (
     add_punctuation,
     chunk_text_punctuation,
-    normalize_text as _normalize_text,
+    normalize_for_inference,
+    normalize_text_input,
 )
 from omnivoice.utils.voice_design import (
     _INSTRUCT_ALL_VALID,
@@ -634,14 +635,17 @@ class OmniVoice(PreTrainedModel):
                 slower. If a list, one value per item. ``None`` (default) uses
                 the model's default estimation.
             normalize_text: If ``True``, run text normalization on the target
-                text before synthesis (numbers, dates, currency, etc. are
-                converted to their spoken form, e.g. ``"2345"`` ->
-                ``"twenty three forty five"``). Default ``False`` (paper
-                reproducibility is unaffected). Chinese/English require the
-                optional ``omnivoice[tn]`` dependency (WeTextProcessing); other
+                text once, before duration estimation and tokenization.
+                Default ``False`` (paper reproducibility is unaffected).
+                Vietnamese uses the lazy local BamiBERT detector followed by
+                deterministic verbalization and preserves the full target on
+                failure. Chinese/English require the optional
+                ``omnivoice[tn]`` dependency (WeTextProcessing); remaining
                 languages use ``num2words`` for bare integers when installed.
+                Reference transcripts and instructions are not normalized.
                 Inline control syntax (``[laughter]``, ``[B EY1 S]``, pinyin
-                tone markers) is preserved. See :func:`omnivoice.utils.text.normalize_text`.
+                tone markers) is preserved. See
+                :func:`omnivoice.utils.text.normalize_text`.
             generation_config: Explicit config object. If provided, takes
                 precedence over ``**kwargs``.
             **kwargs: Generation config or its fields:
@@ -753,6 +757,9 @@ class OmniVoice(PreTrainedModel):
                 "with OmniVoice.from_pretrained()."
             )
 
+        if ref_text is not None:
+            ref_text = normalize_text_input(ref_text)
+
         if isinstance(ref_audio, str):
             ref_wav = load_audio(ref_audio, self.sampling_rate)
         else:
@@ -812,6 +819,8 @@ class OmniVoice(PreTrainedModel):
                 self.load_asr_model()
             ref_text = self.transcribe((ref_wav, self.sampling_rate))
             logger.debug("Auto-transcribed ref_text: %s", ref_text)
+
+        ref_text = normalize_text_input(ref_text)
 
         chunk_size = self.audio_tokenizer.config.hop_length
         clip_size = int(ref_wav.shape[-1] % chunk_size)
@@ -1051,6 +1060,14 @@ class OmniVoice(PreTrainedModel):
             text_list = text
         batch_size = len(text_list)
 
+        text_list = [normalize_text_input(item) for item in text_list]
+        empty_indices = [i for i, item in enumerate(text_list) if not item]
+        if empty_indices:
+            raise ValueError(
+                "Target text is empty after Unicode normalization "
+                f"for batch item(s): {empty_indices}."
+            )
+
         language_list = self._ensure_list(language, batch_size)
         language_list = [_resolve_language(lang) for lang in language_list]
 
@@ -1059,7 +1076,8 @@ class OmniVoice(PreTrainedModel):
         # before duration estimation so the estimate matches the spoken form.
         if normalize_text:
             text_list = [
-                _normalize_text(t, lang) for t, lang in zip(text_list, language_list)
+                normalize_for_inference(t, language=lang, enabled=True, field="target")
+                for t, lang in zip(text_list, language_list)
             ]
         instruct_list = self._ensure_list(instruct, batch_size)
         for i, s in enumerate(instruct_list):
@@ -1093,7 +1111,9 @@ class OmniVoice(PreTrainedModel):
 
         voice_clone_prompt_list = self._ensure_list(voice_clone_prompt, batch_size)
         if voice_clone_prompt_list[0] is not None:
-            ref_text_list = [vc.ref_text for vc in voice_clone_prompt_list]
+            ref_text_list = [
+                normalize_text_input(vc.ref_text) for vc in voice_clone_prompt_list
+            ]
             ref_audio_tokens_list = [
                 vc.ref_audio_tokens for vc in voice_clone_prompt_list
             ]

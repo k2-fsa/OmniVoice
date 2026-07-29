@@ -1,0 +1,13 @@
+{"id":"smoke_cardinal_boundary","category":"CARDINAL_BOUNDARY","input":"Hôm nay tôi nhận được 105 đơn hàng.","expected_options":["Hôm nay tôi nhận được một trăm lẻ năm đơn hàng.","Hôm nay tôi nhận được một trăm linh năm đơn hàng."]}
+{"id":"smoke_measurement_dot","category":"MEASUREMENT","input":"Gói hàng nặng 2.5 kg.","expected_options":["Gói hàng nặng hai phẩy năm ki-lô-gam."]}
+{"id":"smoke_measurement_comma","category":"MEASUREMENT","input":"Gói hàng nặng 2,5 kg.","expected_options":["Gói hàng nặng hai phẩy năm ki-lô-gam."]}
+{"id":"smoke_currency","category":"CURRENCY","input":"Giá sản phẩm là 150.000 đồng.","expected_options":["Giá sản phẩm là một trăm năm mươi nghìn đồng."]}
+{"id":"smoke_percent","category":"PERCENT","input":"Doanh thu tăng 12%.","expected_options":["Doanh thu tăng mười hai phần trăm."]}
+{"id":"smoke_date","category":"DATE","input":"Cuộc họp diễn ra ngày 20/11/2026.","expected_options":["Cuộc họp diễn ra ngày hai mươi tháng mười một năm hai nghìn không trăm hai mươi sáu."]}
+{"id":"smoke_time","category":"TIME","input":"Chúng ta bắt đầu lúc 08:30.","expected_options":["Chúng ta bắt đầu lúc tám giờ ba mươi phút."]}
+{"id":"smoke_phone","category":"PHONE","input":"Số điện thoại là 0912345678.","expected_options":["Số điện thoại là không chín một hai ba bốn năm sáu bảy tám."]}
+{"id":"smoke_version","category":"VERSION","input":"Phiên bản hiện tại là 2.5.","expected_options":["Phiên bản hiện tại là hai chấm năm."]}
+{"id":"smoke_currency_prefix_negative","category":"HARD_NEGATIVE","input":"Tôi có 5 đồng nghiệp.","expected_options":["Tôi có năm đồng nghiệp."]}
+{"id":"smoke_currency_word_negative","category":"HARD_NEGATIVE","input":"Nhà có 3 đồng hồ.","expected_options":["Nhà có ba đồng hồ."]}
+{"id":"smoke_route_word_negative","category":"HARD_NEGATIVE","input":"Tôi đi trên 2 đường khác nhau.","expected_options":["Tôi đi trên hai đường khác nhau."]}
+{"id":"smoke_no_numeric","category":"HARD_NEGATIVE","input":"Đây là một người đẹp.","expected_options":["Đây là một người đẹp."]}

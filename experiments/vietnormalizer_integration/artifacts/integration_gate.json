@@ -1,0 +1,13 @@
+{
+  "corrupted_word_zero": true,
+  "regression_105_order_fixed": true,
+  "no_serious_corruption": true,
+  "acceptable_not_below_upstream": true,
+  "casefold_acceptable_not_below_upstream": true,
+  "hard_negative_false_positive_not_increased": true,
+  "upstream_tests_pass": true,
+  "new_numeric_tests_pass": true,
+  "omnivoice_integration_tests_pass": true,
+  "no_custom_fallback": true,
+  "passed": true
+}

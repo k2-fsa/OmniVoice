@@ -25,6 +25,7 @@ Usage:
 
 import argparse
 import logging
+import os
 from typing import Any, Dict
 
 import gradio as gr
@@ -32,8 +33,11 @@ import numpy as np
 import torch
 
 from omnivoice import OmniVoice, OmniVoiceGenerationConfig
+from omnivoice.cli._demo_config import ensure_output_dir, env_bool, env_port, env_value
+from omnivoice.text_normalization import configure_bamibert
 from omnivoice.utils.common import get_best_device
 from omnivoice.utils.lang_map import LANG_NAMES, lang_display_name
+from omnivoice.utils.text import normalize_text_input
 
 
 # ---------------------------------------------------------------------------
@@ -97,6 +101,19 @@ _ATTR_INFO = {
     "Chinese Dialect / 中文方言": "Only effective for Chinese speech.",
 }
 
+_CSS = """
+.gradio-container {max-width: 100% !important; font-size: 16px !important;}
+.gradio-container h1 {font-size: 1.5em !important;}
+.gradio-container .prose {font-size: 1.1em !important;}
+.compact-audio audio {height: 60px !important;}
+.compact-audio .waveform {min-height: 80px !important;}
+"""
+
+
+def _demo_theme():
+    return gr.themes.Soft(font=["Inter", "Arial", "sans-serif"])
+
+
 # ---------------------------------------------------------------------------
 # Argument parser
 # ---------------------------------------------------------------------------
@@ -110,19 +127,28 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--model",
-        default="k2-fsa/OmniVoice",
+        default=env_value("OMNIVOICE_MODEL", "k2-fsa/OmniVoice"),
         help="Model checkpoint path or HuggingFace repo id.",
     )
     parser.add_argument(
-        "--device", default=None, help="Device to use. Auto-detected if not specified."
+        "--device",
+        default=os.getenv("OMNIVOICE_DEVICE") or None,
+        help="Device to use. Auto-detected if not specified.",
     )
-    parser.add_argument("--ip", default="0.0.0.0", help="Server IP (default: 0.0.0.0).")
     parser.add_argument(
-        "--port", type=int, default=7860, help="Server port (default: 7860)."
+        "--ip",
+        default=env_value("OMNIVOICE_HOST", "0.0.0.0"),
+        help="Server IP (default: 0.0.0.0).",
+    )
+    parser.add_argument(
+        "--port",
+        type=int,
+        default=env_port(),
+        help="Server port (default: 7860).",
     )
     parser.add_argument(
         "--root-path",
-        default=None,
+        default=os.getenv("OMNIVOICE_ROOT_PATH") or None,
         help="Root path for reverse proxy.",
     )
     parser.add_argument(
@@ -132,14 +158,39 @@ def build_parser() -> argparse.ArgumentParser:
         "--no-asr",
         action="store_true",
         default=False,
-        help="Skip loading Whisper ASR model. Reference text auto-transcription"
-        " will be unavailable.",
+        help="Skip preloading Whisper ASR at startup. If reference text is omitted,"
+        " Whisper may still load lazily for auto-transcription.",
     )
     parser.add_argument(
         "--asr-model",
         default="openai/whisper-large-v3-turbo",
         help="ASR model path or HuggingFace repo id"
         " (default: openai/whisper-large-v3-turbo).",
+    )
+    parser.add_argument(
+        "--normalize-text",
+        dest="normalize_text",
+        action="store_true",
+        help="Start Gradio with Vietnamese target normalization enabled.",
+    )
+    parser.add_argument(
+        "--no-normalize-text",
+        dest="normalize_text",
+        action="store_false",
+        help="Start Gradio with target normalization disabled.",
+    )
+    parser.set_defaults(
+        normalize_text=env_bool("OMNIVOICE_NORMALIZE_TEXT", default=False)
+    )
+    parser.add_argument(
+        "--bamibert-model-path",
+        default=None,
+        help="BamiBERT directory (or set OMNIVOICE_BAMIBERT_MODEL).",
+    )
+    parser.add_argument(
+        "--bamibert-device",
+        default=None,
+        help="BamiBERT device (or set OMNIVOICE_BAMIBERT_DEVICE; default: cpu).",
     )
     return parser
 
@@ -153,6 +204,7 @@ def build_demo(
     model: OmniVoice,
     checkpoint: str,
     generate_fn=None,
+    normalize_text_default: bool = False,
 ) -> gr.Blocks:
     sampling_rate = model.sampling_rate
 
@@ -169,49 +221,63 @@ def build_demo(
         duration,
         preprocess_prompt,
         postprocess_output,
+        normalize_text,
         mode,
         ref_text=None,
     ):
-        if not text or not text.strip():
+        normalized_text = normalize_text_input(text or "")
+        normalized_ref_text = (
+            normalize_text_input(ref_text) if ref_text is not None else None
+        )
+        was_normalized = (
+            normalized_text != (text or "") or normalized_ref_text != ref_text
+        )
+
+        if not normalized_text:
             return None, "Please enter the text to synthesize."
 
-        gen_config = OmniVoiceGenerationConfig(
-            num_step=int(num_step or 32),
-            guidance_scale=float(guidance_scale) if guidance_scale is not None else 2.0,
-            denoise=bool(denoise) if denoise is not None else True,
-            preprocess_prompt=bool(preprocess_prompt),
-            postprocess_output=bool(postprocess_output),
-        )
-
-        lang = language if (language and language != "Auto") else None
-
-        kw: Dict[str, Any] = dict(
-            text=text.strip(), language=lang, generation_config=gen_config
-        )
-
-        if speed is not None and float(speed) != 1.0:
-            kw["speed"] = float(speed)
-        if duration is not None and float(duration) > 0:
-            kw["duration"] = float(duration)
-
-        if mode == "clone":
-            if not ref_audio:
-                return None, "Please upload a reference audio."
-            kw["voice_clone_prompt"] = model.create_voice_clone_prompt(
-                ref_audio=ref_audio,
-                ref_text=ref_text,
+        try:
+            gen_config = OmniVoiceGenerationConfig(
+                num_step=int(num_step or 32),
+                guidance_scale=(
+                    float(guidance_scale) if guidance_scale is not None else 2.0
+                ),
+                denoise=bool(denoise) if denoise is not None else True,
+                preprocess_prompt=bool(preprocess_prompt),
+                postprocess_output=bool(postprocess_output),
             )
 
-        if instruct and instruct.strip():
-            kw["instruct"] = instruct.strip()
+            lang = language if (language and language != "Auto") else None
+            kw: Dict[str, Any] = dict(
+                text=normalized_text,
+                language=lang,
+                generation_config=gen_config,
+                normalize_text=bool(normalize_text),
+            )
 
-        try:
+            if speed is not None and float(speed) != 1.0:
+                kw["speed"] = float(speed)
+            if duration is not None and float(duration) > 0:
+                kw["duration"] = float(duration)
+
+            if mode == "clone":
+                if not ref_audio:
+                    return None, "Please upload a reference audio."
+                kw["voice_clone_prompt"] = model.create_voice_clone_prompt(
+                    ref_audio=ref_audio,
+                    ref_text=normalized_ref_text,
+                )
+
+            if instruct and instruct.strip():
+                kw["instruct"] = instruct.strip()
+
             audio = model.generate(**kw)
+            waveform = (audio[0] * 32767).astype(np.int16)
         except Exception as e:
             return None, f"Error: {type(e).__name__}: {e}"
 
-        waveform = (audio[0] * 32767).astype(np.int16)
-        return (sampling_rate, waveform), "Done."
+        status = "Done. Unicode text was normalized." if was_normalized else "Done."
+        return (sampling_rate, waveform), status
 
     # Allow external wrappers (e.g. spaces.GPU for ZeroGPU Spaces)
     _gen = generate_fn if generate_fn is not None else _gen_core
@@ -219,17 +285,6 @@ def build_demo(
     # =====================================================================
     # UI
     # =====================================================================
-    theme = gr.themes.Soft(
-        font=["Inter", "Arial", "sans-serif"],
-    )
-    css = """
-    .gradio-container {max-width: 100% !important; font-size: 16px !important;}
-    .gradio-container h1 {font-size: 1.5em !important;}
-    .gradio-container .prose {font-size: 1.1em !important;}
-    .compact-audio audio {height: 60px !important;}
-    .compact-audio .waveform {min-height: 80px !important;}
-    """
-
     # Reusable: language dropdown component
     def _lang_dropdown(label="Language (optional) / 语种 (可选)", value="Auto"):
         return gr.Dropdown(
@@ -291,9 +346,14 @@ def build_demo(
                 value=True,
                 info="Remove long silences from generated audio.",
             )
-        return ns, gs, dn, sp, du, pp, po
+            tn = gr.Checkbox(
+                label="Chuẩn hóa tiếng Việt",
+                value=normalize_text_default,
+                info="Chuẩn hóa target text trước khi tổng hợp. Mặc định: tắt.",
+            )
+        return ns, gs, dn, sp, du, pp, po, tn
 
-    with gr.Blocks(theme=theme, css=css, title="OmniVoice Demo") as demo:
+    with gr.Blocks(title="OmniVoice Demo") as demo:
         gr.Markdown(
             """
 # OmniVoice Demo
@@ -347,6 +407,7 @@ by Xiaomi AI Lab Next-gen Kaldi team.
                             vc_du,
                             vc_pp,
                             vc_po,
+                            vc_tn,
                         ) = _gen_settings()
                         vc_btn = gr.Button("Generate / 生成", variant="primary")
                     with gr.Column(scale=1):
@@ -357,7 +418,19 @@ by Xiaomi AI Lab Next-gen Kaldi team.
                         vc_status = gr.Textbox(label="Status / 状态", lines=2)
 
                 def _clone_fn(
-                    text, lang, ref_aud, ref_text, instruct, ns, gs, dn, sp, du, pp, po
+                    text,
+                    lang,
+                    ref_aud,
+                    ref_text,
+                    instruct,
+                    ns,
+                    gs,
+                    dn,
+                    sp,
+                    du,
+                    pp,
+                    po,
+                    tn,
                 ):
                     return _gen(
                         text,
@@ -371,6 +444,7 @@ by Xiaomi AI Lab Next-gen Kaldi team.
                         du,
                         pp,
                         po,
+                        tn,
                         mode="clone",
                         ref_text=ref_text or None,
                     )
@@ -390,6 +464,7 @@ by Xiaomi AI Lab Next-gen Kaldi team.
                         vc_du,
                         vc_pp,
                         vc_po,
+                        vc_tn,
                     ],
                     outputs=[vc_audio, vc_status],
                 )
@@ -427,6 +502,7 @@ by Xiaomi AI Lab Next-gen Kaldi team.
                             vd_du,
                             vd_pp,
                             vd_po,
+                            vd_tn,
                         ) = _gen_settings()
                         vd_btn = gr.Button("Generate / 生成", variant="primary")
                     with gr.Column(scale=1):
@@ -458,7 +534,7 @@ by Xiaomi AI Lab Next-gen Kaldi team.
                             parts.append(v)
                     return ", ".join(parts)
 
-                def _design_fn(text, lang, ns, gs, dn, sp, du, pp, po, *groups):
+                def _design_fn(text, lang, ns, gs, dn, sp, du, pp, po, tn, *groups):
                     return _gen(
                         text,
                         lang,
@@ -471,6 +547,7 @@ by Xiaomi AI Lab Next-gen Kaldi team.
                         du,
                         pp,
                         po,
+                        tn,
                         mode="design",
                     )
 
@@ -486,6 +563,7 @@ by Xiaomi AI Lab Next-gen Kaldi team.
                         vd_du,
                         vd_pp,
                         vd_po,
+                        vd_tn,
                     ]
                     + vd_groups,
                     outputs=[vd_audio, vd_status],
@@ -504,8 +582,16 @@ def main(argv=None) -> int:
         level=logging.INFO,
         format="%(asctime)s %(name)s %(levelname)s: %(message)s",
     )
-    parser = build_parser()
+    try:
+        parser = build_parser()
+    except ValueError as error:
+        logging.error("Invalid demo configuration: %s", error)
+        return 2
     args = parser.parse_args(argv)
+    configure_bamibert(args.bamibert_model_path, args.bamibert_device)
+
+    output_dir = ensure_output_dir()
+    os.environ.setdefault("GRADIO_TEMP_DIR", str(output_dir))
 
     device = args.device or get_best_device()
 
@@ -514,22 +600,29 @@ def main(argv=None) -> int:
         parser.print_help()
         return 0
     logging.info(f"Loading model from {checkpoint}, device={device} ...")
+    dtype = torch.float32 if str(device).startswith("cpu") else torch.float16
     model = OmniVoice.from_pretrained(
         checkpoint,
         device_map=device,
-        dtype=torch.float16,
+        dtype=dtype,
         load_asr=not args.no_asr,
         asr_model_name=args.asr_model,
     )
     print("Model loaded.")
 
-    demo = build_demo(model, checkpoint)
+    demo = build_demo(
+        model,
+        checkpoint,
+        normalize_text_default=args.normalize_text,
+    )
 
     demo.queue().launch(
         server_name=args.ip,
         server_port=args.port,
         share=args.share,
         root_path=args.root_path,
+        theme=_demo_theme(),
+        css=_CSS,
     )
     return 0
 

@@ -79,7 +79,6 @@ torch = [
 torchaudio = [
   { index = "pytorch-cuda", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
 ]
-
 [[tool.uv.index]]
 name = "pytorch-cuda"
 # Use PyTorch built for NVIDIA Toolkit version 12.8.
@@ -97,8 +96,19 @@ constraint-dependencies = [
 [tool.ruff.lint]
 ignore = ["F401", "E402", "F403", "F841", "E741"]
 
+[tool.pytest.ini_options]
+addopts = "-m 'not integration'"
+markers = [
+    "integration: tests that load local model artifacts",
+]
+
 [tool.hatch.build.targets.sdist]
 include = ["omnivoice"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["omnivoice"]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+]

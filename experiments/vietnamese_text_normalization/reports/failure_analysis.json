@@ -1,0 +1,2053 @@
+{
+  "warning": "categories are heuristic analysis labels, not audited dataset annotations",
+  "counts": [
+    {
+      "split": "development",
+      "method": "contextual_rule",
+      "category": "contextual ambiguity",
+      "count": 22
+    },
+    {
+      "split": "development",
+      "method": "contextual_rule",
+      "category": "incorrect cardinal morphology",
+      "count": 10
+    },
+    {
+      "split": "development",
+      "method": "contextual_rule",
+      "category": "punctuation/span corruption or unsupported form",
+      "count": 35
+    },
+    {
+      "split": "development",
+      "method": "contextual_rule",
+      "category": "questionable gold label",
+      "count": 1
+    },
+    {
+      "split": "development",
+      "method": "contextual_rule",
+      "category": "structural parsing failure",
+      "count": 15
+    },
+    {
+      "split": "development",
+      "method": "contextual_rule",
+      "category": "unsupported semiotic class",
+      "count": 39
+    },
+    {
+      "split": "development",
+      "method": "direct_num2words",
+      "category": "contextual ambiguity",
+      "count": 32
+    },
+    {
+      "split": "development",
+      "method": "direct_num2words",
+      "category": "incorrect cardinal morphology",
+      "count": 12
+    },
+    {
+      "split": "development",
+      "method": "direct_num2words",
+      "category": "punctuation/span corruption or unsupported form",
+      "count": 44
+    },
+    {
+      "split": "development",
+      "method": "direct_num2words",
+      "category": "questionable gold label",
+      "count": 1
+    },
+    {
+      "split": "development",
+      "method": "direct_num2words",
+      "category": "structural parsing failure",
+      "count": 33
+    },
+    {
+      "split": "development",
+      "method": "direct_num2words",
+      "category": "unsupported semiotic class",
+      "count": 39
+    },
+    {
+      "split": "development",
+      "method": "identity",
+      "category": "contextual ambiguity",
+      "count": 34
+    },
+    {
+      "split": "development",
+      "method": "identity",
+      "category": "incorrect cardinal morphology",
+      "count": 24
+    },
+    {
+      "split": "development",
+      "method": "identity",
+      "category": "punctuation/span corruption or unsupported form",
+      "count": 48
+    },
+    {
+      "split": "development",
+      "method": "identity",
+      "category": "questionable gold label",
+      "count": 1
+    },
+    {
+      "split": "development",
+      "method": "identity",
+      "category": "structural parsing failure",
+      "count": 35
+    },
+    {
+      "split": "development",
+      "method": "identity",
+      "category": "unsupported semiotic class",
+      "count": 39
+    },
+    {
+      "split": "development",
+      "method": "omnivoice_current",
+      "category": "contextual ambiguity",
+      "count": 22
+    },
+    {
+      "split": "development",
+      "method": "omnivoice_current",
+      "category": "incorrect cardinal morphology",
+      "count": 10
+    },
+    {
+      "split": "development",
+      "method": "omnivoice_current",
+      "category": "punctuation/span corruption or unsupported form",
+      "count": 35
+    },
+    {
+      "split": "development",
+      "method": "omnivoice_current",
+      "category": "questionable gold label",
+      "count": 1
+    },
+    {
+      "split": "development",
+      "method": "omnivoice_current",
+      "category": "structural parsing failure",
+      "count": 15
+    },
+    {
+      "split": "development",
+      "method": "omnivoice_current",
+      "category": "unsupported semiotic class",
+      "count": 39
+    },
+    {
+      "split": "development",
+      "method": "omnivoice_fallback",
+      "category": "contextual ambiguity",
+      "count": 32
+    },
+    {
+      "split": "development",
+      "method": "omnivoice_fallback",
+      "category": "incorrect cardinal morphology",
+      "count": 12
+    },
+    {
+      "split": "development",
+      "method": "omnivoice_fallback",
+      "category": "punctuation/span corruption or unsupported form",
+      "count": 44
+    },
+    {
+      "split": "development",
+      "method": "omnivoice_fallback",
+      "category": "questionable gold label",
+      "count": 1
+    },
+    {
+      "split": "development",
+      "method": "omnivoice_fallback",
+      "category": "structural parsing failure",
+      "count": 33
+    },
+    {
+      "split": "development",
+      "method": "omnivoice_fallback",
+      "category": "unsupported semiotic class",
+      "count": 39
+    },
+    {
+      "split": "development",
+      "method": "soe_vinorm",
+      "category": "package/runtime failure",
+      "count": 181
+    },
+    {
+      "split": "development",
+      "method": "vietnormalizer",
+      "category": "contextual ambiguity",
+      "count": 34
+    },
+    {
+      "split": "development",
+      "method": "vietnormalizer",
+      "category": "incorrect cardinal morphology",
+      "count": 24
+    },
+    {
+      "split": "development",
+      "method": "vietnormalizer",
+      "category": "punctuation/span corruption or unsupported form",
+      "count": 48
+    },
+    {
+      "split": "development",
+      "method": "vietnormalizer",
+      "category": "questionable gold label",
+      "count": 1
+    },
+    {
+      "split": "development",
+      "method": "vietnormalizer",
+      "category": "structural parsing failure",
+      "count": 35
+    },
+    {
+      "split": "development",
+      "method": "vietnormalizer",
+      "category": "unsupported semiotic class",
+      "count": 39
+    },
+    {
+      "split": "test",
+      "method": "contextual_rule",
+      "category": "contextual ambiguity",
+      "count": 2
+    },
+    {
+      "split": "test",
+      "method": "contextual_rule",
+      "category": "incorrect cardinal morphology",
+      "count": 1
+    },
+    {
+      "split": "test",
+      "method": "contextual_rule",
+      "category": "punctuation/span corruption or unsupported form",
+      "count": 1
+    },
+    {
+      "split": "test",
+      "method": "contextual_rule",
+      "category": "structural parsing failure",
+      "count": 6
+    },
+    {
+      "split": "test",
+      "method": "contextual_rule",
+      "category": "unsupported semiotic class",
+      "count": 3
+    },
+    {
+      "split": "test",
+      "method": "direct_num2words",
+      "category": "contextual ambiguity",
+      "count": 2
+    },
+    {
+      "split": "test",
+      "method": "direct_num2words",
+      "category": "incorrect cardinal morphology",
+      "count": 1
+    },
+    {
+      "split": "test",
+      "method": "direct_num2words",
+      "category": "punctuation/span corruption or unsupported form",
+      "count": 1
+    },
+    {
+      "split": "test",
+      "method": "direct_num2words",
+      "category": "structural parsing failure",
+      "count": 8
+    },
+    {
+      "split": "test",
+      "method": "direct_num2words",
+      "category": "unsupported semiotic class",
+      "count": 3
+    },
+    {
+      "split": "test",
+      "method": "identity",
+      "category": "contextual ambiguity",
+      "count": 2
+    },
+    {
+      "split": "test",
+      "method": "identity",
+      "category": "incorrect cardinal morphology",
+      "count": 5
+    },
+    {
+      "split": "test",
+      "method": "identity",
+      "category": "punctuation/span corruption or unsupported form",
+      "count": 1
+    },
+    {
+      "split": "test",
+      "method": "identity",
+      "category": "structural parsing failure",
+      "count": 8
+    },
+    {
+      "split": "test",
+      "method": "identity",
+      "category": "unsupported semiotic class",
+      "count": 3
+    },
+    {
+      "split": "test",
+      "method": "omnivoice_current",
+      "category": "contextual ambiguity",
+      "count": 2
+    },
+    {
+      "split": "test",
+      "method": "omnivoice_current",
+      "category": "incorrect cardinal morphology",
+      "count": 1
+    },
+    {
+      "split": "test",
+      "method": "omnivoice_current",
+      "category": "punctuation/span corruption or unsupported form",
+      "count": 1
+    },
+    {
+      "split": "test",
+      "method": "omnivoice_current",
+      "category": "structural parsing failure",
+      "count": 6
+    },
+    {
+      "split": "test",
+      "method": "omnivoice_current",
+      "category": "unsupported semiotic class",
+      "count": 3
+    },
+    {
+      "split": "test",
+      "method": "omnivoice_fallback",
+      "category": "contextual ambiguity",
+      "count": 2
+    },
+    {
+      "split": "test",
+      "method": "omnivoice_fallback",
+      "category": "incorrect cardinal morphology",
+      "count": 1
+    },
+    {
+      "split": "test",
+      "method": "omnivoice_fallback",
+      "category": "punctuation/span corruption or unsupported form",
+      "count": 1
+    },
+    {
+      "split": "test",
+      "method": "omnivoice_fallback",
+      "category": "structural parsing failure",
+      "count": 8
+    },
+    {
+      "split": "test",
+      "method": "omnivoice_fallback",
+      "category": "unsupported semiotic class",
+      "count": 3
+    },
+    {
+      "split": "test",
+      "method": "soe_vinorm",
+      "category": "package/runtime failure",
+      "count": 19
+    },
+    {
+      "split": "test",
+      "method": "vietnormalizer",
+      "category": "contextual ambiguity",
+      "count": 2
+    },
+    {
+      "split": "test",
+      "method": "vietnormalizer",
+      "category": "incorrect cardinal morphology",
+      "count": 5
+    },
+    {
+      "split": "test",
+      "method": "vietnormalizer",
+      "category": "punctuation/span corruption or unsupported form",
+      "count": 1
+    },
+    {
+      "split": "test",
+      "method": "vietnormalizer",
+      "category": "structural parsing failure",
+      "count": 8
+    },
+    {
+      "split": "test",
+      "method": "vietnormalizer",
+      "category": "unsupported semiotic class",
+      "count": 3
+    }
+  ],
+  "representative_examples": [
+    {
+      "split": "development",
+      "method": "contextual_rule",
+      "category": "contextual ambiguity",
+      "examples": [
+        {
+          "id": "phone_001",
+          "input": "Số điện thoại của tôi là 0903120508.",
+          "output": "Số điện thoại của tôi là không chín không ba một hai không năm không tám.",
+          "expected": "Số điện thoại của tôi là không chín không ba, một hai không, năm không tám.",
+          "class": "PHONE"
+        },
+        {
+          "id": "phone_002",
+          "input": "Hãy gọi 0987 654 321.",
+          "output": "Hãy gọi không chín tám bảy sáu năm bốn ba hai một.",
+          "expected": "Hãy gọi không chín tám bảy, sáu năm bốn, ba hai một.",
+          "class": "PHONE"
+        },
+        {
+          "id": "phone_004",
+          "input": "Từ nước ngoài, hãy gọi +84 903 120 508.",
+          "output": "Từ nước ngoài, hãy gọi tám bốn chín không ba một hai không năm không tám.",
+          "expected": "Từ nước ngoài, hãy gọi cộng tám bốn, chín không ba, một hai không, năm không tám.",
+          "class": "PHONE"
+        }
+      ]
+    },
+    {
+      "split": "development",
+      "method": "contextual_rule",
+      "category": "incorrect cardinal morphology",
+      "examples": [
+        {
+          "id": "cardinal_013",
+          "input": "Cuộc khảo sát có 1.001 người tham gia.",
+          "output": "Cuộc khảo sát có 1.001 người tham gia.",
+          "expected": "Cuộc khảo sát có một nghìn không trăm linh một người tham gia.",
+          "class": "QUANTITY"
+        },
+        {
+          "id": "cardinal_014",
+          "input": "Hệ thống ghi nhận 1.005 yêu cầu.",
+          "output": "Hệ thống ghi nhận 1.005 yêu cầu.",
+          "expected": "Hệ thống ghi nhận một nghìn không trăm linh năm yêu cầu.",
+          "class": "QUANTITY"
+        },
+        {
+          "id": "cardinal_015",
+          "input": "Nhà máy sản xuất 1.015 linh kiện.",
+          "output": "Nhà máy sản xuất 1.015 linh kiện.",
+          "expected": "Nhà máy sản xuất một nghìn không trăm mười lăm linh kiện.",
+          "class": "QUANTITY"
+        }
+      ]
+    },
+    {
+      "split": "development",
+      "method": "contextual_rule",
+      "category": "punctuation/span corruption or unsupported form",
+      "examples": [
+        {
+          "id": "decimal_math_001",
+          "input": "Xác suất bằng 0,5.",
+          "output": "Xác suất bằng 0,5.",
+          "expected": "Xác suất bằng không phẩy năm.",
+          "class": "DECIMAL"
+        },
+        {
+          "id": "decimal_math_002",
+          "input": "Kết quả đo là 1,05.",
+          "output": "Kết quả đo là 1,05.",
+          "expected": "Kết quả đo là một phẩy không năm.",
+          "class": "DECIMAL"
+        },
+        {
+          "id": "decimal_math_003",
+          "input": "Giá trị trung bình là 12,04.",
+          "output": "Giá trị trung bình là 12,04.",
+          "expected": "Giá trị trung bình là mười hai phẩy không bốn.",
+          "class": "DECIMAL"
+        }
+      ]
+    },
+    {
+      "split": "development",
+      "method": "contextual_rule",
+      "category": "questionable gold label",
+      "examples": [
+        {
+          "id": "time_duration_009",
+          "input": "Cửa hàng đóng cửa lúc 23:59.",
+          "output": "Cửa hàng đóng cửa lúc hai mươi ba giờ năm mươi chín phút.",
+          "expected": "Cửa hàng đóng cửa lúc hai mươi ba giờ năm chín phút.",
+          "class": "TIME"
+        }
+      ]
+    },
+    {
+      "split": "development",
+      "method": "contextual_rule",
+      "category": "structural parsing failure",
+      "examples": [
+        {
+          "id": "year_date_010",
+          "input": "Hóa đơn được lập ngày 9-1-2021.",
+          "output": "Hóa đơn được lập ngày chín tháng một năm hai nghìn không trăm hai mươi mốt.",
+          "expected": "Hóa đơn được lập ngày mùng chín tháng một năm hai nghìn không trăm hai mươi mốt.",
+          "class": "DATE"
+        },
+        {
+          "id": "year_date_012",
+          "input": "Chúng tôi nghỉ vào ngày 1/5.",
+          "output": "Chúng tôi nghỉ vào ngày một phần năm.",
+          "expected": "Chúng tôi nghỉ vào ngày mùng một tháng năm.",
+          "class": "DATE"
+        },
+        {
+          "id": "year_date_019",
+          "input": "Lịch khám ghi ngày 02/03.",
+          "output": "Lịch khám ghi ngày hai phần ba.",
+          "expected": "Lịch khám ghi ngày mùng hai tháng ba.",
+          "class": "DATE"
+        }
+      ]
+    },
+    {
+      "split": "development",
+      "method": "contextual_rule",
+      "category": "unsupported semiotic class",
+      "examples": [
+        {
+          "id": "decimal_math_008",
+          "input": "Một triệu có thể viết là 10^6.",
+          "output": "Một triệu có thể viết là mười^sáu.",
+          "expected": "Một triệu có thể viết là mười mũ sáu.",
+          "class": "POWER"
+        },
+        {
+          "id": "decimal_math_009",
+          "input": "Diện tích hình vuông được tính bằng 2².",
+          "output": "Diện tích hình vuông được tính bằng 2².",
+          "expected": "Diện tích hình vuông được tính bằng hai bình phương.",
+          "class": "POWER"
+        },
+        {
+          "id": "decimal_math_011",
+          "input": "Giá trị bằng 1,2×10^-3.",
+          "output": "Giá trị bằng 1,2×mười^âm ba.",
+          "expected": "Giá trị bằng một phẩy hai nhân mười mũ âm ba.",
+          "class": "SCIENTIFIC_NOTATION"
+        }
+      ]
+    },
+    {
+      "split": "development",
+      "method": "direct_num2words",
+      "category": "contextual ambiguity",
+      "examples": [
+        {
+          "id": "phone_001",
+          "input": "Số điện thoại của tôi là 0903120508.",
+          "output": "Số điện thoại của tôi là chín trăm lẻ ba triệu một trăm hai mươi nghìn năm trăm lẻ tám.",
+          "expected": "Số điện thoại của tôi là không chín không ba, một hai không, năm không tám.",
+          "class": "PHONE"
+        },
+        {
+          "id": "phone_002",
+          "input": "Hãy gọi 0987 654 321.",
+          "output": "Hãy gọi chín trăm tám mươi bảy sáu trăm năm mươi bốn ba trăm hai mươi mốt.",
+          "expected": "Hãy gọi không chín tám bảy, sáu năm bốn, ba hai một.",
+          "class": "PHONE"
+        },
+        {
+          "id": "phone_004",
+          "input": "Từ nước ngoài, hãy gọi +84 903 120 508.",
+          "output": "Từ nước ngoài, hãy gọi +tám mươi bốn chín trăm lẻ ba một trăm hai mươi năm trăm lẻ tám.",
+          "expected": "Từ nước ngoài, hãy gọi cộng tám bốn, chín không ba, một hai không, năm không tám.",
+          "class": "PHONE"
+        }
+      ]
+    },
+    {
+      "split": "development",
+      "method": "direct_num2words",
+      "category": "incorrect cardinal morphology",
+      "examples": [
+        {
+          "id": "cardinal_008",
+          "input": "Tôi đã đọc 24 trang.",
+          "output": "Tôi đã đọc hai mươi bốn trang.",
+          "expected": "Tôi đã đọc hai mươi tư trang.",
+          "class": "QUANTITY"
+        },
+        {
+          "id": "cardinal_013",
+          "input": "Cuộc khảo sát có 1.001 người tham gia.",
+          "output": "Cuộc khảo sát có một.một người tham gia.",
+          "expected": "Cuộc khảo sát có một nghìn không trăm linh một người tham gia.",
+          "class": "QUANTITY"
+        },
+        {
+          "id": "cardinal_014",
+          "input": "Hệ thống ghi nhận 1.005 yêu cầu.",
+          "output": "Hệ thống ghi nhận một.năm yêu cầu.",
+          "expected": "Hệ thống ghi nhận một nghìn không trăm linh năm yêu cầu.",
+          "class": "QUANTITY"
+        }
+      ]
+    },
+    {
+      "split": "development",
+      "method": "direct_num2words",
+      "category": "punctuation/span corruption or unsupported form",
+      "examples": [
+        {
+          "id": "decimal_math_001",
+          "input": "Xác suất bằng 0,5.",
+          "output": "Xác suất bằng không,năm.",
+          "expected": "Xác suất bằng không phẩy năm.",
+          "class": "DECIMAL"
+        },
+        {
+          "id": "decimal_math_002",
+          "input": "Kết quả đo là 1,05.",
+          "output": "Kết quả đo là một,năm.",
+          "expected": "Kết quả đo là một phẩy không năm.",
+          "class": "DECIMAL"
+        },
+        {
+          "id": "decimal_math_003",
+          "input": "Giá trị trung bình là 12,04.",
+          "output": "Giá trị trung bình là mười hai,bốn.",
+          "expected": "Giá trị trung bình là mười hai phẩy không bốn.",
+          "class": "DECIMAL"
+        }
+      ]
+    },
+    {
+      "split": "development",
+      "method": "direct_num2words",
+      "category": "questionable gold label",
+      "examples": [
+        {
+          "id": "time_duration_009",
+          "input": "Cửa hàng đóng cửa lúc 23:59.",
+          "output": "Cửa hàng đóng cửa lúc hai mươi ba:năm mươi chín.",
+          "expected": "Cửa hàng đóng cửa lúc hai mươi ba giờ năm chín phút.",
+          "class": "TIME"
+        }
+      ]
+    },
+    {
+      "split": "development",
+      "method": "direct_num2words",
+      "category": "structural parsing failure",
+      "examples": [
+        {
+          "id": "year_date_009",
+          "input": "Cuộc hẹn là ngày 03/09/2026.",
+          "output": "Cuộc hẹn là ngày ba/chín/hai nghìn lẻ hai mươi sáu.",
+          "expected": "Cuộc hẹn là ngày mùng ba tháng chín năm hai nghìn không trăm hai mươi sáu.",
+          "class": "DATE"
+        },
+        {
+          "id": "year_date_010",
+          "input": "Hóa đơn được lập ngày 9-1-2021.",
+          "output": "Hóa đơn được lập ngày chín-một-hai nghìn lẻ hai mươi mốt.",
+          "expected": "Hóa đơn được lập ngày mùng chín tháng một năm hai nghìn không trăm hai mươi mốt.",
+          "class": "DATE"
+        },
+        {
+          "id": "year_date_011",
+          "input": "Ngày 29/02/2024 là ngày nhuận.",
+          "output": "Ngày hai mươi chín/hai/hai nghìn lẻ hai mươi bốn là ngày nhuận.",
+          "expected": "Ngày hai mươi chín tháng hai năm hai nghìn không trăm hai mươi tư là ngày nhuận.",
+          "class": "DATE"
+        }
+      ]
+    },
+    {
+      "split": "development",
+      "method": "direct_num2words",
+      "category": "unsupported semiotic class",
+      "examples": [
+        {
+          "id": "decimal_math_008",
+          "input": "Một triệu có thể viết là 10^6.",
+          "output": "Một triệu có thể viết là mười^sáu.",
+          "expected": "Một triệu có thể viết là mười mũ sáu.",
+          "class": "POWER"
+        },
+        {
+          "id": "decimal_math_009",
+          "input": "Diện tích hình vuông được tính bằng 2².",
+          "output": "Diện tích hình vuông được tính bằng hai².",
+          "expected": "Diện tích hình vuông được tính bằng hai bình phương.",
+          "class": "POWER"
+        },
+        {
+          "id": "decimal_math_011",
+          "input": "Giá trị bằng 1,2×10^-3.",
+          "output": "Giá trị bằng một,hai×mười^-ba.",
+          "expected": "Giá trị bằng một phẩy hai nhân mười mũ âm ba.",
+          "class": "SCIENTIFIC_NOTATION"
+        }
+      ]
+    },
+    {
+      "split": "development",
+      "method": "identity",
+      "category": "contextual ambiguity",
+      "examples": [
+        {
+          "id": "phone_001",
+          "input": "Số điện thoại của tôi là 0903120508.",
+          "output": "Số điện thoại của tôi là 0903120508.",
+          "expected": "Số điện thoại của tôi là không chín không ba, một hai không, năm không tám.",
+          "class": "PHONE"
+        },
+        {
+          "id": "phone_002",
+          "input": "Hãy gọi 0987 654 321.",
+          "output": "Hãy gọi 0987 654 321.",
+          "expected": "Hãy gọi không chín tám bảy, sáu năm bốn, ba hai một.",
+          "class": "PHONE"
+        },
+        {
+          "id": "phone_004",
+          "input": "Từ nước ngoài, hãy gọi +84 903 120 508.",
+          "output": "Từ nước ngoài, hãy gọi +84 903 120 508.",
+          "expected": "Từ nước ngoài, hãy gọi cộng tám bốn, chín không ba, một hai không, năm không tám.",
+          "class": "PHONE"
+        }
+      ]
+    },
+    {
+      "split": "development",
+      "method": "identity",
+      "category": "incorrect cardinal morphology",
+      "examples": [
+        {
+          "id": "cardinal_002",
+          "input": "Tôi mua 1 quyển sách.",
+          "output": "Tôi mua 1 quyển sách.",
+          "expected": "Tôi mua một quyển sách.",
+          "class": "QUANTITY"
+        },
+        {
+          "id": "cardinal_004",
+          "input": "Nhóm có 5 thành viên.",
+          "output": "Nhóm có 5 thành viên.",
+          "expected": "Nhóm có năm thành viên.",
+          "class": "QUANTITY"
+        },
+        {
+          "id": "cardinal_005",
+          "input": "Tôi cần 10 chiếc hộp.",
+          "output": "Tôi cần 10 chiếc hộp.",
+          "expected": "Tôi cần mười chiếc hộp.",
+          "class": "QUANTITY"
+        }
+      ]
+    },
+    {
+      "split": "development",
+      "method": "identity",
+      "category": "punctuation/span corruption or unsupported form",
+      "examples": [
+        {
+          "id": "decimal_math_001",
+          "input": "Xác suất bằng 0,5.",
+          "output": "Xác suất bằng 0,5.",
+          "expected": "Xác suất bằng không phẩy năm.",
+          "class": "DECIMAL"
+        },
+        {
+          "id": "decimal_math_002",
+          "input": "Kết quả đo là 1,05.",
+          "output": "Kết quả đo là 1,05.",
+          "expected": "Kết quả đo là một phẩy không năm.",
+          "class": "DECIMAL"
+        },
+        {
+          "id": "decimal_math_003",
+          "input": "Giá trị trung bình là 12,04.",
+          "output": "Giá trị trung bình là 12,04.",
+          "expected": "Giá trị trung bình là mười hai phẩy không bốn.",
+          "class": "DECIMAL"
+        }
+      ]
+    },
+    {
+      "split": "development",
+      "method": "identity",
+      "category": "questionable gold label",
+      "examples": [
+        {
+          "id": "time_duration_009",
+          "input": "Cửa hàng đóng cửa lúc 23:59.",
+          "output": "Cửa hàng đóng cửa lúc 23:59.",
+          "expected": "Cửa hàng đóng cửa lúc hai mươi ba giờ năm chín phút.",
+          "class": "TIME"
+        }
+      ]
+    },
+    {
+      "split": "development",
+      "method": "identity",
+      "category": "structural parsing failure",
+      "examples": [
+        {
+          "id": "year_date_009",
+          "input": "Cuộc hẹn là ngày 03/09/2026.",
+          "output": "Cuộc hẹn là ngày 03/09/2026.",
+          "expected": "Cuộc hẹn là ngày mùng ba tháng chín năm hai nghìn không trăm hai mươi sáu.",
+          "class": "DATE"
+        },
+        {
+          "id": "year_date_010",
+          "input": "Hóa đơn được lập ngày 9-1-2021.",
+          "output": "Hóa đơn được lập ngày 9-1-2021.",
+          "expected": "Hóa đơn được lập ngày mùng chín tháng một năm hai nghìn không trăm hai mươi mốt.",
+          "class": "DATE"
+        },
+        {
+          "id": "year_date_011",
+          "input": "Ngày 29/02/2024 là ngày nhuận.",
+          "output": "Ngày 29/02/2024 là ngày nhuận.",
+          "expected": "Ngày hai mươi chín tháng hai năm hai nghìn không trăm hai mươi tư là ngày nhuận.",
+          "class": "DATE"
+        }
+      ]
+    },
+    {
+      "split": "development",
+      "method": "identity",
+      "category": "unsupported semiotic class",
+      "examples": [
+        {
+          "id": "decimal_math_008",
+          "input": "Một triệu có thể viết là 10^6.",
+          "output": "Một triệu có thể viết là 10^6.",
+          "expected": "Một triệu có thể viết là mười mũ sáu.",
+          "class": "POWER"
+        },
+        {
+          "id": "decimal_math_009",
+          "input": "Diện tích hình vuông được tính bằng 2².",
+          "output": "Diện tích hình vuông được tính bằng 2².",
+          "expected": "Diện tích hình vuông được tính bằng hai bình phương.",
+          "class": "POWER"
+        },
+        {
+          "id": "decimal_math_011",
+          "input": "Giá trị bằng 1,2×10^-3.",
+          "output": "Giá trị bằng 1,2×10^-3.",
+          "expected": "Giá trị bằng một phẩy hai nhân mười mũ âm ba.",
+          "class": "SCIENTIFIC_NOTATION"
+        }
+      ]
+    },
+    {
+      "split": "development",
+      "method": "omnivoice_current",
+      "category": "contextual ambiguity",
+      "examples": [
+        {
+          "id": "phone_001",
+          "input": "Số điện thoại của tôi là 0903120508.",
+          "output": "Số điện thoại của tôi là không chín không ba một hai không năm không tám.",
+          "expected": "Số điện thoại của tôi là không chín không ba, một hai không, năm không tám.",
+          "class": "PHONE"
+        },
+        {
+          "id": "phone_002",
+          "input": "Hãy gọi 0987 654 321.",
+          "output": "Hãy gọi không chín tám bảy sáu năm bốn ba hai một.",
+          "expected": "Hãy gọi không chín tám bảy, sáu năm bốn, ba hai một.",
+          "class": "PHONE"
+        },
+        {
+          "id": "phone_004",
+          "input": "Từ nước ngoài, hãy gọi +84 903 120 508.",
+          "output": "Từ nước ngoài, hãy gọi tám bốn chín không ba một hai không năm không tám.",
+          "expected": "Từ nước ngoài, hãy gọi cộng tám bốn, chín không ba, một hai không, năm không tám.",
+          "class": "PHONE"
+        }
+      ]
+    },
+    {
+      "split": "development",
+      "method": "omnivoice_current",
+      "category": "incorrect cardinal morphology",
+      "examples": [
+        {
+          "id": "cardinal_013",
+          "input": "Cuộc khảo sát có 1.001 người tham gia.",
+          "output": "Cuộc khảo sát có 1.001 người tham gia.",
+          "expected": "Cuộc khảo sát có một nghìn không trăm linh một người tham gia.",
+          "class": "QUANTITY"
+        },
+        {
+          "id": "cardinal_014",
+          "input": "Hệ thống ghi nhận 1.005 yêu cầu.",
+          "output": "Hệ thống ghi nhận 1.005 yêu cầu.",
+          "expected": "Hệ thống ghi nhận một nghìn không trăm linh năm yêu cầu.",
+          "class": "QUANTITY"
+        },
+        {
+          "id": "cardinal_015",
+          "input": "Nhà máy sản xuất 1.015 linh kiện.",
+          "output": "Nhà máy sản xuất 1.015 linh kiện.",
+          "expected": "Nhà máy sản xuất một nghìn không trăm mười lăm linh kiện.",
+          "class": "QUANTITY"
+        }
+      ]
+    },
+    {
+      "split": "development",
+      "method": "omnivoice_current",
+      "category": "punctuation/span corruption or unsupported form",
+      "examples": [
+        {
+          "id": "decimal_math_001",
+          "input": "Xác suất bằng 0,5.",
+          "output": "Xác suất bằng 0,5.",
+          "expected": "Xác suất bằng không phẩy năm.",
+          "class": "DECIMAL"
+        },
+        {
+          "id": "decimal_math_002",
+          "input": "Kết quả đo là 1,05.",
+          "output": "Kết quả đo là 1,05.",
+          "expected": "Kết quả đo là một phẩy không năm.",
+          "class": "DECIMAL"
+        },
+        {
+          "id": "decimal_math_003",
+          "input": "Giá trị trung bình là 12,04.",
+          "output": "Giá trị trung bình là 12,04.",
+          "expected": "Giá trị trung bình là mười hai phẩy không bốn.",
+          "class": "DECIMAL"
+        }
+      ]
+    },
+    {
+      "split": "development",
+      "method": "omnivoice_current",
+      "category": "questionable gold label",
+      "examples": [
+        {
+          "id": "time_duration_009",
+          "input": "Cửa hàng đóng cửa lúc 23:59.",
+          "output": "Cửa hàng đóng cửa lúc hai mươi ba giờ năm mươi chín phút.",
+          "expected": "Cửa hàng đóng cửa lúc hai mươi ba giờ năm chín phút.",
+          "class": "TIME"
+        }
+      ]
+    },
+    {
+      "split": "development",
+      "method": "omnivoice_current",
+      "category": "structural parsing failure",
+      "examples": [
+        {
+          "id": "year_date_010",
+          "input": "Hóa đơn được lập ngày 9-1-2021.",
+          "output": "Hóa đơn được lập ngày chín tháng một năm hai nghìn không trăm hai mươi mốt.",
+          "expected": "Hóa đơn được lập ngày mùng chín tháng một năm hai nghìn không trăm hai mươi mốt.",
+          "class": "DATE"
+        },
+        {
+          "id": "year_date_012",
+          "input": "Chúng tôi nghỉ vào ngày 1/5.",
+          "output": "Chúng tôi nghỉ vào ngày một phần năm.",
+          "expected": "Chúng tôi nghỉ vào ngày mùng một tháng năm.",
+          "class": "DATE"
+        },
+        {
+          "id": "year_date_019",
+          "input": "Lịch khám ghi ngày 02/03.",
+          "output": "Lịch khám ghi ngày hai phần ba.",
+          "expected": "Lịch khám ghi ngày mùng hai tháng ba.",
+          "class": "DATE"
+        }
+      ]
+    },
+    {
+      "split": "development",
+      "method": "omnivoice_current",
+      "category": "unsupported semiotic class",
+      "examples": [
+        {
+          "id": "decimal_math_008",
+          "input": "Một triệu có thể viết là 10^6.",
+          "output": "Một triệu có thể viết là mười^sáu.",
+          "expected": "Một triệu có thể viết là mười mũ sáu.",
+          "class": "POWER"
+        },
+        {
+          "id": "decimal_math_009",
+          "input": "Diện tích hình vuông được tính bằng 2².",
+          "output": "Diện tích hình vuông được tính bằng 2².",
+          "expected": "Diện tích hình vuông được tính bằng hai bình phương.",
+          "class": "POWER"
+        },
+        {
+          "id": "decimal_math_011",
+          "input": "Giá trị bằng 1,2×10^-3.",
+          "output": "Giá trị bằng 1,2×mười^âm ba.",
+          "expected": "Giá trị bằng một phẩy hai nhân mười mũ âm ba.",
+          "class": "SCIENTIFIC_NOTATION"
+        }
+      ]
+    },
+    {
+      "split": "development",
+      "method": "omnivoice_fallback",
+      "category": "contextual ambiguity",
+      "examples": [
+        {
+          "id": "phone_001",
+          "input": "Số điện thoại của tôi là 0903120508.",
+          "output": "Số điện thoại của tôi là chín trăm lẻ ba triệu một trăm hai mươi nghìn năm trăm lẻ tám.",
+          "expected": "Số điện thoại của tôi là không chín không ba, một hai không, năm không tám.",
+          "class": "PHONE"
+        },
+        {
+          "id": "phone_002",
+          "input": "Hãy gọi 0987 654 321.",
+          "output": "Hãy gọi chín trăm tám mươi bảy sáu trăm năm mươi bốn ba trăm hai mươi mốt.",
+          "expected": "Hãy gọi không chín tám bảy, sáu năm bốn, ba hai một.",
+          "class": "PHONE"
+        },
+        {
+          "id": "phone_004",
+          "input": "Từ nước ngoài, hãy gọi +84 903 120 508.",
+          "output": "Từ nước ngoài, hãy gọi +tám mươi bốn chín trăm lẻ ba một trăm hai mươi năm trăm lẻ tám.",
+          "expected": "Từ nước ngoài, hãy gọi cộng tám bốn, chín không ba, một hai không, năm không tám.",
+          "class": "PHONE"
+        }
+      ]
+    },
+    {
+      "split": "development",
+      "method": "omnivoice_fallback",
+      "category": "incorrect cardinal morphology",
+      "examples": [
+        {
+          "id": "cardinal_008",
+          "input": "Tôi đã đọc 24 trang.",
+          "output": "Tôi đã đọc hai mươi bốn trang.",
+          "expected": "Tôi đã đọc hai mươi tư trang.",
+          "class": "QUANTITY"
+        },
+        {
+          "id": "cardinal_013",
+          "input": "Cuộc khảo sát có 1.001 người tham gia.",
+          "output": "Cuộc khảo sát có một.một người tham gia.",
+          "expected": "Cuộc khảo sát có một nghìn không trăm linh một người tham gia.",
+          "class": "QUANTITY"
+        },
+        {
+          "id": "cardinal_014",
+          "input": "Hệ thống ghi nhận 1.005 yêu cầu.",
+          "output": "Hệ thống ghi nhận một.năm yêu cầu.",
+          "expected": "Hệ thống ghi nhận một nghìn không trăm linh năm yêu cầu.",
+          "class": "QUANTITY"
+        }
+      ]
+    },
+    {
+      "split": "development",
+      "method": "omnivoice_fallback",
+      "category": "punctuation/span corruption or unsupported form",
+      "examples": [
+        {
+          "id": "decimal_math_001",
+          "input": "Xác suất bằng 0,5.",
+          "output": "Xác suất bằng không,năm.",
+          "expected": "Xác suất bằng không phẩy năm.",
+          "class": "DECIMAL"
+        },
+        {
+          "id": "decimal_math_002",
+          "input": "Kết quả đo là 1,05.",
+          "output": "Kết quả đo là một,năm.",
+          "expected": "Kết quả đo là một phẩy không năm.",
+          "class": "DECIMAL"
+        },
+        {
+          "id": "decimal_math_003",
+          "input": "Giá trị trung bình là 12,04.",
+          "output": "Giá trị trung bình là mười hai,bốn.",
+          "expected": "Giá trị trung bình là mười hai phẩy không bốn.",
+          "class": "DECIMAL"
+        }
+      ]
+    },
+    {
+      "split": "development",
+      "method": "omnivoice_fallback",
+      "category": "questionable gold label",
+      "examples": [
+        {
+          "id": "time_duration_009",
+          "input": "Cửa hàng đóng cửa lúc 23:59.",
+          "output": "Cửa hàng đóng cửa lúc hai mươi ba:năm mươi chín.",
+          "expected": "Cửa hàng đóng cửa lúc hai mươi ba giờ năm chín phút.",
+          "class": "TIME"
+        }
+      ]
+    },
+    {
+      "split": "development",
+      "method": "omnivoice_fallback",
+      "category": "structural parsing failure",
+      "examples": [
+        {
+          "id": "year_date_009",
+          "input": "Cuộc hẹn là ngày 03/09/2026.",
+          "output": "Cuộc hẹn là ngày ba/chín/hai nghìn lẻ hai mươi sáu.",
+          "expected": "Cuộc hẹn là ngày mùng ba tháng chín năm hai nghìn không trăm hai mươi sáu.",
+          "class": "DATE"
+        },
+        {
+          "id": "year_date_010",
+          "input": "Hóa đơn được lập ngày 9-1-2021.",
+          "output": "Hóa đơn được lập ngày chín-một-hai nghìn lẻ hai mươi mốt.",
+          "expected": "Hóa đơn được lập ngày mùng chín tháng một năm hai nghìn không trăm hai mươi mốt.",
+          "class": "DATE"
+        },
+        {
+          "id": "year_date_011",
+          "input": "Ngày 29/02/2024 là ngày nhuận.",
+          "output": "Ngày hai mươi chín/hai/hai nghìn lẻ hai mươi bốn là ngày nhuận.",
+          "expected": "Ngày hai mươi chín tháng hai năm hai nghìn không trăm hai mươi tư là ngày nhuận.",
+          "class": "DATE"
+        }
+      ]
+    },
+    {
+      "split": "development",
+      "method": "omnivoice_fallback",
+      "category": "unsupported semiotic class",
+      "examples": [
+        {
+          "id": "decimal_math_008",
+          "input": "Một triệu có thể viết là 10^6.",
+          "output": "Một triệu có thể viết là mười^sáu.",
+          "expected": "Một triệu có thể viết là mười mũ sáu.",
+          "class": "POWER"
+        },
+        {
+          "id": "decimal_math_009",
+          "input": "Diện tích hình vuông được tính bằng 2².",
+          "output": "Diện tích hình vuông được tính bằng hai².",
+          "expected": "Diện tích hình vuông được tính bằng hai bình phương.",
+          "class": "POWER"
+        },
+        {
+          "id": "decimal_math_011",
+          "input": "Giá trị bằng 1,2×10^-3.",
+          "output": "Giá trị bằng một,hai×mười^-ba.",
+          "expected": "Giá trị bằng một phẩy hai nhân mười mũ âm ba.",
+          "class": "SCIENTIFIC_NOTATION"
+        }
+      ]
+    },
+    {
+      "split": "development",
+      "method": "soe_vinorm",
+      "category": "package/runtime failure",
+      "examples": [
+        {
+          "id": "cardinal_002",
+          "input": "Tôi mua 1 quyển sách.",
+          "output": "",
+          "expected": "Tôi mua một quyển sách.",
+          "class": "QUANTITY"
+        },
+        {
+          "id": "cardinal_004",
+          "input": "Nhóm có 5 thành viên.",
+          "output": "",
+          "expected": "Nhóm có năm thành viên.",
+          "class": "QUANTITY"
+        },
+        {
+          "id": "cardinal_005",
+          "input": "Tôi cần 10 chiếc hộp.",
+          "output": "",
+          "expected": "Tôi cần mười chiếc hộp.",
+          "class": "QUANTITY"
+        }
+      ]
+    },
+    {
+      "split": "development",
+      "method": "vietnormalizer",
+      "category": "contextual ambiguity",
+      "examples": [
+        {
+          "id": "phone_001",
+          "input": "Số điện thoại của tôi là 0903120508.",
+          "output": "số điện thoại của tôi là không chín không ba một hai không năm không tám.",
+          "expected": "Số điện thoại của tôi là không chín không ba, một hai không, năm không tám.",
+          "class": "PHONE"
+        },
+        {
+          "id": "phone_002",
+          "input": "Hãy gọi 0987 654 321.",
+          "output": "hãy gọi chín trăm tám mươi bảy sáu trăm năm mươi tư ba trăm hai mươi mốt.",
+          "expected": "Hãy gọi không chín tám bảy, sáu năm bốn, ba hai một.",
+          "class": "PHONE"
+        },
+        {
+          "id": "phone_004",
+          "input": "Từ nước ngoài, hãy gọi +84 903 120 508.",
+          "output": "từ nước ngoài, hãy gọi +tám mươi tư chín trăm lẻ ba một trăm hai mươi năm trăm lẻ tám.",
+          "expected": "Từ nước ngoài, hãy gọi cộng tám bốn, chín không ba, một hai không, năm không tám.",
+          "class": "PHONE"
+        }
+      ]
+    },
+    {
+      "split": "development",
+      "method": "vietnormalizer",
+      "category": "incorrect cardinal morphology",
+      "examples": [
+        {
+          "id": "cardinal_002",
+          "input": "Tôi mua 1 quyển sách.",
+          "output": "tôi mua một quyển sách.",
+          "expected": "Tôi mua một quyển sách.",
+          "class": "QUANTITY"
+        },
+        {
+          "id": "cardinal_004",
+          "input": "Nhóm có 5 thành viên.",
+          "output": "nhóm có năm thành viên.",
+          "expected": "Nhóm có năm thành viên.",
+          "class": "QUANTITY"
+        },
+        {
+          "id": "cardinal_005",
+          "input": "Tôi cần 10 chiếc hộp.",
+          "output": "tôi cần mười chiếc hộp.",
+          "expected": "Tôi cần mười chiếc hộp.",
+          "class": "QUANTITY"
+        }
+      ]
+    },
+    {
+      "split": "development",
+      "method": "vietnormalizer",
+      "category": "punctuation/span corruption or unsupported form",
+      "examples": [
+        {
+          "id": "decimal_math_001",
+          "input": "Xác suất bằng 0,5.",
+          "output": "xác suất bằng không phẩy năm.",
+          "expected": "Xác suất bằng không phẩy năm.",
+          "class": "DECIMAL"
+        },
+        {
+          "id": "decimal_math_002",
+          "input": "Kết quả đo là 1,05.",
+          "output": "kết quả đo là một phẩy năm.",
+          "expected": "Kết quả đo là một phẩy không năm.",
+          "class": "DECIMAL"
+        },
+        {
+          "id": "decimal_math_003",
+          "input": "Giá trị trung bình là 12,04.",
+          "output": "giá trị trung bình là mười hai phẩy bốn.",
+          "expected": "Giá trị trung bình là mười hai phẩy không bốn.",
+          "class": "DECIMAL"
+        }
+      ]
+    },
+    {
+      "split": "development",
+      "method": "vietnormalizer",
+      "category": "questionable gold label",
+      "examples": [
+        {
+          "id": "time_duration_009",
+          "input": "Cửa hàng đóng cửa lúc 23:59.",
+          "output": "cửa hàng đóng cửa lúc hai mươi ba giờ năm mươi chín phút.",
+          "expected": "Cửa hàng đóng cửa lúc hai mươi ba giờ năm chín phút.",
+          "class": "TIME"
+        }
+      ]
+    },
+    {
+      "split": "development",
+      "method": "vietnormalizer",
+      "category": "structural parsing failure",
+      "examples": [
+        {
+          "id": "year_date_009",
+          "input": "Cuộc hẹn là ngày 03/09/2026.",
+          "output": "cuộc hẹn là ngày ngày ba tháng chín năm hai nghìn không trăm hai mươi sáu.",
+          "expected": "Cuộc hẹn là ngày mùng ba tháng chín năm hai nghìn không trăm hai mươi sáu.",
+          "class": "DATE"
+        },
+        {
+          "id": "year_date_010",
+          "input": "Hóa đơn được lập ngày 9-1-2021.",
+          "output": "hóa đơn được lập ngày tháng chín đến tháng một năm hai nghìn không trăm hai mươi mốt.",
+          "expected": "Hóa đơn được lập ngày mùng chín tháng một năm hai nghìn không trăm hai mươi mốt.",
+          "class": "DATE"
+        },
+        {
+          "id": "year_date_011",
+          "input": "Ngày 29/02/2024 là ngày nhuận.",
+          "output": "ngày ngày hai mươi chín tháng hai năm hai nghìn không trăm hai mươi tư là ngày nhuận.",
+          "expected": "Ngày hai mươi chín tháng hai năm hai nghìn không trăm hai mươi tư là ngày nhuận.",
+          "class": "DATE"
+        }
+      ]
+    },
+    {
+      "split": "development",
+      "method": "vietnormalizer",
+      "category": "unsupported semiotic class",
+      "examples": [
+        {
+          "id": "decimal_math_008",
+          "input": "Một triệu có thể viết là 10^6.",
+          "output": "một triệu có thể viết là một trăm lẻ sáu.",
+          "expected": "Một triệu có thể viết là mười mũ sáu.",
+          "class": "POWER"
+        },
+        {
+          "id": "decimal_math_009",
+          "input": "Diện tích hình vuông được tính bằng 2².",
+          "output": "diện tích hình vuông được tính bằng 2².",
+          "expected": "Diện tích hình vuông được tính bằng hai bình phương.",
+          "class": "POWER"
+        },
+        {
+          "id": "decimal_math_011",
+          "input": "Giá trị bằng 1,2×10^-3.",
+          "output": "giá trị bằng một phẩy hai×mười tháng ba.",
+          "expected": "Giá trị bằng một phẩy hai nhân mười mũ âm ba.",
+          "class": "SCIENTIFIC_NOTATION"
+        }
+      ]
+    },
+    {
+      "split": "test",
+      "method": "contextual_rule",
+      "category": "contextual ambiguity",
+      "examples": [
+        {
+          "id": "phone_003",
+          "input": "Số liên hệ là 0912-345-678.",
+          "output": "Số liên hệ là không chín một hai ba bốn năm sáu bảy tám.",
+          "expected": "Số liên hệ là không chín một hai, ba bốn năm, sáu bảy tám.",
+          "class": "PHONE"
+        },
+        {
+          "id": "phone_006",
+          "input": "Gọi 1900 5454 49 để được tư vấn.",
+          "output": "Gọi một chín không không năm bốn năm bốn bốn chín để được tư vấn.",
+          "expected": "Gọi một chín không không, năm bốn năm bốn, bốn chín để được tư vấn.",
+          "class": "PHONE"
+        }
+      ]
+    },
+    {
+      "split": "test",
+      "method": "contextual_rule",
+      "category": "incorrect cardinal morphology",
+      "examples": [
+        {
+          "id": "cardinal_018",
+          "input": "Ứng dụng đạt 1.000.000 lượt tải.",
+          "output": "Ứng dụng đạt 1.000.000 lượt tải.",
+          "expected": "Ứng dụng đạt một triệu lượt tải.",
+          "class": "QUANTITY"
+        }
+      ]
+    },
+    {
+      "split": "test",
+      "method": "contextual_rule",
+      "category": "punctuation/span corruption or unsupported form",
+      "examples": [
+        {
+          "id": "decimal_math_006",
+          "input": "Tổng doanh thu là 1.234,56 triệu đồng.",
+          "output": "Tổng doanh thu là 1.234,năm mươi sáu triệu đồng.",
+          "expected": "Tổng doanh thu là một nghìn hai trăm ba mươi tư phẩy năm sáu triệu đồng.",
+          "class": "DECIMAL"
+        }
+      ]
+    },
+    {
+      "split": "test",
+      "method": "contextual_rule",
+      "category": "structural parsing failure",
+      "examples": [
+        {
+          "id": "year_date_013",
+          "input": "Ngày 30-4 là ngày lễ.",
+          "output": "Ngày 30-4 là ngày lễ.",
+          "expected": "Ngày ba mươi tháng tư là ngày lễ.",
+          "class": "DATE"
+        },
+        {
+          "id": "year_date_017",
+          "input": "Tệp được tạo ngày 01.02.2026.",
+          "output": "Tệp được tạo ngày một tháng hai năm hai nghìn không trăm hai mươi sáu.",
+          "expected": "Tệp được tạo ngày mùng một tháng hai năm hai nghìn không trăm hai mươi sáu.",
+          "class": "DATE"
+        },
+        {
+          "id": "time_duration_001",
+          "input": "Hệ thống sao lưu lúc 00:00.",
+          "output": "Hệ thống sao lưu lúc không giờ không phút.",
+          "expected": "Hệ thống sao lưu lúc không giờ.",
+          "class": "TIME"
+        }
+      ]
+    },
+    {
+      "split": "test",
+      "method": "contextual_rule",
+      "category": "unsupported semiotic class",
+      "examples": [
+        {
+          "id": "measure_002",
+          "input": "Em bé nặng 1,5 kg.",
+          "output": "Em bé nặng 1,5 kg.",
+          "expected": "Em bé nặng một phẩy năm ki lô gam.",
+          "class": "MEASURE"
+        },
+        {
+          "id": "measure_008",
+          "input": "Chiều cao của cô ấy là 1,63m.",
+          "output": "Chiều cao của cô ấy là 1,63m.",
+          "expected": "Chiều cao của cô ấy là một phẩy sáu ba mét.",
+          "class": "MEASURE"
+        },
+        {
+          "id": "measure_010",
+          "input": "Căn phòng rộng 32m².",
+          "output": "Căn phòng rộng 32m².",
+          "expected": "Căn phòng rộng ba mươi hai mét vuông.",
+          "class": "MEASURE"
+        }
+      ]
+    },
+    {
+      "split": "test",
+      "method": "direct_num2words",
+      "category": "contextual ambiguity",
+      "examples": [
+        {
+          "id": "phone_003",
+          "input": "Số liên hệ là 0912-345-678.",
+          "output": "Số liên hệ là chín trăm mười hai-ba trăm bốn mươi lăm-sáu trăm bảy mươi tám.",
+          "expected": "Số liên hệ là không chín một hai, ba bốn năm, sáu bảy tám.",
+          "class": "PHONE"
+        },
+        {
+          "id": "phone_006",
+          "input": "Gọi 1900 5454 49 để được tư vấn.",
+          "output": "Gọi một nghìn chín trăm năm nghìn bốn trăm năm mươi bốn bốn mươi chín để được tư vấn.",
+          "expected": "Gọi một chín không không, năm bốn năm bốn, bốn chín để được tư vấn.",
+          "class": "PHONE"
+        }
+      ]
+    },
+    {
+      "split": "test",
+      "method": "direct_num2words",
+      "category": "incorrect cardinal morphology",
+      "examples": [
+        {
+          "id": "cardinal_018",
+          "input": "Ứng dụng đạt 1.000.000 lượt tải.",
+          "output": "Ứng dụng đạt một.không.không lượt tải.",
+          "expected": "Ứng dụng đạt một triệu lượt tải.",
+          "class": "QUANTITY"
+        }
+      ]
+    },
+    {
+      "split": "test",
+      "method": "direct_num2words",
+      "category": "punctuation/span corruption or unsupported form",
+      "examples": [
+        {
+          "id": "decimal_math_006",
+          "input": "Tổng doanh thu là 1.234,56 triệu đồng.",
+          "output": "Tổng doanh thu là một.hai trăm ba mươi bốn,năm mươi sáu triệu đồng.",
+          "expected": "Tổng doanh thu là một nghìn hai trăm ba mươi tư phẩy năm sáu triệu đồng.",
+          "class": "DECIMAL"
+        }
+      ]
+    },
+    {
+      "split": "test",
+      "method": "direct_num2words",
+      "category": "structural parsing failure",
+      "examples": [
+        {
+          "id": "year_date_013",
+          "input": "Ngày 30-4 là ngày lễ.",
+          "output": "Ngày ba mươi-bốn là ngày lễ.",
+          "expected": "Ngày ba mươi tháng tư là ngày lễ.",
+          "class": "DATE"
+        },
+        {
+          "id": "year_date_017",
+          "input": "Tệp được tạo ngày 01.02.2026.",
+          "output": "Tệp được tạo ngày một.hai.hai nghìn lẻ hai mươi sáu.",
+          "expected": "Tệp được tạo ngày mùng một tháng hai năm hai nghìn không trăm hai mươi sáu.",
+          "class": "DATE"
+        },
+        {
+          "id": "time_duration_001",
+          "input": "Hệ thống sao lưu lúc 00:00.",
+          "output": "Hệ thống sao lưu lúc không:không.",
+          "expected": "Hệ thống sao lưu lúc không giờ.",
+          "class": "TIME"
+        }
+      ]
+    },
+    {
+      "split": "test",
+      "method": "direct_num2words",
+      "category": "unsupported semiotic class",
+      "examples": [
+        {
+          "id": "measure_002",
+          "input": "Em bé nặng 1,5 kg.",
+          "output": "Em bé nặng một,năm kg.",
+          "expected": "Em bé nặng một phẩy năm ki lô gam.",
+          "class": "MEASURE"
+        },
+        {
+          "id": "measure_008",
+          "input": "Chiều cao của cô ấy là 1,63m.",
+          "output": "Chiều cao của cô ấy là một,sáu mươi bam.",
+          "expected": "Chiều cao của cô ấy là một phẩy sáu ba mét.",
+          "class": "MEASURE"
+        },
+        {
+          "id": "measure_010",
+          "input": "Căn phòng rộng 32m².",
+          "output": "Căn phòng rộng ba mươi haim².",
+          "expected": "Căn phòng rộng ba mươi hai mét vuông.",
+          "class": "MEASURE"
+        }
+      ]
+    },
+    {
+      "split": "test",
+      "method": "identity",
+      "category": "contextual ambiguity",
+      "examples": [
+        {
+          "id": "phone_003",
+          "input": "Số liên hệ là 0912-345-678.",
+          "output": "Số liên hệ là 0912-345-678.",
+          "expected": "Số liên hệ là không chín một hai, ba bốn năm, sáu bảy tám.",
+          "class": "PHONE"
+        },
+        {
+          "id": "phone_006",
+          "input": "Gọi 1900 5454 49 để được tư vấn.",
+          "output": "Gọi 1900 5454 49 để được tư vấn.",
+          "expected": "Gọi một chín không không, năm bốn năm bốn, bốn chín để được tư vấn.",
+          "class": "PHONE"
+        }
+      ]
+    },
+    {
+      "split": "test",
+      "method": "identity",
+      "category": "incorrect cardinal morphology",
+      "examples": [
+        {
+          "id": "cardinal_001",
+          "input": "Số hồ sơ bị lỗi là 0.",
+          "output": "Số hồ sơ bị lỗi là 0.",
+          "expected": "Số hồ sơ bị lỗi là không.",
+          "class": "QUANTITY"
+        },
+        {
+          "id": "cardinal_003",
+          "input": "Bàn này có 4 chân.",
+          "output": "Bàn này có 4 chân.",
+          "expected": "Bàn này có bốn chân.",
+          "class": "QUANTITY"
+        },
+        {
+          "id": "cardinal_007",
+          "input": "Cửa hàng còn 21 sản phẩm.",
+          "output": "Cửa hàng còn 21 sản phẩm.",
+          "expected": "Cửa hàng còn hai mốt sản phẩm",
+          "class": "QUANTITY"
+        }
+      ]
+    },
+    {
+      "split": "test",
+      "method": "identity",
+      "category": "punctuation/span corruption or unsupported form",
+      "examples": [
+        {
+          "id": "decimal_math_006",
+          "input": "Tổng doanh thu là 1.234,56 triệu đồng.",
+          "output": "Tổng doanh thu là 1.234,56 triệu đồng.",
+          "expected": "Tổng doanh thu là một nghìn hai trăm ba mươi tư phẩy năm sáu triệu đồng.",
+          "class": "DECIMAL"
+        }
+      ]
+    },
+    {
+      "split": "test",
+      "method": "identity",
+      "category": "structural parsing failure",
+      "examples": [
+        {
+          "id": "year_date_013",
+          "input": "Ngày 30-4 là ngày lễ.",
+          "output": "Ngày 30-4 là ngày lễ.",
+          "expected": "Ngày ba mươi tháng tư là ngày lễ.",
+          "class": "DATE"
+        },
+        {
+          "id": "year_date_017",
+          "input": "Tệp được tạo ngày 01.02.2026.",
+          "output": "Tệp được tạo ngày 01.02.2026.",
+          "expected": "Tệp được tạo ngày mùng một tháng hai năm hai nghìn không trăm hai mươi sáu.",
+          "class": "DATE"
+        },
+        {
+          "id": "time_duration_001",
+          "input": "Hệ thống sao lưu lúc 00:00.",
+          "output": "Hệ thống sao lưu lúc 00:00.",
+          "expected": "Hệ thống sao lưu lúc không giờ.",
+          "class": "TIME"
+        }
+      ]
+    },
+    {
+      "split": "test",
+      "method": "identity",
+      "category": "unsupported semiotic class",
+      "examples": [
+        {
+          "id": "measure_002",
+          "input": "Em bé nặng 1,5 kg.",
+          "output": "Em bé nặng 1,5 kg.",
+          "expected": "Em bé nặng một phẩy năm ki lô gam.",
+          "class": "MEASURE"
+        },
+        {
+          "id": "measure_008",
+          "input": "Chiều cao của cô ấy là 1,63m.",
+          "output": "Chiều cao của cô ấy là 1,63m.",
+          "expected": "Chiều cao của cô ấy là một phẩy sáu ba mét.",
+          "class": "MEASURE"
+        },
+        {
+          "id": "measure_010",
+          "input": "Căn phòng rộng 32m².",
+          "output": "Căn phòng rộng 32m².",
+          "expected": "Căn phòng rộng ba mươi hai mét vuông.",
+          "class": "MEASURE"
+        }
+      ]
+    },
+    {
+      "split": "test",
+      "method": "omnivoice_current",
+      "category": "contextual ambiguity",
+      "examples": [
+        {
+          "id": "phone_003",
+          "input": "Số liên hệ là 0912-345-678.",
+          "output": "Số liên hệ là không chín một hai ba bốn năm sáu bảy tám.",
+          "expected": "Số liên hệ là không chín một hai, ba bốn năm, sáu bảy tám.",
+          "class": "PHONE"
+        },
+        {
+          "id": "phone_006",
+          "input": "Gọi 1900 5454 49 để được tư vấn.",
+          "output": "Gọi một chín không không năm bốn năm bốn bốn chín để được tư vấn.",
+          "expected": "Gọi một chín không không, năm bốn năm bốn, bốn chín để được tư vấn.",
+          "class": "PHONE"
+        }
+      ]
+    },
+    {
+      "split": "test",
+      "method": "omnivoice_current",
+      "category": "incorrect cardinal morphology",
+      "examples": [
+        {
+          "id": "cardinal_018",
+          "input": "Ứng dụng đạt 1.000.000 lượt tải.",
+          "output": "Ứng dụng đạt 1.000.000 lượt tải.",
+          "expected": "Ứng dụng đạt một triệu lượt tải.",
+          "class": "QUANTITY"
+        }
+      ]
+    },
+    {
+      "split": "test",
+      "method": "omnivoice_current",
+      "category": "punctuation/span corruption or unsupported form",
+      "examples": [
+        {
+          "id": "decimal_math_006",
+          "input": "Tổng doanh thu là 1.234,56 triệu đồng.",
+          "output": "Tổng doanh thu là 1.234,năm mươi sáu triệu đồng.",
+          "expected": "Tổng doanh thu là một nghìn hai trăm ba mươi tư phẩy năm sáu triệu đồng.",
+          "class": "DECIMAL"
+        }
+      ]
+    },
+    {
+      "split": "test",
+      "method": "omnivoice_current",
+      "category": "structural parsing failure",
+      "examples": [
+        {
+          "id": "year_date_013",
+          "input": "Ngày 30-4 là ngày lễ.",
+          "output": "Ngày 30-4 là ngày lễ.",
+          "expected": "Ngày ba mươi tháng tư là ngày lễ.",
+          "class": "DATE"
+        },
+        {
+          "id": "year_date_017",
+          "input": "Tệp được tạo ngày 01.02.2026.",
+          "output": "Tệp được tạo ngày một tháng hai năm hai nghìn không trăm hai mươi sáu.",
+          "expected": "Tệp được tạo ngày mùng một tháng hai năm hai nghìn không trăm hai mươi sáu.",
+          "class": "DATE"
+        },
+        {
+          "id": "time_duration_001",
+          "input": "Hệ thống sao lưu lúc 00:00.",
+          "output": "Hệ thống sao lưu lúc không giờ không phút.",
+          "expected": "Hệ thống sao lưu lúc không giờ.",
+          "class": "TIME"
+        }
+      ]
+    },
+    {
+      "split": "test",
+      "method": "omnivoice_current",
+      "category": "unsupported semiotic class",
+      "examples": [
+        {
+          "id": "measure_002",
+          "input": "Em bé nặng 1,5 kg.",
+          "output": "Em bé nặng 1,5 kg.",
+          "expected": "Em bé nặng một phẩy năm ki lô gam.",
+          "class": "MEASURE"
+        },
+        {
+          "id": "measure_008",
+          "input": "Chiều cao của cô ấy là 1,63m.",
+          "output": "Chiều cao của cô ấy là 1,63m.",
+          "expected": "Chiều cao của cô ấy là một phẩy sáu ba mét.",
+          "class": "MEASURE"
+        },
+        {
+          "id": "measure_010",
+          "input": "Căn phòng rộng 32m².",
+          "output": "Căn phòng rộng 32m².",
+          "expected": "Căn phòng rộng ba mươi hai mét vuông.",
+          "class": "MEASURE"
+        }
+      ]
+    },
+    {
+      "split": "test",
+      "method": "omnivoice_fallback",
+      "category": "contextual ambiguity",
+      "examples": [
+        {
+          "id": "phone_003",
+          "input": "Số liên hệ là 0912-345-678.",
+          "output": "Số liên hệ là chín trăm mười hai-ba trăm bốn mươi lăm-sáu trăm bảy mươi tám.",
+          "expected": "Số liên hệ là không chín một hai, ba bốn năm, sáu bảy tám.",
+          "class": "PHONE"
+        },
+        {
+          "id": "phone_006",
+          "input": "Gọi 1900 5454 49 để được tư vấn.",
+          "output": "Gọi một nghìn chín trăm năm nghìn bốn trăm năm mươi bốn bốn mươi chín để được tư vấn.",
+          "expected": "Gọi một chín không không, năm bốn năm bốn, bốn chín để được tư vấn.",
+          "class": "PHONE"
+        }
+      ]
+    },
+    {
+      "split": "test",
+      "method": "omnivoice_fallback",
+      "category": "incorrect cardinal morphology",
+      "examples": [
+        {
+          "id": "cardinal_018",
+          "input": "Ứng dụng đạt 1.000.000 lượt tải.",
+          "output": "Ứng dụng đạt một.không.không lượt tải.",
+          "expected": "Ứng dụng đạt một triệu lượt tải.",
+          "class": "QUANTITY"
+        }
+      ]
+    },
+    {
+      "split": "test",
+      "method": "omnivoice_fallback",
+      "category": "punctuation/span corruption or unsupported form",
+      "examples": [
+        {
+          "id": "decimal_math_006",
+          "input": "Tổng doanh thu là 1.234,56 triệu đồng.",
+          "output": "Tổng doanh thu là một.hai trăm ba mươi bốn,năm mươi sáu triệu đồng.",
+          "expected": "Tổng doanh thu là một nghìn hai trăm ba mươi tư phẩy năm sáu triệu đồng.",
+          "class": "DECIMAL"
+        }
+      ]
+    },
+    {
+      "split": "test",
+      "method": "omnivoice_fallback",
+      "category": "structural parsing failure",
+      "examples": [
+        {
+          "id": "year_date_013",
+          "input": "Ngày 30-4 là ngày lễ.",
+          "output": "Ngày ba mươi-bốn là ngày lễ.",
+          "expected": "Ngày ba mươi tháng tư là ngày lễ.",
+          "class": "DATE"
+        },
+        {
+          "id": "year_date_017",
+          "input": "Tệp được tạo ngày 01.02.2026.",
+          "output": "Tệp được tạo ngày một.hai.hai nghìn lẻ hai mươi sáu.",
+          "expected": "Tệp được tạo ngày mùng một tháng hai năm hai nghìn không trăm hai mươi sáu.",
+          "class": "DATE"
+        },
+        {
+          "id": "time_duration_001",
+          "input": "Hệ thống sao lưu lúc 00:00.",
+          "output": "Hệ thống sao lưu lúc không:không.",
+          "expected": "Hệ thống sao lưu lúc không giờ.",
+          "class": "TIME"
+        }
+      ]
+    },
+    {
+      "split": "test",
+      "method": "omnivoice_fallback",
+      "category": "unsupported semiotic class",
+      "examples": [
+        {
+          "id": "measure_002",
+          "input": "Em bé nặng 1,5 kg.",
+          "output": "Em bé nặng một,năm kg.",
+          "expected": "Em bé nặng một phẩy năm ki lô gam.",
+          "class": "MEASURE"
+        },
+        {
+          "id": "measure_008",
+          "input": "Chiều cao của cô ấy là 1,63m.",
+          "output": "Chiều cao của cô ấy là một,sáu mươi bam.",
+          "expected": "Chiều cao của cô ấy là một phẩy sáu ba mét.",
+          "class": "MEASURE"
+        },
+        {
+          "id": "measure_010",
+          "input": "Căn phòng rộng 32m².",
+          "output": "Căn phòng rộng ba mươi haim².",
+          "expected": "Căn phòng rộng ba mươi hai mét vuông.",
+          "class": "MEASURE"
+        }
+      ]
+    },
+    {
+      "split": "test",
+      "method": "soe_vinorm",
+      "category": "package/runtime failure",
+      "examples": [
+        {
+          "id": "cardinal_001",
+          "input": "Số hồ sơ bị lỗi là 0.",
+          "output": "",
+          "expected": "Số hồ sơ bị lỗi là không.",
+          "class": "QUANTITY"
+        },
+        {
+          "id": "cardinal_003",
+          "input": "Bàn này có 4 chân.",
+          "output": "",
+          "expected": "Bàn này có bốn chân.",
+          "class": "QUANTITY"
+        },
+        {
+          "id": "cardinal_007",
+          "input": "Cửa hàng còn 21 sản phẩm.",
+          "output": "",
+          "expected": "Cửa hàng còn hai mốt sản phẩm",
+          "class": "QUANTITY"
+        }
+      ]
+    },
+    {
+      "split": "test",
+      "method": "vietnormalizer",
+      "category": "contextual ambiguity",
+      "examples": [
+        {
+          "id": "phone_003",
+          "input": "Số liên hệ là 0912-345-678.",
+          "output": "số liên hệ là chín trăm mười hai-ba trăm bốn mươi lăm-sáu trăm bảy mươi tám.",
+          "expected": "Số liên hệ là không chín một hai, ba bốn năm, sáu bảy tám.",
+          "class": "PHONE"
+        },
+        {
+          "id": "phone_006",
+          "input": "Gọi 1900 5454 49 để được tư vấn.",
+          "output": "gọi một nghìn chín trăm năm nghìn bốn trăm năm mươi tư bốn mươi chín để được tư vấn.",
+          "expected": "Gọi một chín không không, năm bốn năm bốn, bốn chín để được tư vấn.",
+          "class": "PHONE"
+        }
+      ]
+    },
+    {
+      "split": "test",
+      "method": "vietnormalizer",
+      "category": "incorrect cardinal morphology",
+      "examples": [
+        {
+          "id": "cardinal_001",
+          "input": "Số hồ sơ bị lỗi là 0.",
+          "output": "số hồ sơ bị lỗi là không.",
+          "expected": "Số hồ sơ bị lỗi là không.",
+          "class": "QUANTITY"
+        },
+        {
+          "id": "cardinal_003",
+          "input": "Bàn này có 4 chân.",
+          "output": "bàn này có bốn chân.",
+          "expected": "Bàn này có bốn chân.",
+          "class": "QUANTITY"
+        },
+        {
+          "id": "cardinal_007",
+          "input": "Cửa hàng còn 21 sản phẩm.",
+          "output": "cửa hàng còn hai mươi mốt sản phẩm.",
+          "expected": "Cửa hàng còn hai mốt sản phẩm",
+          "class": "QUANTITY"
+        }
+      ]
+    },
+    {
+      "split": "test",
+      "method": "vietnormalizer",
+      "category": "punctuation/span corruption or unsupported form",
+      "examples": [
+        {
+          "id": "decimal_math_006",
+          "input": "Tổng doanh thu là 1.234,56 triệu đồng.",
+          "output": "tổng doanh thu là một.hai trăm ba mươi tư phẩy năm mươi sáu triệu đồng.",
+          "expected": "Tổng doanh thu là một nghìn hai trăm ba mươi tư phẩy năm sáu triệu đồng.",
+          "class": "DECIMAL"
+        }
+      ]
+    },
+    {
+      "split": "test",
+      "method": "vietnormalizer",
+      "category": "structural parsing failure",
+      "examples": [
+        {
+          "id": "year_date_013",
+          "input": "Ngày 30-4 là ngày lễ.",
+          "output": "ngày ba mươi tháng bốn là ngày lễ.",
+          "expected": "Ngày ba mươi tháng tư là ngày lễ.",
+          "class": "DATE"
+        },
+        {
+          "id": "year_date_017",
+          "input": "Tệp được tạo ngày 01.02.2026.",
+          "output": "tệp được tạo ngày một.hai.hai nghìn không trăm hai mươi sáu.",
+          "expected": "Tệp được tạo ngày mùng một tháng hai năm hai nghìn không trăm hai mươi sáu.",
+          "class": "DATE"
+        },
+        {
+          "id": "time_duration_001",
+          "input": "Hệ thống sao lưu lúc 00:00.",
+          "output": "hệ thống sao lưu lúc không giờ không phút.",
+          "expected": "Hệ thống sao lưu lúc không giờ.",
+          "class": "TIME"
+        }
+      ]
+    },
+    {
+      "split": "test",
+      "method": "vietnormalizer",
+      "category": "unsupported semiotic class",
+      "examples": [
+        {
+          "id": "measure_002",
+          "input": "Em bé nặng 1,5 kg.",
+          "output": "em bé nặng một phẩy năm kg.",
+          "expected": "Em bé nặng một phẩy năm ki lô gam.",
+          "class": "MEASURE"
+        },
+        {
+          "id": "measure_008",
+          "input": "Chiều cao của cô ấy là 1,63m.",
+          "output": "chiều cao của cô ấy là một phẩy sáu mươi bam.",
+          "expected": "Chiều cao của cô ấy là một phẩy sáu ba mét.",
+          "class": "MEASURE"
+        },
+        {
+          "id": "measure_010",
+          "input": "Căn phòng rộng 32m².",
+          "output": "căn phòng rộng ba mươi hai mét vuông.",
+          "expected": "Căn phòng rộng ba mươi hai mét vuông.",
+          "class": "MEASURE"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+services:
+  omnivoice:
+    build:
+      args:
+        OMNIVOICE_LOCKFILE: uv.cpu.lock
+    image: ${OMNIVOICE_CPU_IMAGE:-omnivoice-ui:cpu}
+    environment:
+      OMNIVOICE_DEVICE: cpu
+      OMNIVOICE_BAMIBERT_DEVICE: cpu

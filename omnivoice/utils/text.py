@@ -27,7 +27,8 @@ Provides:
 
 import logging
 import re
-from typing import Callable, List, Optional
+import unicodedata
+from typing import Callable, List, Literal, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -63,6 +64,32 @@ END_PUNCTUATION = {
     "）",
     "】",
 }
+
+_SPECIAL_UNICODE_TRANSLATION = str.maketrans(
+    {
+        "\u00a0": " ",  # non-breaking space
+        "\u202f": " ",  # narrow non-breaking space
+        "\u2007": " ",  # figure space
+        "\u200b": None,  # zero-width space
+        "\u2060": None,  # word joiner
+        "\ufeff": None,  # BOM / zero-width no-break space
+    }
+)
+_HORIZONTAL_WHITESPACE_RE = re.compile(r"[^\S\r\n]+")
+
+
+def normalize_text_input(text: str) -> str:
+    """Normalize user-supplied inference text without changing its meaning.
+
+    Unicode is composed to NFC, unusual horizontal spaces are converted to an
+    ASCII space, selected invisible format characters are removed, and repeated
+    horizontal whitespace is collapsed. Line boundaries and valid Unicode such
+    as punctuation, diacritics, and emoji are preserved.
+    """
+    text = unicodedata.normalize("NFC", text)
+    text = text.translate(_SPECIAL_UNICODE_TRANSLATION)
+    text = _HORIZONTAL_WHITESPACE_RE.sub(" ", text)
+    return text.strip()
 
 
 ABBREVIATIONS = {
@@ -244,6 +271,11 @@ def add_punctuation(text: str):
 
 # Any ``[...]`` span covers both non-verbal tags and CMU pronunciation.
 _BRACKET_TAG_RE = re.compile(r"\[[^\[\]]*\]")
+# Vietnamese needs to observe numeric intervals so it can mark them unsupported;
+# the shared English/Chinese protection behavior remains byte-for-byte unchanged.
+_VI_BRACKET_TAG_RE = re.compile(
+    r"\[(?!\s*[+-]?\d+(?:\.\d+)?\s*,\s*[+-]?\d+(?:\.\d+)?\s*\])[^\[\]]*\]"
+)
 # Uppercase pinyin followed by a tone digit 1-5 (Chinese pronunciation control).
 _PINYIN_TONE_RE = re.compile(r"[A-Z]+[1-5]")
 _CJK_RE = re.compile(r"[\u4e00-\u9fff]")
@@ -282,6 +314,13 @@ def _get_zh_normalizer():
             full_to_half=False,
         )
     return _ZH_NORMALIZER
+
+
+def _get_bamibert_detector(model_path=None, device=None):
+    """Compatibility seam for injecting/mocking the lazy detector lifecycle."""
+    from omnivoice.text_normalization.detector import get_bamibert_detector
+
+    return get_bamibert_detector(model_path, device)
 
 
 def _get_en_normalizer():
@@ -388,30 +427,35 @@ def _apply_with_protection(
     return "".join(out)
 
 
-def normalize_text(text: str, language: Optional[str] = None) -> str:
-    """Normalize numbers, dates, currency, etc. into their spoken form.
+def _apply_vi_with_protection(text: str, fn: Callable[[str], str]) -> str:
+    """Protect controls without hiding their surrounding context from VI TN."""
+    protected: List[str] = []
 
-    Chinese is routed to WeTextProcessing's ``ZhNormalizer`` and English to its
-    ``EnNormalizer`` (configured to only rewrite numeric/symbolic tokens). Any
-    other language falls back to ``num2words`` for bare integers when it is
-    installed, otherwise the text is returned unchanged.
+    def hold(match):
+        protected.append(match.group())
+        return f"\ue000{chr(0xE100 + len(protected) - 1)}\ue001"
 
-    Inline OmniVoice control syntax is preserved: bracketed non-verbal tags
-    (``[laughter]``) and CMU pronunciation overrides (``[B EY1 S]``) are passed
-    through untouched, and Chinese pinyin tone markers (uppercase pinyin +
-    tone digit) are protected so the tone digit is not read as a number.
+    held = _VI_BRACKET_TAG_RE.sub(hold, text)
+    normalized = _normalize_segment(fn, held)
+    for index, value in enumerate(protected):
+        normalized = normalized.replace(f"\ue000{chr(0xE100 + index)}\ue001", value)
+    return normalized
 
-    Args:
-        text: Input text.
-        language: Language code (``"en"``/``"zh"``) or full name (``"English"``).
-            ``None`` auto-detects Chinese vs. English by script.
 
-    Returns:
-        The normalized text.
+def normalize_text(
+    text: str,
+    language: Optional[str] = None,
+    *,
+    detector=None,
+    model_path=None,
+    device: Optional[str] = None,
+) -> str:
+    """Normalize Vietnamese text via the BamiBERT candidate-driven pipeline.
 
-    Raises:
-        ImportError: For Chinese/English when the optional ``omnivoice[tn]``
-            dependency (WeTextProcessing) is not installed.
+    The public normalization boundary now routes Vietnamese text through the
+    candidate-driven NER pipeline in :mod:`omnivoice.text_normalization`, while
+    other languages remain unchanged by default and fall back to the existing
+    best-effort logic.
     """
     if not text or not text.strip():
         return text
@@ -423,7 +467,47 @@ def normalize_text(text: str, language: Optional[str] = None) -> str:
     if code == "en":
         normalizer = _get_en_normalizer()
         return _apply_with_protection(text, normalizer.normalize, protect_pinyin=False)
+    if code in {"vi", "vie", "vietnamese"}:
+        try:
+            from omnivoice.text_normalization import normalize_from_ner
+        except Exception:
+            return text
+
+        try:
+            active_detector = detector or _get_bamibert_detector(model_path, device)
+            return normalize_from_ner(text, active_detector).text
+        except Exception:
+            return text
     # Other languages: best-effort integer conversion via num2words.
     return _apply_with_protection(
         text, lambda s: _num2words_segment(s, code), protect_pinyin=False
     )
+
+
+InferenceTextField = Literal["target", "reference", "instruction"]
+
+
+def normalize_for_inference(
+    text: str,
+    *,
+    language: Optional[str] = None,
+    enabled: bool = True,
+    field: InferenceTextField = "target",
+    debug: bool = False,
+) -> str:
+    """Stable normalization policy boundary for all inference entry points.
+
+    Only target text is eligible.  Reference transcripts remain aligned with
+    their audio, while instruction text belongs to a validated control
+    vocabulary and must not be rewritten.
+    """
+    if field not in {"target", "reference", "instruction"}:
+        raise ValueError(f"unknown inference text field: {field!r}")
+    if not enabled or field != "target":
+        if debug:
+            logger.debug("Skipped normalization for inference field %s.", field)
+        return text
+    output = normalize_text(text, language)
+    if debug:
+        logger.debug("Normalized target text: %r -> %r", text, output)
+    return output

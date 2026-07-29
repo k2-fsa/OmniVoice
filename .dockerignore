@@ -1,0 +1,57 @@
+# Version-control and local tooling
+.git/
+.github/
+.agents/
+.codex/
+.idea/
+.vscode/
+.DS_Store
+*~
+*.swp
+
+# Python environments, caches, and reports
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.tox/
+.nox/
+
+# Generated data, models, caches, and media
+DATA/
+artifacts/
+checkpoints/
+data/
+outputs/
+output/
+results/
+hf-cache/
+.cache/
+huggingface-cache/
+tmp/
+temp/
+*.wav
+*.flac
+*.mp3
+*.ogg
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+*.zip
+
+# Files not needed to install the runtime package
+docs/
+examples/
+experiments/
+tests/
+.ipynb_checkpoints/
+compose*.yaml
+docker-compose*.yml
+Dockerfile*
+README-docker.md

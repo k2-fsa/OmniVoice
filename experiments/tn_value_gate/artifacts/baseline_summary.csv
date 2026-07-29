@@ -1,0 +1,5 @@
+system,records,attempted,coverage,success,partial,unsupported,runtime_error,strict_preferred,canonical_preferred,acceptable,sentence_errors,mean_latency_ms,median_latency_ms,mean_normalized_cer,canonical_wilson_low,canonical_wilson_high
+current_rule,200,200,1.0,134,66,0,0,59,59,66,134,,,0.25126347033010055,0.23613943856849148,0.36158714524618774
+num2words_vi,200,199,0.995,83,116,1,0,18,18,24,176,,,0.25934528017615494,0.05768744886219316,0.13776571876716542
+vietnormalizer,200,200,1.0,200,0,0,0,0,0,0,200,,,0.2017857529784509,1.734723475976807e-18,0.018845326377266575
+soe_vinorm,200,200,1.0,200,0,0,0,0,93,105,95,,,0.09474320676755114,0.3971856415700402,0.5341335312763685

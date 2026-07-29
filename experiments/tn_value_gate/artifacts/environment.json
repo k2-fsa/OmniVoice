@@ -1,0 +1,32 @@
+{
+  "timestamp_utc": "2026-07-22T09:37:18.056008+00:00",
+  "os": "Linux-6.18.33.2-microsoft-standard-WSL2-x86_64-with-glibc2.39",
+  "python": "3.12.3 (main, Jun 19 2026, 12:46:00) [GCC 13.3.0]",
+  "git_commit": "468e927ba3716cd8dd86421148dfb3046e9f9d7b",
+  "git_branch": "feat/vietnamese-text-normalization",
+  "dirty_status": [
+    " M .gitignore",
+    " M omnivoice/utils/text.py",
+    "?? docs/vietnamese_text_normalization.md",
+    "?? experiments/",
+    "?? omnivoice/utils/vietnamese_normalization/",
+    "?? tests/"
+  ],
+  "external_python": "/tmp/omnivoice-tn-value-gate-venv/bin/python",
+  "hf_home": "/home/pkh257/.cache/huggingface",
+  "cpu": "x86_64",
+  "cuda_available": false,
+  "external_packages": {
+    "num2words": "0.5.14",
+    "vietnormalizer": "0.2.3",
+    "soe-vinorm": "0.3.2",
+    "onnxruntime": "1.19.2"
+  },
+  "soe_model": {
+    "repository": "vinhdq842/soe-vinorm",
+    "revision": "cb9705b",
+    "device": "CPU"
+  },
+  "gpu_probe": "nvidia-smi unavailable; torch reports no CUDA device",
+  "command": "python -m experiments.tn_value_gate.run_all --dataset ... --external-python ..."
+}

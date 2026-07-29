@@ -1,0 +1,8 @@
+{
+  "system": "soe_vinorm",
+  "selection_metric": "canonical preferred sentence accuracy on pilot development set",
+  "score": [
+    93,
+    200
+  ]
+}

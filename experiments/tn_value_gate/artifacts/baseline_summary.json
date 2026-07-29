@@ -1,0 +1,152 @@
+{
+  "dataset": {
+    "absolute_path": "/tmp/omnivoice_vi_tn_pilot.jsonl",
+    "file_size_bytes": 43663,
+    "record_count": 200,
+    "sha256": "f845a96394f28d3bfd9ca33070af3cf6524dfbe30fc3ad06497e6356b4ad7007",
+    "source": "git 7053b50:experiments/vi_number_normalization/data/pilot.jsonl",
+    "designation": "pilot development set"
+  },
+  "systems": {
+    "current_rule": {
+      "records": 200,
+      "attempted": 200,
+      "coverage": 1.0,
+      "success": 134,
+      "partial": 66,
+      "unsupported": 0,
+      "runtime_error": 0,
+      "strict_preferred": 59,
+      "canonical_preferred": 59,
+      "acceptable": 66,
+      "strict_preferred_pair": [
+        59,
+        200
+      ],
+      "canonical_preferred_pair": [
+        59,
+        200
+      ],
+      "acceptable_pair": [
+        66,
+        200
+      ],
+      "sentence_errors": 134,
+      "conditional_canonical_preferred_pair": [
+        59,
+        200
+      ],
+      "mean_ms": 0.056628150177857606,
+      "median_ms": 0.04581649773172103,
+      "mean_normalized_cer": 0.25126347033010055,
+      "canonical_wilson_low": 0.23613943856849148,
+      "canonical_wilson_high": 0.36158714524618774
+    },
+    "num2words_vi": {
+      "records": 200,
+      "attempted": 199,
+      "coverage": 0.995,
+      "success": 83,
+      "partial": 116,
+      "unsupported": 1,
+      "runtime_error": 0,
+      "strict_preferred": 18,
+      "canonical_preferred": 18,
+      "acceptable": 24,
+      "strict_preferred_pair": [
+        18,
+        200
+      ],
+      "canonical_preferred_pair": [
+        18,
+        200
+      ],
+      "acceptable_pair": [
+        24,
+        200
+      ],
+      "sentence_errors": 176,
+      "conditional_canonical_preferred_pair": [
+        18,
+        199
+      ],
+      "mean_ms": 0.018206220174761256,
+      "median_ms": 0.0151584990817355,
+      "mean_normalized_cer": 0.25934528017615494,
+      "canonical_wilson_low": 0.05768744886219316,
+      "canonical_wilson_high": 0.13776571876716542
+    },
+    "vietnormalizer": {
+      "records": 200,
+      "attempted": 200,
+      "coverage": 1.0,
+      "success": 200,
+      "partial": 0,
+      "unsupported": 0,
+      "runtime_error": 0,
+      "strict_preferred": 0,
+      "canonical_preferred": 0,
+      "acceptable": 0,
+      "strict_preferred_pair": [
+        0,
+        200
+      ],
+      "canonical_preferred_pair": [
+        0,
+        200
+      ],
+      "acceptable_pair": [
+        0,
+        200
+      ],
+      "sentence_errors": 200,
+      "conditional_canonical_preferred_pair": [
+        0,
+        200
+      ],
+      "mean_ms": 0.15173069470620248,
+      "median_ms": 0.13690099876839668,
+      "mean_normalized_cer": 0.2017857529784509,
+      "canonical_wilson_low": 1.734723475976807e-18,
+      "canonical_wilson_high": 0.018845326377266575
+    },
+    "soe_vinorm": {
+      "records": 200,
+      "attempted": 200,
+      "coverage": 1.0,
+      "success": 200,
+      "partial": 0,
+      "unsupported": 0,
+      "runtime_error": 0,
+      "strict_preferred": 0,
+      "canonical_preferred": 93,
+      "acceptable": 105,
+      "strict_preferred_pair": [
+        0,
+        200
+      ],
+      "canonical_preferred_pair": [
+        93,
+        200
+      ],
+      "acceptable_pair": [
+        105,
+        200
+      ],
+      "sentence_errors": 95,
+      "conditional_canonical_preferred_pair": [
+        93,
+        200
+      ],
+      "mean_ms": 0.7030733151987079,
+      "median_ms": 0.46427400229731575,
+      "mean_normalized_cer": 0.09474320676755114,
+      "canonical_wilson_low": 0.3971856415700402,
+      "canonical_wilson_high": 0.5341335312763685
+    }
+  },
+  "limitations": [
+    "pilot development set; rules were informed by data",
+    "no audited ambiguity cluster/domain/reading_style metadata"
+  ]
+}

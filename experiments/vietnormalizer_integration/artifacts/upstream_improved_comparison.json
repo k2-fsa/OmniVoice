@@ -1,0 +1,13 @@
+{
+  "strict_counts": {
+    "upstream_wrong_improved_correct": 71,
+    "both_wrong": 129
+  },
+  "strict_regressions": [],
+  "casefold_counts": {
+    "both_correct": 60,
+    "both_wrong": 129,
+    "upstream_wrong_improved_correct": 11
+  },
+  "casefold_regressions": []
+}

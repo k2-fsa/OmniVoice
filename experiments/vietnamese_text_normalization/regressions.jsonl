@@ -1,0 +1,12 @@
+{"id":"date","raw_text":"Ngày 29/02/2024 là ngày nhuận.","role":"DATE","gold":"Ngày hai mươi chín tháng hai năm hai nghìn không trăm hai mươi tư là ngày nhuận."}
+{"id":"emergency_phone","raw_text":"Khi cần cấp cứu, hãy gọi 115.","role":"EMERGENCY_PHONE","gold":"Khi cần cấp cứu, hãy gọi một một năm."}
+{"id":"fraction","raw_text":"Có 2/3 số người đồng ý.","role":"FRACTION","gold":"Có hai phần ba số người đồng ý."}
+{"id":"identifier","raw_text":"Mã xác nhận là 105.","role":"IDENTIFIER","gold":"Mã xác nhận là một không năm."}
+{"id":"interval","raw_text":"Khoảng tin cậy nằm trong đoạn [0,1].","role":"INTERVAL","gold":"Khoảng tin cậy nằm trong đoạn từ không đến một."}
+{"id":"iso_date","raw_text":"Hệ thống lưu ngày theo định dạng 2026-07-21.","role":"ISO_DATE","gold":"Hệ thống lưu ngày theo định dạng năm hai không hai sáu tháng bảy ngày hai mốt."}
+{"id":"medical_ratio","raw_text":"Thị lực của cô ấy đạt 10/10.","role":"MEDICAL_RATIO","gold":"Thị lực của cô ấy đạt mười trên mười."}
+{"id":"money","raw_text":"Món đồ này có giá HK$500.","role":"MONEY","gold":"Món đồ này có giá năm trăm đô la Hồng Kông."}
+{"id":"order_id","raw_text":"Đơn hàng mang mã 105.","role":"ORDER_ID","gold":"Đơn hàng mang mã một không năm."}
+{"id":"room","raw_text":"Tôi đang ở phòng 105.","role":"ROOM","gold":"Tôi đang ở phòng một không năm."}
+{"id":"service_phone","raw_text":"Hãy gọi đường dây 1080.","role":"SERVICE_PHONE","gold":"Hãy gọi đường dây một không tám không."}
+{"id":"time","raw_text":"Cửa hàng đóng cửa lúc 23:59.","role":"TIME","gold":"Cửa hàng đóng cửa lúc hai mươi ba giờ năm mươi chín phút."}
