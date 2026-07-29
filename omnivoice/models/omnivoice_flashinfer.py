@@ -25,6 +25,7 @@ Usage:
     from omnivoice_flashinfer import apply_flashinfer
     apply_flashinfer(model, enable_cuda_graph=True)
 """
+
 import math
 import time
 from types import MethodType
@@ -48,8 +49,9 @@ _WORKSPACE_SIZE = 128 * 1024 * 1024
 _CTX = {"wrapper": None}
 
 
-def _flashinfer_attention(module, query, key, value, attention_mask,
-                          scaling=None, dropout=0.0, **kwargs):
+def _flashinfer_attention(
+    module, query, key, value, attention_mask, scaling=None, dropout=0.0, **kwargs
+):
     """query (1, Hq, S, D), key/value (1, Hkv, S, D) — packed documents."""
     _b, hq, s, d = query.shape
     hkv = key.shape[1]
@@ -87,8 +89,14 @@ def _patch_rmsnorm(llm):
     return n
 
 
-def _fi_attention_module_forward(self, hidden_states, position_embeddings=None,
-                                 attention_mask=None, past_key_values=None, **kwargs):
+def _fi_attention_module_forward(
+    self,
+    hidden_states,
+    position_embeddings=None,
+    attention_mask=None,
+    past_key_values=None,
+    **kwargs,
+):
     """NHD-layout replacement for Qwen3Attention.forward (packed batch=1).
 
     The stock forward works in (B, H, S, D): the rotate-half RoPE costs a cat
@@ -127,12 +135,12 @@ def _fi_attention_module_forward(self, hidden_states, position_embeddings=None,
         out = torch.empty_like(q)
         for start, slot_len, m in slots:
             od = F.scaled_dot_product_attention(
-                q[start:start + slot_len].transpose(0, 1).unsqueeze(0),
-                k[start:start + slot_len].transpose(0, 1).unsqueeze(0),
-                v[start:start + slot_len].transpose(0, 1).unsqueeze(0),
+                q[start : start + slot_len].transpose(0, 1).unsqueeze(0),
+                k[start : start + slot_len].transpose(0, 1).unsqueeze(0),
+                v[start : start + slot_len].transpose(0, 1).unsqueeze(0),
                 attn_mask=m,
             )
-            out[start:start + slot_len] = od.squeeze(0).transpose(0, 1)
+            out[start : start + slot_len] = od.squeeze(0).transpose(0, 1)
     else:
         out = _CTX["wrapper"].run(q, k, v)  # (S, Hq, D)
     return self.o_proj(out.reshape(s, -1)).unsqueeze(0), None
@@ -166,15 +174,19 @@ def _fi_mlp_forward(self, x):
 def _patch_mlp(llm):
     for layer in llm.layers:
         mlp = layer.mlp
-        mlp._fi_w_gate_up = torch.cat(
-            [mlp.gate_proj.weight, mlp.up_proj.weight], dim=0
-        )
+        mlp._fi_w_gate_up = torch.cat([mlp.gate_proj.weight, mlp.up_proj.weight], dim=0)
         mlp.forward = MethodType(_fi_mlp_forward, mlp)
 
 
 class PackedAttnRunner:
-    def __init__(self, num_qo_heads, num_kv_heads, head_dim, device,
-                 workspace_size=_WORKSPACE_SIZE):
+    def __init__(
+        self,
+        num_qo_heads,
+        num_kv_heads,
+        head_dim,
+        device,
+        workspace_size=_WORKSPACE_SIZE,
+    ):
         self.num_qo_heads = num_qo_heads
         self.num_kv_heads = num_kv_heads
         self.head_dim = head_dim
@@ -200,7 +212,7 @@ class PackedAttnRunner:
             self.num_kv_heads,
             self.head_dim,
             causal=False,
-            sm_scale=self.head_dim ** -0.5,
+            sm_scale=self.head_dim**-0.5,
             q_data_type=dtype,
             kv_data_type=dtype,
         )
@@ -268,22 +280,27 @@ def _generate_iterative_packed(
         total_len = sum(doc_lens)
 
     C = self.config.num_audio_codebook
-    packed_ids = torch.full((1, C, total_len), self.config.audio_mask_id,
-                            dtype=torch.long, device=self.device)
-    packed_audio_mask = torch.zeros((1, total_len), dtype=torch.bool, device=self.device)
+    packed_ids = torch.full(
+        (1, C, total_len),
+        self.config.audio_mask_id,
+        dtype=torch.long,
+        device=self.device,
+    )
+    packed_audio_mask = torch.zeros(
+        (1, total_len), dtype=torch.bool, device=self.device
+    )
     position_ids = torch.zeros((1, total_len), dtype=torch.long, device=self.device)
 
     for i, inp in enumerate(inputs_list):
         c_off, u_off = offsets[2 * i], offsets[2 * i + 1]
         c_len, u_len = c_lens[i], u_lens[i]
-        packed_ids[0, :, c_off:c_off + c_len] = inp["input_ids"][0]
-        packed_audio_mask[0, c_off:c_off + c_len] = inp["audio_mask"][0]
-        position_ids[0, c_off:c_off + c_len] = torch.arange(c_len, device=self.device)
+        packed_ids[0, :, c_off : c_off + c_len] = inp["input_ids"][0]
+        packed_audio_mask[0, c_off : c_off + c_len] = inp["audio_mask"][0]
+        position_ids[0, c_off : c_off + c_len] = torch.arange(c_len, device=self.device)
         # uncond doc = target region only
-        packed_ids[0, :, u_off:u_off + u_len] = inp["input_ids"][0, :, -u_len:]
-        packed_audio_mask[0, u_off:u_off + u_len] = inp["audio_mask"][0, -u_len:]
-        position_ids[0, u_off:u_off + u_len] = torch.arange(u_len, device=self.device)
-
+        packed_ids[0, :, u_off : u_off + u_len] = inp["input_ids"][0, :, -u_len:]
+        packed_audio_mask[0, u_off : u_off + u_len] = inp["audio_mask"][0, -u_len:]
+        position_ids[0, u_off : u_off + u_len] = torch.arange(u_len, device=self.device)
 
     timesteps = _get_time_steps(
         t_start=0.0, t_end=1.0, num_step=gen_config.num_step, t_shift=gen_config.t_shift
@@ -295,8 +312,11 @@ def _generate_iterative_packed(
         sched = []
         for step in range(gen_config.num_step):
             num = (
-                rem if step == gen_config.num_step - 1
-                else min(math.ceil(total_mask * (timesteps[step + 1] - timesteps[step])), rem)
+                rem
+                if step == gen_config.num_step - 1
+                else min(
+                    math.ceil(total_mask * (timesteps[step + 1] - timesteps[step])), rem
+                )
             )
             sched.append(int(num))
             rem -= int(num)
@@ -317,8 +337,9 @@ def _generate_iterative_packed(
         if bucket_U is not None:
             flat_spans.append((U_b * i, t_len))
             cond_rows = torch.zeros(U_b, dtype=torch.long, device=self.device)
-            cond_rows[:t_len] = torch.arange(c_off + c_len - t_len, c_off + c_len,
-                                             device=self.device)
+            cond_rows[:t_len] = torch.arange(
+                c_off + c_len - t_len, c_off + c_len, device=self.device
+            )
             uncond_rows = torch.zeros(U_b, dtype=torch.long, device=self.device)
             uncond_rows[:t_len] = torch.arange(u_off, u_off + t_len, device=self.device)
             cond_ranges.append(cond_rows)
@@ -326,8 +347,9 @@ def _generate_iterative_packed(
         else:
             prev = 0 if i == 0 else flat_spans[-1][0] + flat_spans[-1][1]
             flat_spans.append((prev, t_len))
-            cond_ranges.append(torch.arange(c_off + c_len - t_len, c_off + c_len,
-                                            device=self.device))
+            cond_ranges.append(
+                torch.arange(c_off + c_len - t_len, c_off + c_len, device=self.device)
+            )
             uncond_ranges.append(torch.arange(u_off, u_off + t_len, device=self.device))
     T_flat = (U_b * B) if bucket_U is not None else sum(task.target_lens)
     tgt_index = torch.cat(cond_ranges + uncond_ranges)
@@ -337,8 +359,8 @@ def _generate_iterative_packed(
     # so the global "already unmasked" fill gives them -inf scores and topk
     # never selects them.
     tokens_flat = torch.full((C, T_flat), -1, dtype=torch.long, device=self.device)
-    for (st, t_len) in flat_spans:
-        tokens_flat[:, st:st + t_len] = self.config.audio_mask_id
+    for st, t_len in flat_spans:
+        tokens_flat[:, st : st + t_len] = self.config.audio_mask_id
 
     if use_graph and bucket_U is not None:
         graph_entry = _get_or_capture_bucket_graph(self, B, U_b, C_b)
@@ -407,19 +429,16 @@ def _generate_iterative_packed(
             c_len, t_len = c_lens[i], task.target_lens[i]
             st, _ = flat_spans[i]
 
-            _, topk_idx = torch.topk(scores_all[:, st:st + t_len].reshape(-1), k)
-            flat_tokens = tokens_flat[:, st:st + t_len].reshape(-1)
-            flat_tokens[topk_idx] = pred_all[:, st:st + t_len].reshape(-1)[topk_idx]
+            _, topk_idx = torch.topk(scores_all[:, st : st + t_len].reshape(-1), k)
+            flat_tokens = tokens_flat[:, st : st + t_len].reshape(-1)
+            flat_tokens[topk_idx] = pred_all[:, st : st + t_len].reshape(-1)[topk_idx]
             new_tokens = flat_tokens.view(C, t_len)
-            tokens_flat[:, st:st + t_len] = new_tokens
+            tokens_flat[:, st : st + t_len] = new_tokens
 
             packed_ids[0, :, c_off + c_len - t_len : c_off + c_len] = new_tokens
             packed_ids[0, :, u_off : u_off + t_len] = new_tokens
 
-    return [
-        tokens_flat[:, st:st + t_len]
-        for (st, t_len) in flat_spans
-    ]
+    return [tokens_flat[:, st : st + t_len] for (st, t_len) in flat_spans]
 
 
 def _forward_logits(model, input_ids, audio_mask, position_ids, tgt_index):
@@ -441,11 +460,9 @@ def _forward_logits(model, input_ids, audio_mask, position_ids, tgt_index):
     tgt_hidden = hidden[0, tgt_index]  # (2T, hidden)
     logits_flat = model.audio_heads(tgt_hidden)
     n = tgt_hidden.shape[0]
-    return (
-        logits_flat.view(1, n, model.config.num_audio_codebook,
-                         model.config.audio_vocab_size)
-        .permute(0, 2, 1, 3)
-    )
+    return logits_flat.view(
+        1, n, model.config.num_audio_codebook, model.config.audio_vocab_size
+    ).permute(0, 2, 1, 3)
 
 
 def _get_or_capture_graph(model, doc_lens_key, tgt_index):
@@ -459,8 +476,11 @@ def _get_or_capture_graph(model, doc_lens_key, tgt_index):
     C = model.config.num_audio_codebook
     llm_cfg = model.config.llm_config
     runner = PackedAttnRunner(
-        llm_cfg.num_attention_heads, llm_cfg.num_key_value_heads, llm_cfg.head_dim,
-        device, workspace_size=64 * 1024 * 1024,
+        llm_cfg.num_attention_heads,
+        llm_cfg.num_key_value_heads,
+        llm_cfg.head_dim,
+        device,
+        workspace_size=64 * 1024 * 1024,
     )
     runner.plan(list(doc_lens_key), torch.float16)
     _CTX["wrapper"] = runner.wrapper
@@ -470,8 +490,12 @@ def _get_or_capture_graph(model, doc_lens_key, tgt_index):
     # baked with their final values
     positions = torch.cat([torch.arange(l, device=device) for l in doc_lens_key])
     static = {
-        "input_ids": torch.full((1, C, total_len), model.config.audio_mask_id,
-                                dtype=torch.long, device=device),
+        "input_ids": torch.full(
+            (1, C, total_len),
+            model.config.audio_mask_id,
+            dtype=torch.long,
+            device=device,
+        ),
         "audio_mask": torch.zeros((1, total_len), dtype=torch.bool, device=device),
         "position_ids": positions.unsqueeze(0).contiguous(),
     }
@@ -483,8 +507,13 @@ def _get_or_capture_graph(model, doc_lens_key, tgt_index):
     side_stream.wait_stream(torch.cuda.current_stream())
     with torch.cuda.stream(side_stream):
         for _ in range(2):
-            _forward_logits(model, static["input_ids"], static["audio_mask"],
-                            static["position_ids"], tgt_index)
+            _forward_logits(
+                model,
+                static["input_ids"],
+                static["audio_mask"],
+                static["position_ids"],
+                tgt_index,
+            )
     torch.cuda.current_stream().wait_stream(side_stream)
     torch.cuda.synchronize()
 
@@ -492,13 +521,24 @@ def _get_or_capture_graph(model, doc_lens_key, tgt_index):
     with torch.cuda.graph(graph):
         # tgt_index depends only on doc_lens (the cache key), so it is safe
         # to bake into the graph
-        logits = _forward_logits(model, static["input_ids"], static["audio_mask"],
-                                 static["position_ids"], tgt_index)
+        logits = _forward_logits(
+            model,
+            static["input_ids"],
+            static["audio_mask"],
+            static["position_ids"],
+            tgt_index,
+        )
 
     # tgt_index is baked into the captured gather by pointer — the entry must
     # keep it alive or the allocator will reuse its memory for later samples
-    entry = {"graph": graph, "logits": logits, "runner": runner,
-             "tgt_index": tgt_index, "pos_ids_i32": pos_ids_i32, **static}
+    entry = {
+        "graph": graph,
+        "logits": logits,
+        "runner": runner,
+        "tgt_index": tgt_index,
+        "pos_ids_i32": pos_ids_i32,
+        **static,
+    }
     cache[doc_lens_key] = entry
     return entry
 
@@ -518,8 +558,12 @@ def _get_or_capture_bucket_graph(model, B, U_b, C_b):
     C = model.config.num_audio_codebook
 
     static = {
-        "input_ids": torch.full((1, C, total_len), model.config.audio_mask_id,
-                                dtype=torch.long, device=device),
+        "input_ids": torch.full(
+            (1, C, total_len),
+            model.config.audio_mask_id,
+            dtype=torch.long,
+            device=device,
+        ),
         "audio_mask": torch.zeros((1, total_len), dtype=torch.bool, device=device),
         "position_ids": torch.zeros((1, total_len), dtype=torch.long, device=device),
         "pos_ids_i32": torch.zeros(total_len, dtype=torch.int32, device=device),
@@ -529,8 +573,10 @@ def _get_or_capture_bucket_graph(model, B, U_b, C_b):
     # init all-True so warmup/capture has no fully-masked softmax rows
     doc_masks, doc_slots = [], []
     for i in range(B):
-        for slot_start, slot_len in ((i * (C_b + U_b), C_b),
-                                     (i * (C_b + U_b) + C_b, U_b)):
+        for slot_start, slot_len in (
+            (i * (C_b + U_b), C_b),
+            (i * (C_b + U_b) + C_b, U_b),
+        ):
             m = torch.ones(1, 1, 1, slot_len, dtype=torch.bool, device=device)
             doc_masks.append(m)
             doc_slots.append((slot_start, slot_len, m))
@@ -543,25 +589,45 @@ def _get_or_capture_bucket_graph(model, B, U_b, C_b):
     side_stream.wait_stream(torch.cuda.current_stream())
     with torch.cuda.stream(side_stream):
         for _ in range(2):
-            _forward_logits(model, static["input_ids"], static["audio_mask"],
-                            static["position_ids"], static["tgt_index"])
+            _forward_logits(
+                model,
+                static["input_ids"],
+                static["audio_mask"],
+                static["position_ids"],
+                static["tgt_index"],
+            )
     torch.cuda.current_stream().wait_stream(side_stream)
     torch.cuda.synchronize()
 
     graph = torch.cuda.CUDAGraph()
     with torch.cuda.graph(graph):
-        logits = _forward_logits(model, static["input_ids"], static["audio_mask"],
-                                 static["position_ids"], static["tgt_index"])
+        logits = _forward_logits(
+            model,
+            static["input_ids"],
+            static["audio_mask"],
+            static["position_ids"],
+            static["tgt_index"],
+        )
 
-    entry = {"graph": graph, "logits": logits, "doc_masks": doc_masks,
-             "doc_slots": doc_slots, **static}
+    entry = {
+        "graph": graph,
+        "logits": logits,
+        "doc_masks": doc_masks,
+        "doc_slots": doc_slots,
+        **static,
+    }
     cache[key] = entry
     return entry
 
 
-def apply_flashinfer(model, enable_cuda_graph: bool = False, fuse_rmsnorm: bool = True,
-                     fuse_attention: bool = True, cuda_graph_buckets=None,
-                     overhead_budget: int = 512):
+def apply_flashinfer(
+    model,
+    enable_cuda_graph: bool = False,
+    fuse_rmsnorm: bool = True,
+    fuse_attention: bool = True,
+    cuda_graph_buckets=None,
+    overhead_budget: int = 512,
+):
     """Patch an OmniVoice instance to use flashinfer packed attention."""
     model.llm.set_attn_implementation("omnivoice_fi")
     if fuse_rmsnorm:
@@ -575,7 +641,9 @@ def apply_flashinfer(model, enable_cuda_graph: bool = False, fuse_rmsnorm: bool 
 
     llm_cfg = model.config.llm_config
     model._fi_runner = PackedAttnRunner(
-        llm_cfg.num_attention_heads, llm_cfg.num_key_value_heads, llm_cfg.head_dim,
+        llm_cfg.num_attention_heads,
+        llm_cfg.num_key_value_heads,
+        llm_cfg.head_dim,
         model.device,
     )
     model._fi_graph_cache = {}
