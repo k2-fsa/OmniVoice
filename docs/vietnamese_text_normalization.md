@@ -7,13 +7,19 @@ single/batch CLI, and Gradio. When enabled, only target text is eligible:
 
 ```text
 target text       -> BamiBERT -> deterministic normalization -> TTS
-reference text    -> unchanged (must remain aligned with reference audio)
+reference text    -> no semantic normalization (must remain audio-aligned)
 instruction text  -> unchanged (validated control vocabulary)
 ```
 
 There is no backend selector and no legacy fallback. If detector loading,
 prediction, prediction conversion, or deterministic orchestration fails, the
 complete original target is handed onward.
+
+All inference text boundaries still apply meaning-preserving Unicode cleanup
+(NFC composition, unusual-space normalization, and removal of selected
+invisible format characters). This cleanup is independent of the opt-in
+Vietnamese semantic normalization flag and also applies to reference
+transcripts without rewriting numbers or words.
 
 ## Candidate-driven BamiBERT pipeline
 

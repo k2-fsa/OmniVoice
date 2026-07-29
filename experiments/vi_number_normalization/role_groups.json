@@ -1,0 +1,102 @@
+{
+  "quantity": [
+    "AVAILABILITY",
+    "NEGATIVE_QUANTITY",
+    "PROBABILITY",
+    "QUANTITY",
+    "SIGNED_NUMBER"
+  ],
+  "phone": [
+    "EMERGENCY_PHONE",
+    "PHONE",
+    "PHONE_EXTENSION",
+    "SERVICE_PHONE"
+  ],
+  "identifier/location": [
+    "ACCOUNT_NUMBER",
+    "ADDRESS",
+    "ALLEY_NUMBER",
+    "APARTMENT",
+    "BATCH_ID",
+    "BUS_ROUTE",
+    "CARD_SUFFIX",
+    "CLASS_ID",
+    "ERROR_CODE",
+    "FLIGHT_ID",
+    "GATE",
+    "HOUSE_NUMBER",
+    "IDENTIFIER",
+    "INVOICE_ID",
+    "LICENSE_PLATE",
+    "LOCKER",
+    "NATIONAL_ID",
+    "ORDER_ID",
+    "PASSPORT_ID",
+    "PIN",
+    "POSTAL_CODE",
+    "QUEUE_ID",
+    "RECORD_ID",
+    "ROAD_ROUTE",
+    "ROOM",
+    "SEAT",
+    "STUDENT_ID",
+    "TABLE_NUMBER",
+    "TAX_ID",
+    "TRACKING_ID",
+    "TRAIN_ID"
+  ],
+  "date/year": [
+    "DATE",
+    "DATE_RANGE",
+    "DAY_OF_MONTH",
+    "ISO_DATE",
+    "MONTH_YEAR",
+    "QUARTER_YEAR",
+    "YEAR",
+    "YEAR_BCE",
+    "YEAR_RANGE"
+  ],
+  "time/duration": [
+    "DURATION",
+    "FRACTIONAL_DURATION",
+    "MEDIA_TIMESTAMP",
+    "TIME",
+    "TIME_RANGE"
+  ],
+  "money": [
+    "MONEY",
+    "MONEY_RANGE",
+    "MONEY_RATE"
+  ],
+  "percentage/ratio": [
+    "FINANCIAL_RATIO",
+    "MEDICAL_RATIO",
+    "PERCENT",
+    "PERCENT_RANGE",
+    "RATIO",
+    "SCORE",
+    "SCORE_SCALE",
+    "SIGNED_PERCENT"
+  ],
+  "measurement": [
+    "DIGITAL_STORAGE",
+    "KILOMETER_MARKER",
+    "MEASURE",
+    "MEASURE_RANGE",
+    "TEMPERATURE"
+  ],
+  "fraction/range": [
+    "FRACTION",
+    "INTERVAL",
+    "RANGE"
+  ],
+  "version/decimal/math": [
+    "DECIMAL",
+    "EQUATION",
+    "ORDINAL_ROMAN",
+    "POWER",
+    "RADICAL",
+    "SCIENTIFIC_NOTATION",
+    "VERSION"
+  ]
+}

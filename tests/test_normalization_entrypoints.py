@@ -245,7 +245,9 @@ class GradioTest(unittest.TestCase):
         self.assertEqual(len(checkboxes), 2)
         self.assertTrue(all(item["props"]["value"] is True for item in checkboxes))
 
-    def test_disabled_gradio_normalization_preserves_target_whitespace(self):
+    def test_disabled_gradio_semantic_normalization_still_applies_unicode_cleanup(
+        self,
+    ):
         model = FakeModel()
         app = demo.build_demo(model, "test")
         design_fn = next(
@@ -265,7 +267,7 @@ class GradioTest(unittest.TestCase):
             True,
             False,
         )
-        self.assertEqual(model.generate_calls[-1]["text"], "  Có 2 hộp  ")
+        self.assertEqual(model.generate_calls[-1]["text"], "Có 2 hộp")
 
 
 if __name__ == "__main__":

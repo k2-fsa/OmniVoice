@@ -27,6 +27,7 @@ Provides:
 
 import logging
 import re
+import unicodedata
 from typing import Callable, List, Literal, Optional
 
 logger = logging.getLogger(__name__)
@@ -63,6 +64,32 @@ END_PUNCTUATION = {
     "）",
     "】",
 }
+
+_SPECIAL_UNICODE_TRANSLATION = str.maketrans(
+    {
+        "\u00a0": " ",  # non-breaking space
+        "\u202f": " ",  # narrow non-breaking space
+        "\u2007": " ",  # figure space
+        "\u200b": None,  # zero-width space
+        "\u2060": None,  # word joiner
+        "\ufeff": None,  # BOM / zero-width no-break space
+    }
+)
+_HORIZONTAL_WHITESPACE_RE = re.compile(r"[^\S\r\n]+")
+
+
+def normalize_text_input(text: str) -> str:
+    """Normalize user-supplied inference text without changing its meaning.
+
+    Unicode is composed to NFC, unusual horizontal spaces are converted to an
+    ASCII space, selected invisible format characters are removed, and repeated
+    horizontal whitespace is collapsed. Line boundaries and valid Unicode such
+    as punctuation, diacritics, and emoji are preserved.
+    """
+    text = unicodedata.normalize("NFC", text)
+    text = text.translate(_SPECIAL_UNICODE_TRANSLATION)
+    text = _HORIZONTAL_WHITESPACE_RE.sub(" ", text)
+    return text.strip()
 
 
 ABBREVIATIONS = {

@@ -52,6 +52,7 @@ from omnivoice.utils.audio import load_audio
 from omnivoice.utils.common import get_best_device_with_count, str2bool
 from omnivoice.utils.data_utils import read_test_list
 from omnivoice.utils.duration import RuleDurationEstimator
+from omnivoice.utils.text import normalize_text_input
 
 
 worker_model = None
@@ -474,13 +475,21 @@ def main():
     samples_raw = read_test_list(args.test_list)
     samples = []
     for s in samples_raw:
+        text = normalize_text_input(s["text"])
+        if not text:
+            raise ValueError(
+                f"Sample {s['id']!r} has empty text after Unicode normalization."
+            )
+        ref_text = s.get("ref_text")
+        if ref_text is not None:
+            ref_text = normalize_text_input(ref_text)
         lang_id = args.lang_id if args.lang_id is not None else s.get("language_id")
         samples.append(
             (
                 s["id"],
-                s.get("ref_text"),
+                ref_text,
                 s.get("ref_audio"),
-                s["text"],
+                text,
                 lang_id,
                 s.get("duration"),
                 s.get("speed"),

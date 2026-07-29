@@ -7,13 +7,8 @@ ARG UV_VERSION=0.10.4
 ENV PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
     UV_LINK_MODE=copy \
-    UV_TORCH_BACKEND=cpu \
-    UV_HTTP_TIMEOUT=300 \
-    UV_HTTP_RETRIES=5 \
     HF_HOME=/cache/huggingface \
     OMNIVOICE_OUTPUT_DIR=/app/outputs \
-    OMNIVOICE_BAMIBERT_MODEL=/models/bamibert \
-    OMNIVOICE_BAMIBERT_DEVICE=cpu \
     GRADIO_TEMP_DIR=/app/outputs \
     GRADIO_ANALYTICS_ENABLED=false
 
@@ -30,8 +25,7 @@ RUN mkdir -p /app/outputs /cache/huggingface \
 
 RUN pip install --no-cache-dir "uv==${UV_VERSION}"
 
-COPY pyproject.toml README.md LICENSE ./
-COPY uv.cpu.lock ./uv.lock
+COPY pyproject.toml uv.lock README.md LICENSE ./
 
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-dev --no-install-project
@@ -45,4 +39,4 @@ ENV PATH="/app/.venv/bin:$PATH"
 
 EXPOSE 8001
 
-CMD ["omnivoice-demo", "--device", "cpu", "--no-asr"]
+CMD ["omnivoice-demo", "--no-asr"]

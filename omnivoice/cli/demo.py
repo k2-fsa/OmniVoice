@@ -25,6 +25,7 @@ Usage:
 
 import argparse
 import logging
+import os
 from typing import Any, Dict
 
 import gradio as gr
@@ -32,9 +33,11 @@ import numpy as np
 import torch
 
 from omnivoice import OmniVoice, OmniVoiceGenerationConfig
+from omnivoice.cli._demo_config import ensure_output_dir, env_port, env_value
 from omnivoice.text_normalization import configure_bamibert
 from omnivoice.utils.common import get_best_device
 from omnivoice.utils.lang_map import LANG_NAMES, lang_display_name
+from omnivoice.utils.text import normalize_text_input
 
 
 # ---------------------------------------------------------------------------
@@ -98,6 +101,19 @@ _ATTR_INFO = {
     "Chinese Dialect / 中文方言": "Only effective for Chinese speech.",
 }
 
+_CSS = """
+.gradio-container {max-width: 100% !important; font-size: 16px !important;}
+.gradio-container h1 {font-size: 1.5em !important;}
+.gradio-container .prose {font-size: 1.1em !important;}
+.compact-audio audio {height: 60px !important;}
+.compact-audio .waveform {min-height: 80px !important;}
+"""
+
+
+def _demo_theme():
+    return gr.themes.Soft(font=["Inter", "Arial", "sans-serif"])
+
+
 # ---------------------------------------------------------------------------
 # Argument parser
 # ---------------------------------------------------------------------------
@@ -111,19 +127,28 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--model",
-        default="k2-fsa/OmniVoice",
+        default=env_value("OMNIVOICE_MODEL", "k2-fsa/OmniVoice"),
         help="Model checkpoint path or HuggingFace repo id.",
     )
     parser.add_argument(
-        "--device", default=None, help="Device to use. Auto-detected if not specified."
+        "--device",
+        default=os.getenv("OMNIVOICE_DEVICE") or None,
+        help="Device to use. Auto-detected if not specified.",
     )
-    parser.add_argument("--ip", default="0.0.0.0", help="Server IP (default: 0.0.0.0).")
     parser.add_argument(
-        "--port", type=int, default=7860, help="Server port (default: 7860)."
+        "--ip",
+        default=env_value("OMNIVOICE_HOST", "0.0.0.0"),
+        help="Server IP (default: 0.0.0.0).",
+    )
+    parser.add_argument(
+        "--port",
+        type=int,
+        default=env_port(),
+        help="Server port (default: 7860).",
     )
     parser.add_argument(
         "--root-path",
-        default=None,
+        default=os.getenv("OMNIVOICE_ROOT_PATH") or None,
         help="Root path for reverse proxy.",
     )
     parser.add_argument(
@@ -198,7 +223,15 @@ def build_demo(
         mode,
         ref_text=None,
     ):
-        if not text or not text.strip():
+        normalized_text = normalize_text_input(text or "")
+        normalized_ref_text = (
+            normalize_text_input(ref_text) if ref_text is not None else None
+        )
+        was_normalized = (
+            normalized_text != (text or "") or normalized_ref_text != ref_text
+        )
+
+        if not normalized_text:
             return None, "Please enter the text to synthesize."
 
         gen_config = OmniVoiceGenerationConfig(
@@ -212,7 +245,7 @@ def build_demo(
         lang = language if (language and language != "Auto") else None
 
         kw: Dict[str, Any] = dict(
-            text=text,
+            text=normalized_text,
             language=lang,
             generation_config=gen_config,
             normalize_text=bool(normalize_text),
@@ -228,7 +261,7 @@ def build_demo(
                 return None, "Please upload a reference audio."
             kw["voice_clone_prompt"] = model.create_voice_clone_prompt(
                 ref_audio=ref_audio,
-                ref_text=ref_text,
+                ref_text=normalized_ref_text,
             )
 
         if instruct and instruct.strip():
@@ -240,7 +273,8 @@ def build_demo(
             return None, f"Error: {type(e).__name__}: {e}"
 
         waveform = (audio[0] * 32767).astype(np.int16)
-        return (sampling_rate, waveform), "Done."
+        status = "Done. Unicode text was normalized." if was_normalized else "Done."
+        return (sampling_rate, waveform), status
 
     # Allow external wrappers (e.g. spaces.GPU for ZeroGPU Spaces)
     _gen = generate_fn if generate_fn is not None else _gen_core
@@ -248,17 +282,6 @@ def build_demo(
     # =====================================================================
     # UI
     # =====================================================================
-    theme = gr.themes.Soft(
-        font=["Inter", "Arial", "sans-serif"],
-    )
-    css = """
-    .gradio-container {max-width: 100% !important; font-size: 16px !important;}
-    .gradio-container h1 {font-size: 1.5em !important;}
-    .gradio-container .prose {font-size: 1.1em !important;}
-    .compact-audio audio {height: 60px !important;}
-    .compact-audio .waveform {min-height: 80px !important;}
-    """
-
     # Reusable: language dropdown component
     def _lang_dropdown(label="Language (optional) / 语种 (可选)", value="Auto"):
         return gr.Dropdown(
@@ -327,7 +350,7 @@ def build_demo(
             )
         return ns, gs, dn, sp, du, pp, po, tn
 
-    with gr.Blocks(theme=theme, css=css, title="OmniVoice Demo") as demo:
+    with gr.Blocks(title="OmniVoice Demo") as demo:
         gr.Markdown(
             """
 # OmniVoice Demo
@@ -560,6 +583,9 @@ def main(argv=None) -> int:
     args = parser.parse_args(argv)
     configure_bamibert(args.bamibert_model_path, args.bamibert_device)
 
+    output_dir = ensure_output_dir()
+    os.environ.setdefault("GRADIO_TEMP_DIR", str(output_dir))
+
     device = args.device or get_best_device()
 
     checkpoint = args.model
@@ -567,10 +593,11 @@ def main(argv=None) -> int:
         parser.print_help()
         return 0
     logging.info(f"Loading model from {checkpoint}, device={device} ...")
+    dtype = torch.float32 if str(device).startswith("cpu") else torch.float16
     model = OmniVoice.from_pretrained(
         checkpoint,
         device_map=device,
-        dtype=torch.float16,
+        dtype=dtype,
         load_asr=not args.no_asr,
         asr_model_name=args.asr_model,
     )
@@ -587,6 +614,8 @@ def main(argv=None) -> int:
         server_port=args.port,
         share=args.share,
         root_path=args.root_path,
+        theme=_demo_theme(),
+        css=_CSS,
     )
     return 0
 

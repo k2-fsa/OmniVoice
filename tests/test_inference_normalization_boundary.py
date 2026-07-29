@@ -230,7 +230,7 @@ class InferenceDataFlowTest(unittest.TestCase):
         self.assertIs(output[0], fake_audio)
         self.assertIsNotNone(observed_task)
         self.assertEqual(observed_task.texts, ["Tôi có hai mươi lăm quyển sách."])
-        self.assertEqual(observed_task.ref_texts, ["Mẫu\u00a0có 1 hộp"])
+        self.assertEqual(observed_task.ref_texts, ["Mẫu có 1 hộp"])
         self.assertEqual(observed_task.instructs, ["female, low pitch"])
 
 
