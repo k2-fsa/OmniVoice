@@ -142,6 +142,13 @@ def get_parser():
         "If > 0, use fixed-size batching instead of duration-based batching.",
     )
     parser.add_argument(
+        "--enable_flashinfer",
+        type=str2bool,
+        default=False,
+        help="Enable FlashInfer-accelerated decoding (sequence packing, fused "
+        "kernels; see optimize.md). Requires the flashinfer-python package.",
+    )
+    parser.add_argument(
         "--warmup",
         type=int,
         default=0,
@@ -195,7 +202,7 @@ def get_parser():
     return parser
 
 
-def process_init(rank_queue, model_checkpoint, warmup=0):
+def process_init(rank_queue, model_checkpoint, warmup=0, enable_flashinfer=False):
     """Initializer for each worker process.
 
     Loads model (with tokenizers and duration estimator) onto a specific GPU
@@ -228,6 +235,14 @@ def process_init(rank_queue, model_checkpoint, warmup=0):
         device_map=worker_device,
         dtype=torch.float16,
     )
+
+    # Opt-in flashinfer acceleration. Applied here because workers are
+    # spawned processes: patching the model in the parent does not propagate.
+    if enable_flashinfer:
+        from omnivoice.models.omnivoice_flashinfer import apply_flashinfer
+
+        apply_flashinfer(worker_model)
+        logging.info("flashinfer acceleration enabled")
 
     if warmup > 0:
         logging.info(f"Running {warmup} warmup iterations on {worker_device}")
@@ -468,7 +483,7 @@ def main():
         with ProcessPoolExecutor(
             max_workers=num_processes,
             initializer=process_init,
-            initargs=(rank_queue, args.model, args.warmup),
+            initargs=(rank_queue, args.model, args.warmup, args.enable_flashinfer),
         ) as executor:
             futures = []
 

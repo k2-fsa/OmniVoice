@@ -334,6 +334,50 @@ Only `id` and `text` are mandatory fields. `ref_audio` and `ref_text` are used i
 
 `language_id`, `duration`, and `speed` are optional. `duration` (in seconds) fixes the output length; `speed` controls the speaking rate. If `duration` and `speed` are both provided, `speed` will be ignored.
 
+### FlashInfer Acceleration
+
+Inference can be accelerated ~2-2.9x losslessly with [FlashInfer](https://github.com/flashinfer-ai/flashinfer) kernels (sequence packing for the CFG cond/uncond pair, fused RMSNorm/RoPE/GEMM kernels, and optional CUDA graphs). See [optimize.md](optimize.md) for the full analysis.
+
+**Installation** (NVIDIA GPUs; pick the index matching your CUDA version, e.g. cu128 for PyTorch built with CUDA 12.8):
+
+```bash
+pip install flashinfer-python==0.6.15.post1 "flashinfer-jit-cache==0.6.15.post1+cu128" \
+    --extra-index-url https://flashinfer.ai/whl/cu128/
+```
+
+**Usage** with the batch inference CLI:
+
+```bash
+omnivoice-infer-batch \
+    --model k2-fsa/OmniVoice \
+    --test_list test.jsonl \
+    --res_dir results/ \
+    --batch_size 8 \
+    --enable_flashinfer true
+```
+
+or with the Python API:
+
+```python
+from omnivoice.models.omnivoice_flashinfer import apply_flashinfer
+
+model = OmniVoice.from_pretrained("k2-fsa/OmniVoice", device_map="cuda", dtype=torch.float16)
+apply_flashinfer(model)                          # throughput / batched inference
+apply_flashinfer(model, enable_cuda_graph=True)  # recommended for batch=1 (low latency)
+```
+
+CUDA graphs are recommended for single-stream (batch=1) usage, where kernel-launch overhead dominates; at batch >= 4 the plain FlashInfer path is already the fastest configuration.
+
+**Benchmark** (seed-tts zh testset, 2020 samples / 3.3h audio, voice cloning, single H100, fp16, `num_step=32`; Average RTF as reported by `omnivoice-infer-batch`, outputs ASR-verified lossless):
+
+| batch size | baseline | FlashInfer | speedup |
+|---|---|---|---|
+| 1 | 0.0899 | 0.0430 | 2.1x |
+| 1 + CUDA graph | — | 0.0367 | 2.4x |
+| 2 | 0.0480 | 0.0245 | 2.0x |
+| 4 | 0.0331 | 0.0152 | 2.2x |
+| 8 | 0.0298 | **0.0115** | **2.6x** |
+
 ---
 
 ## Training & Evaluation
