@@ -10,8 +10,6 @@ def verbalize_year(value: str | int) -> str:
         raise ValueError(f"YEAR không hợp lệ: {value!r}")
 
     if len(raw_value) != 4:
-        raise ValueError(
-            f"YEAR hiện chỉ hỗ trợ năm có 4 chữ số: {value!r}"
-        )
+        raise ValueError(f"YEAR hiện chỉ hỗ trợ năm có 4 chữ số: {value!r}")
 
     return verbalize_cardinal(raw_value)

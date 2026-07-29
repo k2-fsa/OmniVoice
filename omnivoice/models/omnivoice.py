@@ -1076,9 +1076,7 @@ class OmniVoice(PreTrainedModel):
         # before duration estimation so the estimate matches the spoken form.
         if normalize_text:
             text_list = [
-                normalize_for_inference(
-                    t, language=lang, enabled=True, field="target"
-                )
+                normalize_for_inference(t, language=lang, enabled=True, field="target")
                 for t, lang in zip(text_list, language_list)
             ]
         instruct_list = self._ensure_list(instruct, batch_size)

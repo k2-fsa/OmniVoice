@@ -16,10 +16,19 @@ class TryTextNormalizerCliTest(unittest.TestCase):
 
         stdout = io.StringIO()
         with (
-            patch.object(try_text_normalizer, "build_detector", return_value=FakeDetector()),
+            patch.object(
+                try_text_normalizer, "build_detector", return_value=FakeDetector()
+            ),
             patch("sys.stdout", stdout),
         ):
-            exit_code = try_text_normalizer.main(["Tôi có 2 quyển sách", "--model-path", "custom-model", "--no-diagnostics"])
+            exit_code = try_text_normalizer.main(
+                [
+                    "Tôi có 2 quyển sách",
+                    "--model-path",
+                    "custom-model",
+                    "--no-diagnostics",
+                ]
+            )
 
         self.assertEqual(exit_code, 0)
         self.assertIn("Original text:", stdout.getvalue())

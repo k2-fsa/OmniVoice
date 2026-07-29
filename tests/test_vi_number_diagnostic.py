@@ -151,9 +151,7 @@ class SelectionAndVariantTest(unittest.TestCase):
         )
 
     def test_manifest_and_evaluation_paths_match(self):
-        selection = {
-            "records": [{**_record(), "broad_group": "quantity"}]
-        }
+        selection = {"records": [{**_record(), "broad_group": "quantity"}]}
         with tempfile.TemporaryDirectory() as temp_dir:
             output_dir = Path(temp_dir)
             variants = build_variants(

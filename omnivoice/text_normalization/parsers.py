@@ -224,10 +224,19 @@ def parse_money(surface: str) -> MoneyValue:
     if not marker:
         raise CurrencyMarkerMissingError("currency marker missing")
     amount = parse_number(number)
-    currencies = {"₫": "đồng", "đ": "đồng", "vnd": "đồng", "đồng": "đồng",
-                  "$": "đô la Mỹ", "usd": "đô la Mỹ", "€": "euro", "eur": "euro"}
-    return MoneyValue(amount, multiplier.lower() if multiplier else None,
-                      currencies[marker.lower()])
+    currencies = {
+        "₫": "đồng",
+        "đ": "đồng",
+        "vnd": "đồng",
+        "đồng": "đồng",
+        "$": "đô la Mỹ",
+        "usd": "đô la Mỹ",
+        "€": "euro",
+        "eur": "euro",
+    }
+    return MoneyValue(
+        amount, multiplier.lower() if multiplier else None, currencies[marker.lower()]
+    )
 
 
 def parse_measurement(surface: str) -> MeasurementValue:
@@ -235,9 +244,12 @@ def parse_measurement(surface: str) -> MeasurementValue:
     if not match:
         raise ValueError("malformed or unsupported measurement")
     number = match.group("number").strip()
-    amount = parse_decimal(number) if re.search(r"[.,]", number) and not (
-        re.fullmatch(r"[+\-−]?\d{1,3}(?:[.\s\u00a0\u202f]\d{3})+", number)
-    ) else parse_cardinal(number)
+    amount = (
+        parse_decimal(number)
+        if re.search(r"[.,]", number)
+        and not (re.fullmatch(r"[+\-−]?\d{1,3}(?:[.\s\u00a0\u202f]\d{3})+", number))
+        else parse_cardinal(number)
+    )
     return MeasurementValue(amount, UNITS[match.group("unit").lower()])
 
 

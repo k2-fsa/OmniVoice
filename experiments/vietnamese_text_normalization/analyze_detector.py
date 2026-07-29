@@ -45,9 +45,7 @@ def analyze(path: Path) -> dict:
     return {
         "summary": dict(counts),
         "exact_boundary_recall": counts["exact_boundary"] / total if total else 1.0,
-        "coverage_recall": (
-            counts["exact_boundary"] + counts["covered_wrong_boundary"]
-        )
+        "coverage_recall": (counts["exact_boundary"] + counts["covered_wrong_boundary"])
         / total
         if total
         else 1.0,

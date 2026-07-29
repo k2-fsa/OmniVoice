@@ -17,21 +17,36 @@ class CanonicalizationTests(unittest.TestCase):
 
 class DatasetTests(unittest.TestCase):
     def test_jsonl_parser_and_duplicate_guard(self):
-        row = {"id": "x", "raw_text": "Có 12", "number": "12", "role": "cardinal",
-               "preferred_spoken": ["Có mười hai"]}
+        row = {
+            "id": "x",
+            "raw_text": "Có 12",
+            "number": "12",
+            "role": "cardinal",
+            "preferred_spoken": ["Có mười hai"],
+        }
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "data.jsonl"
-            path.write_text(json.dumps(row, ensure_ascii=False) + "\n", encoding="utf-8")
+            path.write_text(
+                json.dumps(row, ensure_ascii=False) + "\n", encoding="utf-8"
+            )
             self.assertEqual(load_dataset(path), [row])
-            path.write_text("\n".join([json.dumps(row), json.dumps(row)]), encoding="utf-8")
+            path.write_text(
+                "\n".join([json.dumps(row), json.dumps(row)]), encoding="utf-8"
+            )
             with self.assertRaisesRegex(ValueError, "duplicate id"):
                 load_dataset(path)
 
 
 class AdapterTests(unittest.TestCase):
     def test_result_contract(self):
-        result = NormalizationResult(output_text="x", supported=True, status="success",
-                                     error_type=None, error_message=None, latency_ms=1.0)
+        result = NormalizationResult(
+            output_text="x",
+            supported=True,
+            status="success",
+            error_type=None,
+            error_message=None,
+            latency_ms=1.0,
+        )
         self.assertEqual(result.to_dict()["error_type"], None)
 
     def test_num2words_marks_structured_context_partial(self):

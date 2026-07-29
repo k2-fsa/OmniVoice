@@ -103,7 +103,9 @@ def worker(backend: str) -> None:
     from vietnormalizer import VietnameseNormalizer
 
     normalizer = VietnameseNormalizer(enable_transliteration=False)
-    method = normalizer.normalize if backend == "upstream" else normalizer.normalize_numeric
+    method = (
+        normalizer.normalize if backend == "upstream" else normalizer.normalize_numeric
+    )
     for line in sys.stdin:
         request = json.loads(line)
         started = time.perf_counter()
@@ -140,10 +142,16 @@ def run_external(python: Path, backend: str, rows: list[dict]) -> dict[str, dict
         check=False,
     )
     if completed.returncode:
-        raise RuntimeError(completed.stderr.strip() or f"worker exited {completed.returncode}")
-    values = [json.loads(line) for line in completed.stdout.splitlines() if line.strip()]
+        raise RuntimeError(
+            completed.stderr.strip() or f"worker exited {completed.returncode}"
+        )
+    values = [
+        json.loads(line) for line in completed.stdout.splitlines() if line.strip()
+    ]
     if len(values) != len(rows):
-        raise RuntimeError(f"{backend}: expected {len(rows)} records, received {len(values)}")
+        raise RuntimeError(
+            f"{backend}: expected {len(rows)} records, received {len(values)}"
+        )
     return {value["id"]: value for value in values}
 
 
@@ -205,7 +213,9 @@ def aggregate(rows: list[dict]) -> dict:
         "runtime_errors": sum(row["error"] is not None for row in rows),
         "median_latency_ms": statistics.median(latencies),
         "p95_latency_ms": percentile(latencies, 0.95),
-        "throughput_items_per_second": count / (elapsed_ms / 1000) if elapsed_ms else None,
+        "throughput_items_per_second": count / (elapsed_ms / 1000)
+        if elapsed_ms
+        else None,
     }
 
 
@@ -231,7 +241,8 @@ def evaluate(
                     **result,
                     "preferred_exact": output == options[0],
                     "acceptable_exact": acceptable,
-                    "casefold_acceptable": canonicalize(output).casefold() in folded_options,
+                    "casefold_acceptable": canonicalize(output).casefold()
+                    in folded_options,
                     "changed": changed,
                     "corrupted_word": corrupt,
                     "boundary_error": corrupt,
@@ -286,7 +297,9 @@ def main() -> None:
         args.improved_repo,
     )
     if any(value is None for value in required):
-        parser.error("driver mode requires dataset, smoke cases, both Python paths, and artifacts")
+        parser.error(
+            "driver mode requires dataset, smoke cases, both Python paths, and artifacts"
+        )
 
     from omnivoice.utils.text import normalize_text
 
@@ -353,7 +366,9 @@ def main() -> None:
                     "input": methods["vietnormalizer_upstream"]["input"],
                     "upstream": methods["vietnormalizer_upstream"]["output"],
                     "improved": methods["vietnormalizer_improved"]["output"],
-                    "expected_options": methods["vietnormalizer_improved"]["expected_options"],
+                    "expected_options": methods["vietnormalizer_improved"][
+                        "expected_options"
+                    ],
                 }
             )
 
@@ -376,14 +391,17 @@ def main() -> None:
                     "input": methods["vietnormalizer_upstream"]["input"],
                     "upstream": methods["vietnormalizer_upstream"]["output"],
                     "improved": methods["vietnormalizer_improved"]["output"],
-                    "expected_options": methods["vietnormalizer_improved"]["expected_options"],
+                    "expected_options": methods["vietnormalizer_improved"][
+                        "expected_options"
+                    ],
                 }
             )
 
     hard_negative = [
         row
         for row in smoke_outputs
-        if row["backend"] == "vietnormalizer_improved" and row["category"] == "HARD_NEGATIVE"
+        if row["backend"] == "vietnormalizer_improved"
+        and row["category"] == "HARD_NEGATIVE"
     ]
     upstream_metrics = corpus_summary["systems"]["vietnormalizer_upstream"]
     improved_metrics = corpus_summary["systems"]["vietnormalizer_improved"]
@@ -400,7 +418,8 @@ def main() -> None:
             improved_metrics["acceptable_exact"] >= upstream_metrics["acceptable_exact"]
         ),
         "casefold_acceptable_not_below_upstream": (
-            improved_metrics["casefold_acceptable"] >= upstream_metrics["casefold_acceptable"]
+            improved_metrics["casefold_acceptable"]
+            >= upstream_metrics["casefold_acceptable"]
         ),
         "hard_negative_false_positive_not_increased": not any(
             row["false_positive"] for row in hard_negative
@@ -416,9 +435,10 @@ def main() -> None:
         "path": str(dataset_path),
         "case_count": len(corpus),
         "unique_id_count": len({row["id"] for row in corpus}),
-        "duplicate_input_count": len(corpus)
-        - len({row["raw_text"] for row in corpus}),
-        "category_distribution": dict(sorted(Counter(row["role"] for row in corpus).items())),
+        "duplicate_input_count": len(corpus) - len({row["raw_text"] for row in corpus}),
+        "category_distribution": dict(
+            sorted(Counter(row["role"] for row in corpus).items())
+        ),
         "source": "git 7053b50:experiments/vi_number_normalization/data/pilot.jsonl",
         "created_utc": datetime.now(timezone.utc).isoformat(),
         "sha256": sha256(dataset_path),

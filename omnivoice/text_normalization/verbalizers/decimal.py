@@ -12,16 +12,10 @@ def verbalize_decimal(value: str | float) -> str:
     if raw_value[:1] in {"+", "-"}:
         raw_value = raw_value[1:]
 
-    separator_count = (
-        raw_value.count(",")
-        + raw_value.count(".")
-    )
+    separator_count = raw_value.count(",") + raw_value.count(".")
 
     if separator_count != 1:
-        raise ValueError(
-            f"DECIMAL phải có đúng một dấu phẩy hoặc dấu chấm: "
-            f"{value!r}"
-        )
+        raise ValueError(f"DECIMAL phải có đúng một dấu phẩy hoặc dấu chấm: {value!r}")
 
     separator = "," if "," in raw_value else "."
     integer_part, fractional_part = raw_value.split(separator)
@@ -38,10 +32,7 @@ def verbalize_decimal(value: str | float) -> str:
 
     # Đọc từng chữ số để bảo toàn số 0:
     # 2,05 → hai phẩy không năm
-    fractional_words = " ".join(
-        DIGITS[int(digit)]
-        for digit in fractional_part
-    )
+    fractional_words = " ".join(DIGITS[int(digit)] for digit in fractional_part)
 
     spoken = f"{integer_words} phẩy {fractional_words}"
 

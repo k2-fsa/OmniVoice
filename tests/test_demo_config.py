@@ -21,7 +21,9 @@ class DemoConfigTest(unittest.TestCase):
     def test_environment_value_and_default(self):
         with patch.dict(os.environ, {"OMNIVOICE_DEVICE": "cpu"}, clear=True):
             self.assertEqual(env_value("OMNIVOICE_DEVICE", "cuda"), "cpu")
-            self.assertEqual(env_value("OMNIVOICE_MODEL", "default-model"), "default-model")
+            self.assertEqual(
+                env_value("OMNIVOICE_MODEL", "default-model"), "default-model"
+            )
 
     def test_port_validation(self):
         with patch.dict(os.environ, {"OMNIVOICE_PORT": "8001"}, clear=True):

@@ -12,7 +12,9 @@ from omnivoice.utils.text import normalize_for_inference, normalize_text
 
 class PolicyTest(unittest.TestCase):
     def test_target_reference_instruction_policy(self):
-        with patch("omnivoice.utils.text.normalize_text", return_value="TARGET") as call:
+        with patch(
+            "omnivoice.utils.text.normalize_text", return_value="TARGET"
+        ) as call:
             self.assertEqual(
                 normalize_for_inference("Có 2 hộp", language="vi", field="target"),
                 "TARGET",
@@ -76,9 +78,7 @@ class InferenceDataFlowTest(unittest.TestCase):
         torch.nn.Module.__init__(model)
         model.register_parameter("_test_parameter", torch.nn.Parameter(torch.zeros(1)))
         model.text_tokenizer = self.Tokenizer()
-        model.audio_tokenizer = SimpleNamespace(
-            config=SimpleNamespace(frame_rate=12.5)
-        )
+        model.audio_tokenizer = SimpleNamespace(config=SimpleNamespace(frame_rate=12.5))
         model.config = SimpleNamespace(num_audio_codebook=2, audio_mask_id=99)
         return model
 
@@ -232,7 +232,6 @@ class InferenceDataFlowTest(unittest.TestCase):
         self.assertEqual(observed_task.texts, ["Tôi có hai mươi lăm quyển sách."])
         self.assertEqual(observed_task.ref_texts, ["Mẫu có 1 hộp"])
         self.assertEqual(observed_task.instructs, ["female, low pitch"])
-
 
 
 if __name__ == "__main__":

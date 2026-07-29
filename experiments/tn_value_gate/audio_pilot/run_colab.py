@@ -24,16 +24,25 @@ def main() -> None:
         raise RuntimeError("CUDA requested but unavailable")
     with args.manifest.open(encoding="utf-8", newline="") as stream:
         rows = list(csv.DictReader(stream))
-    model = OmniVoice.from_pretrained(args.checkpoint, device_map=args.device, dtype=torch.float16)
-    prompt = model.create_voice_clone_prompt(ref_audio=str(args.reference_audio), ref_text=args.reference_text)
+    model = OmniVoice.from_pretrained(
+        args.checkpoint, device_map=args.device, dtype=torch.float16
+    )
+    prompt = model.create_voice_clone_prompt(
+        ref_audio=str(args.reference_audio), ref_text=args.reference_text
+    )
     args.output_dir.mkdir(parents=True, exist_ok=True)
     for row in rows:
         output = args.output_dir / row["audio_path"]
-        if output.is_file() and output.stat().st_size > 0: continue
+        if output.is_file() and output.stat().st_size > 0:
+            continue
         output.parent.mkdir(parents=True, exist_ok=True)
         torch.manual_seed(args.seed)
-        audio = model.generate(text=row["target_text"], voice_clone_prompt=prompt,
-                               normalize_text=False, num_step=16)
+        audio = model.generate(
+            text=row["target_text"],
+            voice_clone_prompt=prompt,
+            normalize_text=False,
+            num_step=16,
+        )
         sf.write(output, audio[0], model.sampling_rate)
 
 

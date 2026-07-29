@@ -142,9 +142,7 @@ def validate_records(
             if field not in record:
                 errors.append(f"{location}: missing required field {field!r}")
             elif not isinstance(record[field], expected_type):
-                errors.append(
-                    f"{location}: {field} must be {expected_type.__name__}"
-                )
+                errors.append(f"{location}: {field} must be {expected_type.__name__}")
         record_id = record.get("id")
         if isinstance(record_id, str):
             if not record_id.strip():
@@ -375,8 +373,8 @@ def build_variants(
             "oracle": record["preferred_spoken"][0],
         }
         for system in SYSTEMS:
-            audio_path = output_dir / "audio" / stable_audio_filename(
-                record["id"], system
+            audio_path = (
+                output_dir / "audio" / stable_audio_filename(record["id"], system)
             )
             variants.append(
                 {
@@ -564,8 +562,7 @@ def _system_summary(rows: list[dict[str, str]]) -> dict[str, Any]:
         "other_error_counts": {
             key: count
             for key, count in sorted(error_counts.items())
-            if key
-            not in {"missing-number", "repeated-number", "substituted-number"}
+            if key not in {"missing-number", "repeated-number", "substituted-number"}
         },
     }
 
@@ -611,9 +608,7 @@ def summarize_evaluations(rows: list[dict[str, str]]) -> dict[str, Any]:
             for system in SYSTEMS
         }
         pronunciation_values = {
-            system: _parse_bool(
-                system_rows[system].get("pronunciation_clear", "")
-            )
+            system: _parse_bool(system_rows[system].get("pronunciation_clear", ""))
             for system in SYSTEMS
         }
         naturalness_values = {

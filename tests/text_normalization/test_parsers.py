@@ -10,7 +10,9 @@ from omnivoice.text_normalization.parsers import (
 )
 
 
-@pytest.mark.parametrize("surface", ["250 000", "250\u00a0000", "250\u202f000", "250.000"])
+@pytest.mark.parametrize(
+    "surface", ["250 000", "250\u00a0000", "250\u202f000", "250.000"]
+)
 def test_cardinal_grouping(surface):
     assert parse_cardinal(surface).integer == "250000"
 
@@ -23,8 +25,13 @@ def test_cardinal_rejects_unsupported(surface):
 
 @pytest.mark.parametrize(
     ("surface", "integer", "fractional"),
-    [("27,5", "27", "5"), ("-0,05", "0", "05"), ("12,50", "12", "50"),
-     ("1.234,56", "1234", "56"), ("1,234.56", "1234", "56")],
+    [
+        ("27,5", "27", "5"),
+        ("-0,05", "0", "05"),
+        ("12,50", "12", "50"),
+        ("1.234,56", "1234", "56"),
+        ("1,234.56", "1234", "56"),
+    ],
 )
 def test_decimal_locale_policy(surface, integer, fractional):
     value = parse_decimal(surface)
@@ -38,21 +45,43 @@ def test_decimal_ambiguity_and_malformed_preserved_by_parser(surface):
 
 
 @pytest.mark.parametrize(
-    "surface", ["27/07/2026", "27/7/2026", "27-07-2026", "27.07.2026", "2026-07-27",
-                "29/02/2024", "27/07/26"]
+    "surface",
+    [
+        "27/07/2026",
+        "27/7/2026",
+        "27-07-2026",
+        "27.07.2026",
+        "2026-07-27",
+        "29/02/2024",
+        "27/07/26",
+    ],
 )
 def test_valid_dates(surface):
     assert parse_date(surface).month == 7 or surface == "29/02/2024"
 
 
-@pytest.mark.parametrize("surface", ["31/02/2026", "29/02/2025", "0/7/2026", "1/13/2026"])
+@pytest.mark.parametrize(
+    "surface", ["31/02/2026", "29/02/2025", "0/7/2026", "1/13/2026"]
+)
 def test_invalid_dates(surface):
     with pytest.raises(ValueError):
         parse_date(surface)
 
 
-@pytest.mark.parametrize("surface", ["08:30", "8:30", "08:30:15", "8h30", "8 h 30", "8 giờ 30",
-                                     "8 giờ", "8:30 PM", "8:30 AM"])
+@pytest.mark.parametrize(
+    "surface",
+    [
+        "08:30",
+        "8:30",
+        "08:30:15",
+        "8h30",
+        "8 h 30",
+        "8 giờ 30",
+        "8 giờ",
+        "8:30 PM",
+        "8:30 AM",
+    ],
+)
 def test_valid_times(surface):
     parse_time(surface)
 

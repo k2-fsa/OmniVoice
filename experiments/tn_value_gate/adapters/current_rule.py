@@ -27,5 +27,12 @@ def normalize(text: str) -> NormalizationResult:
             },
         )
     except Exception as error:
-        return NormalizationResult("", False, "runtime_error", type(error).__name__, str(error),
-                                   (time.perf_counter() - started) * 1000, {"version": VERSION})
+        return NormalizationResult(
+            "",
+            False,
+            "runtime_error",
+            type(error).__name__,
+            str(error),
+            (time.perf_counter() - started) * 1000,
+            {"version": VERSION},
+        )

@@ -24,7 +24,9 @@ ID_CONTEXT_RE = re.compile(
 ORDINAL_CONTEXT_RE = re.compile(r"(?:thứ|hạng|lần thứ)\s*$", re.IGNORECASE)
 
 
-def _effective_label(text: str, start: int, label: EntityLabel) -> tuple[EntityLabel, str]:
+def _effective_label(
+    text: str, start: int, label: EntityLabel
+) -> tuple[EntityLabel, str]:
     context = text[max(0, start - 80) : start]
     if label in {
         EntityLabel.PHONE,
@@ -44,21 +46,33 @@ def _normalize_candidates(
     valid: list[tuple[CandidateSpan, int, int, str, int, float]] = []
     for input_order, raw in enumerate(candidates):
         try:
-            candidate = raw if isinstance(raw, CandidateSpan) else CandidateSpan(
-                start=int(raw["start"]), end=int(raw["end"]),
-                label=str(raw.get("label", raw.get("entity_group"))),
-                text=raw.get("text"), score=raw.get("score"),
+            candidate = (
+                raw
+                if isinstance(raw, CandidateSpan)
+                else CandidateSpan(
+                    start=int(raw["start"]),
+                    end=int(raw["end"]),
+                    label=str(raw.get("label", raw.get("entity_group"))),
+                    text=raw.get("text"),
+                    score=raw.get("score"),
+                )
             )
         except (KeyError, TypeError, ValueError) as error:
             placeholder = CandidateSpan(-1, -1, "UNKNOWN")
-            diagnostics.append(Diagnostic(placeholder, "preserved", f"malformed candidate: {error}"))
+            diagnostics.append(
+                Diagnostic(placeholder, "preserved", f"malformed candidate: {error}")
+            )
             continue
         if not 0 <= candidate.start < candidate.end <= len(text):
-            diagnostics.append(Diagnostic(candidate, "preserved", "invalid span bounds"))
+            diagnostics.append(
+                Diagnostic(candidate, "preserved", "invalid span bounds")
+            )
             continue
         source = text[candidate.start : candidate.end]
         if candidate.text is not None and candidate.text != source:
-            diagnostics.append(Diagnostic(candidate, "preserved", "candidate text/source mismatch"))
+            diagnostics.append(
+                Diagnostic(candidate, "preserved", "candidate text/source mismatch")
+            )
             continue
         left = len(source) - len(source.lstrip())
         right = len(source.rstrip())
@@ -66,10 +80,14 @@ def _normalize_candidates(
         try:
             score = float(candidate.score) if candidate.score is not None else 0.0
         except (TypeError, ValueError):
-            diagnostics.append(Diagnostic(candidate, "preserved", "invalid confidence score"))
+            diagnostics.append(
+                Diagnostic(candidate, "preserved", "invalid confidence score")
+            )
             continue
         if not math.isfinite(score):
-            diagnostics.append(Diagnostic(candidate, "preserved", "invalid confidence score"))
+            diagnostics.append(
+                Diagnostic(candidate, "preserved", "invalid confidence score")
+            )
             continue
         valid.append(
             (
@@ -95,7 +113,11 @@ def _normalize_candidates(
             start < other_end and end > other_start
             for _, other_start, other_end, _, _, _ in accepted
         ):
-            diagnostics.append(Diagnostic(candidate, "preserved", "overlap lost deterministic conflict"))
+            diagnostics.append(
+                Diagnostic(
+                    candidate, "preserved", "overlap lost deterministic conflict"
+                )
+            )
         else:
             accepted.append(item)
 
@@ -117,15 +139,20 @@ def _normalize_candidates(
                 raise ValueError("ambiguous decimal/grouping form")
             value = parse(semantic, effective)
             replacement = verbalize(value, effective, surface=semantic)
-            if effective == EntityLabel.ORDINAL and not ORDINAL_CONTEXT_RE.search(text[:start]):
+            if effective == EntityLabel.ORDINAL and not ORDINAL_CONTEXT_RE.search(
+                text[:start]
+            ):
                 replacement = f"thứ {replacement}"
             if effective == EntityLabel.DATE:
                 prefix = text[max(0, start - 12) : start].lower()
                 if re.search(r"ngày\s*$", prefix):
                     replacement = replacement.removeprefix("ngày ")
             replacements.append((start, end, replacement))
-            diagnostics.append(Diagnostic(candidate, "normalized", reason, effective.value,
-                                          replacement, value))
+            diagnostics.append(
+                Diagnostic(
+                    candidate, "normalized", reason, effective.value, replacement, value
+                )
+            )
         except (ValueError, OverflowError) as error:
             if effective == EntityLabel.MONEY and isinstance(
                 error, CurrencyMarkerMissingError
@@ -165,7 +192,9 @@ def _normalize_candidates(
                 )
                 continue
             logger.debug("Preserving %r: %s", semantic, error)
-            diagnostics.append(Diagnostic(candidate, "preserved", str(error), effective.value))
+            diagnostics.append(
+                Diagnostic(candidate, "preserved", str(error), effective.value)
+            )
 
     output = text
     for start, end, replacement in sorted(replacements, reverse=True):
@@ -204,6 +233,12 @@ def normalize_from_ner(text: str, detector) -> NormalizationResult:
     except Exception as error:
         logger.warning("NER normalization failed; preserving input: %s", error)
         return NormalizationResult(
-            text, (Diagnostic(CandidateSpan(0, len(text), "UNKNOWN"), "preserved",
-                              f"detector failure: {error}"),)
+            text,
+            (
+                Diagnostic(
+                    CandidateSpan(0, len(text), "UNKNOWN"),
+                    "preserved",
+                    f"detector failure: {error}",
+                ),
+            ),
         )

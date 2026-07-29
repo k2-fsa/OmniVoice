@@ -35,7 +35,9 @@ class SingleCliTest(unittest.TestCase):
         base = ["--text", "Có 2 hộp", "--output", "out.wav"]
         self.assertFalse(parser.parse_args(base).normalize_text)
         self.assertTrue(parser.parse_args(base + ["--normalize-text"]).normalize_text)
-        self.assertFalse(parser.parse_args(base + ["--no-normalize-text"]).normalize_text)
+        self.assertFalse(
+            parser.parse_args(base + ["--no-normalize-text"]).normalize_text
+        )
         self.assertIsNone(parser.parse_args(base).bamibert_model_path)
 
     def test_main_forwards_boolean_without_touching_other_text_fields(self):
@@ -102,7 +104,9 @@ class BatchCliTest(unittest.TestCase):
         base = ["--test_list", "input.jsonl", "--res_dir", "results"]
         self.assertFalse(parser.parse_args(base).normalize_text)
         self.assertTrue(parser.parse_args(base + ["--normalize-text"]).normalize_text)
-        self.assertFalse(parser.parse_args(base + ["--no-normalize-text"]).normalize_text)
+        self.assertFalse(
+            parser.parse_args(base + ["--no-normalize-text"]).normalize_text
+        )
         self.assertIsNone(parser.parse_args(base).bamibert_device)
 
     def test_worker_forwards_boolean_without_touching_other_text_fields(self):
@@ -189,9 +193,7 @@ class GradioTest(unittest.TestCase):
         self.assertFalse(parser.parse_args(["--no-normalize-text"]).normalize_text)
 
     def test_parser_reads_normalization_default_from_environment(self):
-        with patch.dict(
-            os.environ, {"OMNIVOICE_NORMALIZE_TEXT": "true"}, clear=False
-        ):
+        with patch.dict(os.environ, {"OMNIVOICE_NORMALIZE_TEXT": "true"}, clear=False):
             self.assertTrue(demo.build_parser().parse_args([]).normalize_text)
 
     def test_checkbox_defaults_off_and_clone_event_forwards_value(self):
@@ -233,9 +235,7 @@ class GradioTest(unittest.TestCase):
                 self.assertIs(call["normalize_text"], enabled)
                 self.assertEqual(call["text"], "Có 2 hộp")
                 self.assertEqual(call["instruct"], "female")
-                self.assertEqual(
-                    model.prompt_calls[-1]["ref_text"], "Mẫu có 1 hộp"
-                )
+                self.assertEqual(model.prompt_calls[-1]["ref_text"], "Mẫu có 1 hộp")
 
     def test_clone_prompt_errors_are_returned_to_the_ui(self):
         model = FakeModel()

@@ -11,6 +11,7 @@ from omnivoice.text_normalization import (
 )
 from omnivoice.text_normalization.types import Diagnostic
 
+
 def build_detector(model_path=None, device="cpu"):
     """Obtain the shared lazy detector used by production inference."""
     return get_bamibert_detector(model_path, device)
@@ -39,7 +40,9 @@ def _format_diagnostic(diagnostic: Diagnostic) -> str:
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Try Vietnamese text normalization with BamiBERT candidates")
+    parser = argparse.ArgumentParser(
+        description="Try Vietnamese text normalization with BamiBERT candidates"
+    )
     parser.add_argument("text", help="Text to normalize")
     parser.add_argument(
         "--model-path",

@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 from typing import Any, Iterable, Optional
 
+
 class CandidateLabel(str, Enum):
     """Frozen experiment taxonomy; not a production backend dependency."""
 
@@ -24,6 +25,7 @@ class CandidateLabel(str, Enum):
     PERCENT = "PERCENT"
     ROMAN = "ROMAN"
     KEEP = "KEEP"
+
 
 TAXONOMY_V1 = frozenset(label.value for label in CandidateLabel)
 
@@ -83,9 +85,7 @@ def validate_case(value: dict[str, Any]) -> NormalizationCase:
         if end > len(value["text"]):
             raise ValueError(f"spans[{index}] is outside text")
         if not isinstance(surface, str) or value["text"][start:end] != surface:
-            raise ValueError(
-                f"spans[{index}] violates text[start:end] == surface"
-            )
+            raise ValueError(f"spans[{index}] violates text[start:end] == surface")
         if start < previous_end:
             raise ValueError("spans must be sorted and non-overlapping")
         label = _validate_label(raw.get("label"), f"spans[{index}].label")
@@ -102,9 +102,7 @@ def validate_case(value: dict[str, Any]) -> NormalizationCase:
         metadata = raw.get("metadata", {})
         if not isinstance(metadata, dict):
             raise ValueError(f"spans[{index}].metadata must be an object")
-        spans.append(
-            GoldSpan(start, end, surface, label, spoken, acceptable, metadata)
-        )
+        spans.append(GoldSpan(start, end, surface, label, spoken, acceptable, metadata))
         previous_end = end
     metadata = value.get("metadata", {})
     if not isinstance(metadata, dict):

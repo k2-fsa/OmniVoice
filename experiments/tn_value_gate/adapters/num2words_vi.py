@@ -31,13 +31,34 @@ def normalize(text: str) -> NormalizationResult:
     output = _INTEGER.sub(replace, text)
     latency = (time.perf_counter() - started) * 1000
     if not attempts:
-        return NormalizationResult(text, False, "unsupported", None, "no supported integer span", latency,
-                                   {"version": VERSION, "attempted_spans": 0})
+        return NormalizationResult(
+            text,
+            False,
+            "unsupported",
+            None,
+            "no supported integer span",
+            latency,
+            {"version": VERSION, "attempted_spans": 0},
+        )
     if errors:
-        return NormalizationResult(output, False, "partial", "SpanError", "; ".join(errors), latency,
-                                   {"version": VERSION, "attempted_spans": attempts})
+        return NormalizationResult(
+            output,
+            False,
+            "partial",
+            "SpanError",
+            "; ".join(errors),
+            latency,
+            {"version": VERSION, "attempted_spans": attempts},
+        )
     structured = bool(_STRUCTURED.search(text))
-    return NormalizationResult(output, not structured, "partial" if structured else "success", None,
-                               "generic integer substitution inside unsupported structure" if structured else None,
-                               latency, {"version": VERSION, "attempted_spans": attempts,
-                                         "full_tn_system": False})
+    return NormalizationResult(
+        output,
+        not structured,
+        "partial" if structured else "success",
+        None,
+        "generic integer substitution inside unsupported structure"
+        if structured
+        else None,
+        latency,
+        {"version": VERSION, "attempted_spans": attempts, "full_tn_system": False},
+    )

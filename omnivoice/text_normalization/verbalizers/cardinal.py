@@ -75,9 +75,7 @@ def verbalize_cardinal(value: str | int) -> str:
         raw_value = raw_value[1:]
 
     if not raw_value or not raw_value.isdigit():
-        raise ValueError(
-            f"CARDINAL phải chứa một số nguyên: {value!r}"
-        )
+        raise ValueError(f"CARDINAL phải chứa một số nguyên: {value!r}")
 
     number = int(raw_value)
 

@@ -176,16 +176,23 @@ def test_invalid_mismatch_unknown_and_parse_failure_preserve_exact_text():
 
 def test_bare_single_digit_grouping_is_ambiguous_even_if_labeled_cardinal():
     text = "Giá trị là 1.234."
-    assert normalize_candidates(
-        text,
-        [span(text, "1.234", "CARDINAL")],
-    ).text == text
+    assert (
+        normalize_candidates(
+            text,
+            [span(text, "1.234", "CARDINAL")],
+        ).text
+        == text
+    )
 
 
 def test_right_to_left_repeated_entities_and_punctuation():
     text = "25, rồi 25!"
     result = normalize_candidates(
-        text, [span(text, "25", "CARDINAL", occurrence=0), span(text, "25", "CARDINAL", occurrence=1)]
+        text,
+        [
+            span(text, "25", "CARDINAL", occurrence=0),
+            span(text, "25", "CARDINAL", occurrence=1),
+        ],
     )
     assert result.text == "hai mươi lăm, rồi hai mươi lăm!"
 

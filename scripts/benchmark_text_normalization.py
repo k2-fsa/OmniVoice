@@ -17,8 +17,7 @@ CASES = {
     "no-number": "Tôi thích đọc sách vào buổi sáng.",
     "short-heavy": "Tôi có 25 quyển sách và đã đọc 2 quyển.",
     "multi-entity": (
-        "Hẹn lúc 08:30 ngày 27/07/2026, phí là 250.000 đồng "
-        "và gọi số 0912 345 678."
+        "Hẹn lúc 08:30 ngày 27/07/2026, phí là 250.000 đồng và gọi số 0912 345 678."
     ),
     "long": (
         "Thông báo cuộc họp bắt đầu lúc 08:30 ngày 27/07/2026. "
