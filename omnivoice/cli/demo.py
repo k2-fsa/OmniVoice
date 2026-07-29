@@ -33,7 +33,7 @@ import numpy as np
 import torch
 
 from omnivoice import OmniVoice, OmniVoiceGenerationConfig
-from omnivoice.cli._demo_config import ensure_output_dir, env_port, env_value
+from omnivoice.cli._demo_config import ensure_output_dir, env_bool, env_port, env_value
 from omnivoice.text_normalization import configure_bamibert
 from omnivoice.utils.common import get_best_device
 from omnivoice.utils.lang_map import LANG_NAMES, lang_display_name
@@ -158,8 +158,8 @@ def build_parser() -> argparse.ArgumentParser:
         "--no-asr",
         action="store_true",
         default=False,
-        help="Skip loading Whisper ASR model. Reference text auto-transcription"
-        " will be unavailable.",
+        help="Skip preloading Whisper ASR at startup. If reference text is omitted,"
+        " Whisper may still load lazily for auto-transcription.",
     )
     parser.add_argument(
         "--asr-model",
@@ -179,7 +179,9 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_false",
         help="Start Gradio with target normalization disabled.",
     )
-    parser.set_defaults(normalize_text=False)
+    parser.set_defaults(
+        normalize_text=env_bool("OMNIVOICE_NORMALIZE_TEXT", default=False)
+    )
     parser.add_argument(
         "--bamibert-model-path",
         default=None,
@@ -234,45 +236,46 @@ def build_demo(
         if not normalized_text:
             return None, "Please enter the text to synthesize."
 
-        gen_config = OmniVoiceGenerationConfig(
-            num_step=int(num_step or 32),
-            guidance_scale=float(guidance_scale) if guidance_scale is not None else 2.0,
-            denoise=bool(denoise) if denoise is not None else True,
-            preprocess_prompt=bool(preprocess_prompt),
-            postprocess_output=bool(postprocess_output),
-        )
-
-        lang = language if (language and language != "Auto") else None
-
-        kw: Dict[str, Any] = dict(
-            text=normalized_text,
-            language=lang,
-            generation_config=gen_config,
-            normalize_text=bool(normalize_text),
-        )
-
-        if speed is not None and float(speed) != 1.0:
-            kw["speed"] = float(speed)
-        if duration is not None and float(duration) > 0:
-            kw["duration"] = float(duration)
-
-        if mode == "clone":
-            if not ref_audio:
-                return None, "Please upload a reference audio."
-            kw["voice_clone_prompt"] = model.create_voice_clone_prompt(
-                ref_audio=ref_audio,
-                ref_text=normalized_ref_text,
+        try:
+            gen_config = OmniVoiceGenerationConfig(
+                num_step=int(num_step or 32),
+                guidance_scale=(
+                    float(guidance_scale) if guidance_scale is not None else 2.0
+                ),
+                denoise=bool(denoise) if denoise is not None else True,
+                preprocess_prompt=bool(preprocess_prompt),
+                postprocess_output=bool(postprocess_output),
             )
 
-        if instruct and instruct.strip():
-            kw["instruct"] = instruct.strip()
+            lang = language if (language and language != "Auto") else None
+            kw: Dict[str, Any] = dict(
+                text=normalized_text,
+                language=lang,
+                generation_config=gen_config,
+                normalize_text=bool(normalize_text),
+            )
 
-        try:
+            if speed is not None and float(speed) != 1.0:
+                kw["speed"] = float(speed)
+            if duration is not None and float(duration) > 0:
+                kw["duration"] = float(duration)
+
+            if mode == "clone":
+                if not ref_audio:
+                    return None, "Please upload a reference audio."
+                kw["voice_clone_prompt"] = model.create_voice_clone_prompt(
+                    ref_audio=ref_audio,
+                    ref_text=normalized_ref_text,
+                )
+
+            if instruct and instruct.strip():
+                kw["instruct"] = instruct.strip()
+
             audio = model.generate(**kw)
+            waveform = (audio[0] * 32767).astype(np.int16)
         except Exception as e:
             return None, f"Error: {type(e).__name__}: {e}"
 
-        waveform = (audio[0] * 32767).astype(np.int16)
         status = "Done. Unicode text was normalized." if was_normalized else "Done."
         return (sampling_rate, waveform), status
 
@@ -579,7 +582,11 @@ def main(argv=None) -> int:
         level=logging.INFO,
         format="%(asctime)s %(name)s %(levelname)s: %(message)s",
     )
-    parser = build_parser()
+    try:
+        parser = build_parser()
+    except ValueError as error:
+        logging.error("Invalid demo configuration: %s", error)
+        return 2
     args = parser.parse_args(argv)
     configure_bamibert(args.bamibert_model_path, args.bamibert_device)
 

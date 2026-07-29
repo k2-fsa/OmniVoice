@@ -12,6 +12,7 @@ assert SPEC.loader is not None
 SPEC.loader.exec_module(demo_config)
 
 ensure_output_dir = demo_config.ensure_output_dir
+env_bool = demo_config.env_bool
 env_port = demo_config.env_port
 env_value = demo_config.env_value
 
@@ -28,6 +29,25 @@ class DemoConfigTest(unittest.TestCase):
         with patch.dict(os.environ, {"OMNIVOICE_PORT": "70000"}, clear=True):
             with self.assertRaisesRegex(ValueError, "between 1 and 65535"):
                 env_port()
+
+    def test_boolean_validation(self):
+        for value in ("1", "true", "yes", "on"):
+            with self.subTest(value=value):
+                with patch.dict(
+                    os.environ, {"OMNIVOICE_NORMALIZE_TEXT": value}, clear=True
+                ):
+                    self.assertTrue(env_bool("OMNIVOICE_NORMALIZE_TEXT"))
+        for value in ("0", "false", "no", "off"):
+            with self.subTest(value=value):
+                with patch.dict(
+                    os.environ, {"OMNIVOICE_NORMALIZE_TEXT": value}, clear=True
+                ):
+                    self.assertFalse(env_bool("OMNIVOICE_NORMALIZE_TEXT", True))
+        with patch.dict(
+            os.environ, {"OMNIVOICE_NORMALIZE_TEXT": "sometimes"}, clear=True
+        ):
+            with self.assertRaisesRegex(ValueError, "must be one of"):
+                env_bool("OMNIVOICE_NORMALIZE_TEXT")
 
     def test_output_directory_is_created(self):
         with tempfile.TemporaryDirectory() as temp_dir:

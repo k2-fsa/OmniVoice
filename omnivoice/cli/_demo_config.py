@@ -23,6 +23,21 @@ def env_port(name: str = "OMNIVOICE_PORT", default: int = 7860) -> int:
     return port
 
 
+def env_bool(name: str, default: bool = False) -> bool:
+    """Read a strict boolean environment value."""
+    value = os.getenv(name)
+    if value is None or not value.strip():
+        return default
+    normalized = value.strip().lower()
+    if normalized in {"1", "true", "yes", "on"}:
+        return True
+    if normalized in {"0", "false", "no", "off"}:
+        return False
+    raise ValueError(
+        f"{name} must be one of true/false, yes/no, on/off, or 1/0; got {value!r}"
+    )
+
+
 def ensure_output_dir(path: str | None = None) -> Path:
     """Create and return the directory used for Gradio-generated files."""
     output_dir = Path(path or env_value("OMNIVOICE_OUTPUT_DIR", "outputs"))

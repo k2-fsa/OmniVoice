@@ -1,139 +1,180 @@
 # OmniVoice Docker deployment
 
-OmniVoice provides separate reproducible CPU and NVIDIA/CUDA image workflows.
-`compose.yaml` contains shared settings; `compose.cpu.yaml` selects the CPU-only
-image and device; `compose.gpu.yaml` requests an NVIDIA GPU and selects CUDA.
+OmniVoice uses one parameterized `Dockerfile` for both runtime variants:
 
-The CPU image uses `uv.cpu.lock`, which selects CPU-only PyTorch packages. The
-GPU image uses `uv.lock`, which intentionally selects the CUDA 12.8 PyTorch
-build. Neither workflow changes model architecture, generation settings, or
-audio processing.
+- CPU builds copy `uv.cpu.lock`, which resolves CPU-only PyTorch wheels.
+- NVIDIA builds copy `uv.lock`, which resolves the CUDA 12.8 PyTorch wheels.
+
+The operating-system packages, application installation, non-root runtime, and
+startup command are otherwise identical. `compose.yaml` contains shared
+settings; `compose.cpu.yaml` and `compose.gpu.yaml` select the dependency lock,
+image tag, and inference device.
 
 ## Prerequisites
 
-- Docker Engine or Docker Desktop with Compose v2 (`docker compose`).
-- Network access while building and during the first model download.
-- Enough disk space for the image and model cache, and enough RAM to load the
-  model. CPU inference is memory-intensive and may take several minutes.
-- On Windows, Docker Desktop with WSL 2 integration enabled.
+- Docker Engine or Docker Desktop with Compose v2.
+- Network access during the image build and first model download.
+- Enough disk space for the image/cache and enough RAM to load OmniVoice.
+- For GPU deployment: a supported NVIDIA GPU, driver, and NVIDIA Container
+  Toolkit (or equivalent Docker Desktop/WSL 2 integration).
 
-NVIDIA deployment also requires a supported GPU, a compatible NVIDIA driver,
-and NVIDIA Container Toolkit (or compatible Docker Desktop/WSL 2 GPU support).
+CPU inference is memory-intensive and substantially slower than GPU inference.
+Model download and startup can take many minutes.
+
+## Quick start
+
+CPU:
+
+```bash
+docker compose -f compose.yaml -f compose.cpu.yaml up --build -d
+docker compose -f compose.yaml -f compose.cpu.yaml ps
+docker compose -f compose.yaml -f compose.cpu.yaml logs -f omnivoice
+```
+
+NVIDIA GPU:
+
+```bash
+nvidia-smi
+docker compose -f compose.yaml -f compose.gpu.yaml up --build -d
+docker compose -f compose.yaml -f compose.gpu.yaml ps
+```
+
+Open <http://localhost:8001>. The container starts Gradio non-interactively and
+does not preload Whisper ASR. If reference text is omitted during voice
+cloning, Whisper can still load lazily on that request.
 
 ## Configuration
 
-The deployment has safe defaults matching the tested CPU setup:
-
 | Variable | Default | Purpose |
 | --- | --- | --- |
-| `OMNIVOICE_DEVICE` | auto; `cpu`/`cuda` in overrides | Inference device |
 | `OMNIVOICE_MODEL` | `k2-fsa/OmniVoice` | Hugging Face model ID or local container path |
-| `OMNIVOICE_HOST` | `0.0.0.0` | Gradio listen address |
-| `OMNIVOICE_PORT` | `8001` | Host and container port |
-| `OMNIVOICE_OUTPUT_DIR` | `/app/outputs` | Gradio temporary/generated files |
-| `HF_HOME` | `/cache/huggingface` | Hugging Face cache location |
+| `OMNIVOICE_DEVICE` | `cpu`/`cuda` in overrides | Main inference device |
+| `OMNIVOICE_HOST` | `0.0.0.0` | Gradio listen address inside the container |
+| `OMNIVOICE_PORT` | `8001` | Published and container port |
+| `OMNIVOICE_PUBLISH_HOST` | `0.0.0.0` | Host interface on which Docker publishes the port |
 | `OMNIVOICE_ROOT_PATH` | empty | Optional reverse-proxy root path |
+| `OMNIVOICE_HEALTH_START_PERIOD` | `20m` | Grace period for download/model loading |
+| `OMNIVOICE_NORMALIZE_TEXT` | `false` | Initial state of the Vietnamese normalization checkbox |
+| `OMNIVOICE_BAMIBERT_HOST_PATH` | `./artifacts/models/bamibert_augmented_best` | Host BamiBERT directory |
+| `OMNIVOICE_BAMIBERT_DEVICE` | `cpu` | Device for the normalization detector |
 
-Set variables in the shell before `docker compose`, for example:
+Example:
 
 ```bash
-OMNIVOICE_PORT=8010 OMNIVOICE_MODEL=/models/OmniVoice \
-  docker compose -f compose.yaml -f compose.cpu.yaml up -d
+OMNIVOICE_PORT=8010 \
+OMNIVOICE_PUBLISH_HOST=127.0.0.1 \
+OMNIVOICE_NORMALIZE_TEXT=true \
+docker compose -f compose.yaml -f compose.cpu.yaml up --build -d
 ```
 
-A local model path must also be mounted into the container. The service keeps
-the Hugging Face cache in the `omnivoice_huggingface-cache` volume and outputs
-in `omnivoice_outputs`. `/app/outputs` is created writable in both images.
+The `OMNIVOICE_PORT` value configures both Gradio and the container port, so a
+single setting is sufficient.
 
-## Validate configuration
+## Vietnamese normalization
+
+Model weights are deliberately not baked into the image. Put the latest
+BamiBERT model at the default host path:
+
+```text
+artifacts/models/bamibert_augmented_best/
+```
+
+or set `OMNIVOICE_BAMIBERT_HOST_PATH` to another readable directory. Compose
+mounts it read-only at `/models/bamibert` for both CPU and GPU deployments.
+The detector defaults to CPU to avoid consuming TTS GPU memory; override
+`OMNIVOICE_BAMIBERT_DEVICE` when appropriate.
+
+Enable normalization either with `OMNIVOICE_NORMALIZE_TEXT=true` or with the
+checkbox in both Gradio generation tabs. Only target text is semantically
+normalized. Unicode-safe cleanup remains active for target and reference text.
+Detector failures preserve the complete target rather than handing partially
+normalized text to inference.
+
+## Cache and restart behavior
+
+`omnivoice_huggingface-cache` stores model snapshots and
+`omnivoice_outputs` stores Gradio outputs. They survive container replacement
+and normal Compose shutdown, so restarting does not download cached snapshots
+again:
 
 ```bash
-docker compose -f compose.yaml config
+docker compose -f compose.yaml -f compose.cpu.yaml restart
+```
+
+The service uses `restart: unless-stopped`, an init process, a 30-second stop
+grace period, and the exec-form application command. On startup, a small
+entrypoint repairs ownership once for volumes created by older root-running
+images, then immediately drops to UID/GID `10001`. The internal cache and
+output paths are fixed so this narrowly scoped migration cannot traverse an
+arbitrary configured path. Do not use `down -v` unless you intentionally want
+to delete the model and output volumes.
+
+BuildKit cache mounts preserve downloaded Python packages between builds.
+Dependency layers only invalidate when `pyproject.toml`, the selected lockfile,
+or the pinned `uv` version changes; application-source changes reuse those
+layers.
+
+## Health check
+
+The service becomes healthy only after model loading completes and Gradio
+answers on its configured port. The default health start period is 20 minutes:
+
+```bash
+docker compose -f compose.yaml -f compose.cpu.yaml ps
+docker inspect --format '{{json .State.Health}}' omnivoice-ui
+```
+
+Increase `OMNIVOICE_HEALTH_START_PERIOD` on slow CPU or network-constrained
+hosts. A container in `starting` state during the initial model load is
+expected; inspect logs before treating it as failed.
+
+## Validation
+
+Validate the merged Compose configurations:
+
+```bash
 docker compose -f compose.yaml -f compose.cpu.yaml config
 docker compose -f compose.yaml -f compose.gpu.yaml config
 ```
 
-## CPU deployment
-
-Build and start the CPU-only image:
+Confirm the CPU image did not install a CUDA build:
 
 ```bash
-docker compose --progress=plain -f compose.yaml -f compose.cpu.yaml build
-docker compose -f compose.yaml -f compose.cpu.yaml up -d
-```
-
-Open <http://localhost:8001>. On first start, OmniVoice downloads the model to
-the persistent cache and then loads it into RAM. The health check allows up to
-15 minutes for this initialization. CPU speech generation was tested
-end-to-end, but inference is extremely slow and may take several minutes per
-request depending on the host.
-
-Confirm the CPU package selection without downloading the model:
-
-```bash
-docker run --rm --entrypoint python omnivoice-ui:cpu -c \
-  "import torch, torchaudio, gradio, omnivoice; print('Imports OK'); print('PyTorch:', torch.__version__); print('TorchAudio:', torchaudio.__version__); print('CUDA build:', torch.version.cuda); print('CUDA available:', torch.cuda.is_available())"
+docker run --rm omnivoice-ui:cpu python -c \
+  "import torch, torchaudio, gradio, omnivoice; print(torch.__version__); print(torchaudio.__version__); print(torch.version.cuda); print(torch.cuda.is_available())"
 ```
 
 For the CPU image, `torch.version.cuda` must be `None` and
 `torch.cuda.is_available()` must be `False`.
 
-## NVIDIA/CUDA deployment
+GPU Compose configuration can be validated without an adapter, but runtime
+validation requires an NVIDIA-enabled Docker host.
 
-On an NVIDIA host, build and start the CUDA configuration:
+## Operations and troubleshooting
 
-```bash
-nvidia-smi
-docker compose -f compose.yaml -f compose.gpu.yaml up --build -d
-```
-
-The CUDA configuration and package path are preserved and Compose-valid, but
-CUDA execution was not runtime-tested locally because the development machine
-has no NVIDIA GPU. Do not treat a successful image build as proof that the
-target host's driver/runtime combination works.
-
-## Operations
-
-Use the same `-f` arguments for the deployment you started. These examples use
-CPU:
+Use the same Compose file pair for every operation:
 
 ```bash
-# Status and health
-docker compose -f compose.yaml -f compose.cpu.yaml ps
-
-# Follow application and model-loading logs
-docker compose -f compose.yaml -f compose.cpu.yaml logs -f omnivoice
-
-# Live container CPU and memory usage
-docker stats omnivoice-ui
-
-# Stop containers while preserving them
+docker compose -f compose.yaml -f compose.cpu.yaml logs --tail=200 omnivoice
 docker compose -f compose.yaml -f compose.cpu.yaml stop
-
-# Remove containers and the network while preserving named volumes
 docker compose -f compose.yaml -f compose.cpu.yaml down
 ```
 
-Normal `down` preserves model and output volumes. Do not use `down -v` unless
-you intentionally want to delete both named volumes and redownload the model.
+- **Health remains `starting`:** follow the logs and check RAM, disk space, and
+  network access. Increase the health start period if model loading is healthy
+  but slow.
+- **Container exits with code 137:** the host likely killed it for running out
+  of memory.
+- **Port already allocated:** change `OMNIVOICE_PORT`.
+- **BamiBERT cannot load:** verify the host directory contains the complete
+  model and is readable by container UID `10001`.
+- **Model download repeats:** verify the `omnivoice_huggingface-cache` volume is
+  mounted and `HF_HOME` matches its container target.
+- **NVIDIA device unavailable:** check `nvidia-smi`, the NVIDIA Container
+  Toolkit, Docker daemon configuration, and host driver compatibility.
+- **Permission errors:** keep the named volumes. The startup migration handles
+  volumes from older root-running images; bind-mounting replacement cache or
+  output paths is outside the supported Compose configuration.
 
-## Troubleshooting
-
-- **Health remains `starting`:** follow the logs. Initial download and model
-  loading can take a long time; confirm the host has enough RAM and disk space.
-- **Port already allocated:** set another port, such as
-  `OMNIVOICE_PORT=8010`, and browse to that port.
-- **Model download fails:** verify outbound network/DNS access and available
-  cache volume space. A configured Hugging Face token or mirror can be passed
-  through the environment when required by the model source.
-- **Container exits or is killed:** inspect `docker compose ... logs` and host
-  memory usage. An out-of-memory kill commonly has exit code 137.
-- **CPU image contains CUDA:** rebuild with both Compose files and no stale tag:
-  `docker compose -f compose.yaml -f compose.cpu.yaml build --no-cache`.
-- **NVIDIA device unavailable:** run `nvidia-smi` on the host and verify Docker
-  NVIDIA runtime support before starting the GPU override.
-- **Permission errors under outputs/cache:** inspect the named-volume mounts and
-  avoid replacing container paths with host directories lacking write access.
-
-Generated audio, outputs, model checkpoints, and Hugging Face caches are
-excluded from the Docker build context and must not be committed.
+Generated audio, model weights, checkpoints, Hugging Face caches, datasets, and
+secrets are excluded from the image build context and must not be committed.

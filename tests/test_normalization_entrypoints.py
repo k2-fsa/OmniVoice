@@ -188,6 +188,12 @@ class GradioTest(unittest.TestCase):
         self.assertTrue(parser.parse_args(["--normalize-text"]).normalize_text)
         self.assertFalse(parser.parse_args(["--no-normalize-text"]).normalize_text)
 
+    def test_parser_reads_normalization_default_from_environment(self):
+        with patch.dict(
+            os.environ, {"OMNIVOICE_NORMALIZE_TEXT": "true"}, clear=False
+        ):
+            self.assertTrue(demo.build_parser().parse_args([]).normalize_text)
+
     def test_checkbox_defaults_off_and_clone_event_forwards_value(self):
         model = FakeModel()
         app = demo.build_demo(model, "test")
@@ -230,6 +236,45 @@ class GradioTest(unittest.TestCase):
                 self.assertEqual(
                     model.prompt_calls[-1]["ref_text"], "Mẫu có 1 hộp"
                 )
+
+    def test_clone_prompt_errors_are_returned_to_the_ui(self):
+        model = FakeModel()
+        app = demo.build_demo(model, "test")
+        clone_fn = next(
+            block_fn.fn
+            for block_fn in app.fns.values()
+            if getattr(block_fn.fn, "__name__", "") == "_clone_fn"
+        )
+        with patch.object(
+            model,
+            "create_voice_clone_prompt",
+            side_effect=RuntimeError("ASR model unavailable"),
+        ):
+            audio, status = clone_fn(
+                "Có 2 hộp",
+                "vi",
+                "ref.wav",
+                None,
+                "female",
+                32,
+                2.0,
+                True,
+                1.0,
+                None,
+                True,
+                True,
+                False,
+            )
+        self.assertIsNone(audio)
+        self.assertEqual(status, "Error: RuntimeError: ASR model unavailable")
+
+    def test_invalid_environment_configuration_exits_cleanly(self):
+        with (
+            patch.dict(os.environ, {"OMNIVOICE_PORT": "invalid"}, clear=False),
+            self.assertLogs(level="ERROR") as logs,
+        ):
+            self.assertEqual(demo.main([]), 2)
+        self.assertIn("Invalid demo configuration", "\n".join(logs.output))
 
     def test_configured_checkbox_default_is_enabled(self):
         app = demo.build_demo(

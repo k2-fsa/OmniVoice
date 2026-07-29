@@ -1,11 +1,9 @@
 services:
   omnivoice:
     build:
-      dockerfile: Dockerfile.cpu
-    image: omnivoice-ui:cpu
+      args:
+        OMNIVOICE_LOCKFILE: uv.cpu.lock
+    image: ${OMNIVOICE_CPU_IMAGE:-omnivoice-ui:cpu}
     environment:
       OMNIVOICE_DEVICE: cpu
-      OMNIVOICE_BAMIBERT_MODEL: /models/bamibert
       OMNIVOICE_BAMIBERT_DEVICE: cpu
-    volumes:
-      - ${OMNIVOICE_BAMIBERT_HOST_PATH:-./artifacts/models/bamibert_augmented_best}:/models/bamibert:ro
