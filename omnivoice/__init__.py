@@ -25,6 +25,13 @@ from omnivoice.models.omnivoice import (
     OmniVoiceGenerationConfig,
 )
 from omnivoice.controls import PausePlan, PauseSpec
+from omnivoice.narration import (
+    NarrationControl,
+    NarrationController,
+    NarrationPlan,
+    NarrationResult,
+    parse_narration_controls,
+)
 
 __all__ = [
     "OmniVoice",
@@ -32,4 +39,9 @@ __all__ = [
     "OmniVoiceGenerationConfig",
     "PausePlan",
     "PauseSpec",
+    "NarrationControl",
+    "NarrationController",
+    "NarrationPlan",
+    "NarrationResult",
+    "parse_narration_controls",
 ]
