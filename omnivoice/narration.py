@@ -14,7 +14,7 @@ import numpy as np
 import torch
 import torchaudio
 
-from omnivoice.controls import PausePlan, parse_pause_markers
+from omnivoice.controls import PausePlan, PauseSpec, parse_pause_markers
 from omnivoice.models.omnivoice import (
     GenerationTask,
     OmniVoice,
@@ -264,8 +264,8 @@ def _resolve_pronunciations(
             raise ValueError(f"Duplicate pronunciation key: {raw_key!r}")
         seen_keys.add(key)
         pronunciation = _normalize_cmu_pronunciation(raw_value)
-        matched = False
         pattern = re.compile(r"(?<![A-Za-z0-9'])" + re.escape(key) + r"(?![A-Za-z0-9'])")
+        matched = bool(pattern.search(plan.text.casefold()))
         for control_index, control in enumerate(plan.controls):
             surface = plan.text[control.start_char : control.end_char]
             for match in pattern.finditer(surface.casefold()):
@@ -274,7 +274,6 @@ def _resolve_pronunciations(
                 if any(start < old_end and old_start < end for old_start, old_end, _ in parts):
                     continue
                 parts.append((start, end, pronunciation))
-                matched = True
         if not matched:
             raise ValueError(
                 f"Pronunciation key does not match a controlled span: {raw_key!r}"
@@ -290,6 +289,73 @@ def _resolve_pronunciations(
         else:
             resolved[control_index] = tuple(parts)
     return resolved
+
+
+def _pronunciation_replacements(
+    text: str, pronunciations: Optional[dict[str, str]]
+) -> list[tuple[int, int, str]]:
+    if pronunciations is None:
+        return []
+    if not isinstance(pronunciations, dict):
+        raise TypeError("pronunciations must be a dictionary")
+    replacements = []
+    occupied: list[tuple[int, int]] = []
+    ordered = sorted(
+        pronunciations.items(), key=lambda item: len(str(item[0]).strip()), reverse=True
+    )
+    for raw_key, raw_value in ordered:
+        if not isinstance(raw_key, str) or not raw_key.strip():
+            raise TypeError("pronunciation keys must be nonempty strings")
+        key = raw_key.strip()
+        pronunciation = _normalize_cmu_pronunciation(raw_value)
+        pattern = re.compile(
+            r"(?<![A-Za-z0-9'])" + re.escape(key) + r"(?![A-Za-z0-9'])",
+            re.IGNORECASE,
+        )
+        for match in pattern.finditer(text):
+            start, end = match.span()
+            if any(start < old_end and old_start < end for old_start, old_end in occupied):
+                continue
+            occupied.append((start, end))
+            replacements.append((start, end, pronunciation))
+    replacements.sort(key=lambda item: item[0])
+    return replacements
+
+
+def _apply_pronunciations(
+    text: str, pronunciations: Optional[dict[str, str]]
+) -> str:
+    replacements = _pronunciation_replacements(text, pronunciations)
+    if not replacements:
+        return text
+    parts = []
+    cursor = 0
+    for start, end, pronunciation in replacements:
+        parts.extend((text[cursor:start], pronunciation))
+        cursor = end
+    parts.append(text[cursor:])
+    return "".join(parts)
+
+
+def _apply_pronunciations_to_pause_plan(
+    text: str,
+    pause_plan: PausePlan,
+    pronunciations: Optional[dict[str, str]],
+) -> tuple[str, PausePlan]:
+    replacements = _pronunciation_replacements(text, pronunciations)
+    if not replacements:
+        return text, pause_plan
+    conditioned = _apply_pronunciations(text, pronunciations)
+    remapped = []
+    for pause in pause_plan.pauses:
+        delta = 0
+        for start, end, pronunciation in replacements:
+            if pause.after_char >= end:
+                delta += len(pronunciation) - (end - start)
+            elif start < pause.after_char < end:
+                raise ValueError("Pause cannot split a pronunciation-controlled word")
+        remapped.append(PauseSpec(pause.after_char + delta, pause.seconds))
+    return conditioned, PausePlan(tuple(remapped))
 
 
 def parse_narration_controls(text: str, shorthand: bool = False) -> NarrationPlan:
@@ -809,14 +875,17 @@ class NarrationController:
         )
 
         _set_seed(seed)
+        baseline_text, baseline_pause_plan = _apply_pronunciations_to_pause_plan(
+            plan.text, plan.pause_plan, pronunciations
+        )
         baseline_task = self.model._preprocess_all(
-            text=plan.text,
+            text=baseline_text,
             language=language,
             voice_clone_prompt=prompt,
             preprocess_prompt=preprocess_prompt,
             speed=1.0,
             duration=None,
-            pause_plan=plan.pause_plan if plan.pause_plan.pauses else None,
+            pause_plan=baseline_pause_plan if baseline_pause_plan.pauses else None,
         )
         short_idx, long_idx = baseline_task.get_indices(
             config, self.model.audio_tokenizer.config.frame_rate
@@ -891,6 +960,9 @@ class NarrationController:
                 plan.text,
                 control,
                 pronunciation=pronunciation,
+            )
+            conditioned_text = _apply_pronunciations(
+                conditioned_text, pronunciations
             )
             target_duration = (
                 source_metrics["duration_seconds"]
@@ -982,7 +1054,10 @@ class NarrationController:
         final_transcript = _transcribe(
             self.aligner, current_raw, self.model.sampling_rate
         )
-        pronunciation_report = {}
+        pronunciation_report = {
+            str(surface): _normalize_cmu_pronunciation(value)
+            for surface, value in (pronunciations or {}).items()
+        }
         for index, value in resolved_pronunciations.items():
             surface = plan.text[
                 plan.controls[index].start_char : plan.controls[index].end_char

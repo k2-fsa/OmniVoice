@@ -6,6 +6,8 @@ import numpy as np
 from omnivoice.narration import (
     NarrationControl,
     _aligned_control_audio,
+    _apply_pronunciations,
+    _apply_pronunciations_to_pause_plan,
     _conditioned_text,
     _core_frame_target,
     _normalize_cmu_pronunciation,
@@ -19,6 +21,7 @@ from omnivoice.narration import (
     NarrationController,
     narration_capabilities,
 )
+from omnivoice.controls import PausePlan, PauseSpec
 
 
 def test_explicit_controls_clean_text_and_keep_offsets():
@@ -181,6 +184,30 @@ def test_cmu_pronunciation_can_protect_word_inside_multiword_control():
     assert _conditioned_text(plan.text, plan.controls[0], resolved[0]) == (
         "This was —an [AH2 N IH0 K S P EH1 K T IH0 D] result—."
     )
+
+
+def test_cmu_pronunciation_also_protects_words_outside_control():
+    plan = parse_narration_controls(
+        'Tony Soprano was <emphasis strength="strong">never ordinary</emphasis>.'
+    )
+    pronunciations = {"Soprano": "S AH0 P R AA1 N OW0"}
+
+    assert _resolve_pronunciations(plan, pronunciations) == {}
+    assert _apply_pronunciations(plan.text, pronunciations) == (
+        "Tony [S AH0 P R AA1 N OW0] was never ordinary."
+    )
+
+
+def test_cmu_replacement_remaps_native_pause_offset():
+    text = "Tony Soprano paused."
+    pause = PausePlan((PauseSpec(text.index(" paused"), 0.8),))
+
+    conditioned, remapped = _apply_pronunciations_to_pause_plan(
+        text, pause, {"Soprano": "S AH0 P R AA1 N OW0"}
+    )
+
+    assert conditioned == "Tony [S AH0 P R AA1 N OW0] paused."
+    assert conditioned[: remapped.pauses[0].after_char].endswith("]")
 
 
 def test_generate_plan_rejects_non_plan_before_loading_model():
