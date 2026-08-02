@@ -1372,7 +1372,10 @@ class OmniVoice(PreTrainedModel):
         }
 
     def _generate_iterative(
-        self, task: GenerationTask, gen_config: OmniVoiceGenerationConfig
+        self,
+        task: GenerationTask,
+        gen_config: OmniVoiceGenerationConfig,
+        trace: Optional[list[dict]] = None,
     ) -> List[torch.Tensor]:
         """N-step iterative unmasked decoding.
 
@@ -1492,6 +1495,43 @@ class OmniVoice(PreTrainedModel):
         fixed_checks = torch.ones(
             (gen_config.num_step, B), dtype=torch.bool, device=self.device
         )
+        trace_items = None
+        if trace is not None:
+            trace_items = []
+            for i, t_len in enumerate(task.target_lens):
+                template = task.target_templates[i] if task.target_templates else None
+                fixed = (
+                    torch.zeros(
+                        (self.config.num_audio_codebook, t_len),
+                        dtype=torch.bool,
+                        device=self.device,
+                    )
+                    if template is None
+                    else template != self.config.audio_mask_id
+                )
+                pause = torch.zeros_like(fixed)
+                if task.pause_spans is not None:
+                    for start, end in task.pause_spans[i]:
+                        pause[:, start:end] = True
+                shape = (self.config.num_audio_codebook, t_len)
+                trace_items.append(
+                    {
+                        "unmask_step": torch.full(
+                            shape, -1, dtype=torch.int16, device=self.device
+                        ),
+                        "token_logprob": torch.full(
+                            shape, float("nan"), dtype=torch.float32, device=self.device
+                        ),
+                        "entropy": torch.full(
+                            shape, float("nan"), dtype=torch.float32, device=self.device
+                        ),
+                        "cfg_delta": torch.full(
+                            shape, float("nan"), dtype=torch.float32, device=self.device
+                        ),
+                        "fixed": fixed,
+                        "pause": pause,
+                    }
+                )
 
         for step in range(gen_config.num_step):
             if not any(schedules[i][step] > 0 for i in range(B)):
@@ -1514,9 +1554,15 @@ class OmniVoice(PreTrainedModel):
                 c_logits = batch_logits[i : i + 1, :, c_len - t_len : c_len, :]
                 u_logits = batch_logits[B + i : B + i + 1, :, :t_len, :]
 
-                pred_tokens, scores = self._predict_tokens_with_scoring(
-                    c_logits, u_logits, gen_config
-                )
+                diagnostics = None
+                if trace_items is None:
+                    pred_tokens, scores = self._predict_tokens_with_scoring(
+                        c_logits, u_logits, gen_config
+                    )
+                else:
+                    pred_tokens, scores, diagnostics = self._predict_tokens_with_scoring(
+                        c_logits, u_logits, gen_config, return_diagnostics=True
+                    )
 
                 scores = scores - (layer_ids * gen_config.layer_penalty_factor)
 
@@ -1539,6 +1585,33 @@ class OmniVoice(PreTrainedModel):
                 flat_tokens[topk_idx] = pred_tokens.flatten()[topk_idx]
                 sample_tokens.copy_(flat_tokens.view_as(sample_tokens))
 
+                if diagnostics is not None:
+                    chosen = pred_tokens.flatten()[topk_idx]
+                    combined = diagnostics["log_probs"].view(-1, c_logits.shape[-1])[
+                        topk_idx
+                    ]
+                    conditional = diagnostics["c_log_probs"].view(
+                        -1, c_logits.shape[-1]
+                    )[topk_idx]
+                    unconditional = diagnostics["u_log_probs"].view(
+                        -1, c_logits.shape[-1]
+                    )[topk_idx]
+                    row = torch.arange(k, device=self.device)
+                    chosen_logprob = combined[row, chosen]
+                    probability = combined.exp()
+                    entropy = -(
+                        probability
+                        * torch.where(
+                            torch.isfinite(combined), combined, torch.zeros_like(combined)
+                        )
+                    ).sum(dim=-1)
+                    cfg_delta = conditional[row, chosen] - unconditional[row, chosen]
+                    item = trace_items[i]
+                    item["unmask_step"].view(-1)[topk_idx] = step + 1
+                    item["token_logprob"].view(-1)[topk_idx] = chosen_logprob
+                    item["entropy"].view(-1)[topk_idx] = entropy
+                    item["cfg_delta"].view(-1)[topk_idx] = cfg_delta
+
                 # Update individual slices into batched structure
                 tokens[i : i + 1, :, :t_len] = sample_tokens
                 batch_input_ids[i : i + 1, :, c_len - t_len : c_len] = sample_tokens
@@ -1560,9 +1633,29 @@ class OmniVoice(PreTrainedModel):
                 f"Fixed pause token mutated at diffusion step {int(first[0].item()) + 1}"
             )
 
+        if trace_items is not None:
+            for i, item in enumerate(trace_items):
+                trace.append(
+                    {
+                        "format": "omnivoice_generation_trace_v1",
+                        "num_step": gen_config.num_step,
+                        "frame_rate": self.audio_tokenizer.config.frame_rate,
+                        "codebook_weights": tuple(self.config.audio_codebook_weights),
+                        "tokens": tokens[i, :, : task.target_lens[i]].detach().cpu(),
+                        "unmask_step": item["unmask_step"].detach().cpu(),
+                        "token_logprob": item["token_logprob"].detach().cpu(),
+                        "entropy": item["entropy"].detach().cpu(),
+                        "cfg_delta": item["cfg_delta"].detach().cpu(),
+                        "fixed": item["fixed"].detach().cpu(),
+                        "pause": item["pause"].detach().cpu(),
+                    }
+                )
+
         return [tokens[i, :, : task.target_lens[i]] for i in range(B)]
 
-    def _predict_tokens_with_scoring(self, c_logits, u_logits, gen_config):
+    def _predict_tokens_with_scoring(
+        self, c_logits, u_logits, gen_config, return_diagnostics: bool = False
+    ):
         if gen_config.guidance_scale != 0:
             c_log_probs = F.log_softmax(c_logits, dim=-1)
             u_log_probs = F.log_softmax(u_logits, dim=-1)
@@ -1571,7 +1664,13 @@ class OmniVoice(PreTrainedModel):
                 dim=-1,
             )
         else:
-            log_probs = F.log_softmax(c_logits, dim=-1)
+            c_log_probs = F.log_softmax(c_logits, dim=-1)
+            log_probs = c_log_probs
+            u_log_probs = (
+                F.log_softmax(u_logits, dim=-1)
+                if return_diagnostics
+                else None
+            )
 
         log_probs[..., self.config.audio_mask_id] = -float("inf")
 
@@ -1585,6 +1684,12 @@ class OmniVoice(PreTrainedModel):
 
         confidence_scores = log_probs.max(dim=-1)[0]
 
+        if return_diagnostics:
+            return pred_tokens, confidence_scores, {
+                "log_probs": log_probs,
+                "c_log_probs": c_log_probs,
+                "u_log_probs": u_log_probs,
+            }
         return pred_tokens, confidence_scores
 
 

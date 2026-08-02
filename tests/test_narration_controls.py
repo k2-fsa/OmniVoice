@@ -16,6 +16,8 @@ from omnivoice.narration import (
     build_inpaint_template,
     control_word_indices,
     parse_narration_controls,
+    NarrationController,
+    narration_capabilities,
 )
 
 
@@ -163,6 +165,40 @@ def test_cmu_pronunciation_normalization_and_control_resolution():
         plan,
         {"unexpected": "AH2 N IH0 K S P EH1 K T IH0 D"},
     ) == {0: "[AH2 N IH0 K S P EH1 K T IH0 D]"}
+
+
+def test_cmu_pronunciation_can_protect_word_inside_multiword_control():
+    plan = parse_narration_controls(
+        'This was <emphasis strength="strong">an unexpected result</emphasis>.'
+    )
+    resolved = _resolve_pronunciations(
+        plan,
+        {"unexpected": "AH2 N IH0 K S P EH1 K T IH0 D"},
+    )
+    assert resolved == {
+        0: ((3, 13, "[AH2 N IH0 K S P EH1 K T IH0 D]"),)
+    }
+    assert _conditioned_text(plan.text, plan.controls[0], resolved[0]) == (
+        "This was —an [AH2 N IH0 K S P EH1 K T IH0 D] result—."
+    )
+
+
+def test_generate_plan_rejects_non_plan_before_loading_model():
+    controller = NarrationController(SimpleNamespace())
+    with pytest.raises(TypeError, match="NarrationPlan"):
+        controller.generate_plan("not a plan")
+
+
+def test_narration_capabilities_are_stable_and_defensively_copied():
+    first = narration_capabilities()
+    first["regional_controls"]["emphasis"]["values"].append("fake")
+    second = narration_capabilities()
+    assert second["frame_rate"] == 25
+    assert second["regional_controls"]["emphasis"]["values"] == [
+        "reduced",
+        "moderate",
+        "strong",
+    ]
 
 
 @pytest.mark.parametrize(

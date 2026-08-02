@@ -205,7 +205,12 @@ def test_room_tone_is_mono_center_cropped_and_validated():
 
 class _DiffusionHarness:
     device = torch.device("cpu")
-    config = SimpleNamespace(num_audio_codebook=2, audio_mask_id=4)
+    config = SimpleNamespace(
+        num_audio_codebook=2,
+        audio_mask_id=4,
+        audio_codebook_weights=[2, 1],
+    )
+    audio_tokenizer = SimpleNamespace(config=SimpleNamespace(frame_rate=25))
 
     def __init__(self):
         self.inputs = []
@@ -237,10 +242,19 @@ class _DiffusionHarness:
         logits = torch.zeros((*input_ids.shape, 5), dtype=torch.float32)
         return SimpleNamespace(logits=logits)
 
-    def _predict_tokens_with_scoring(self, c_logits, u_logits, gen_config):
+    def _predict_tokens_with_scoring(
+        self, c_logits, u_logits, gen_config, return_diagnostics=False
+    ):
         shape = c_logits.shape[:-1]
         pred = torch.ones(shape, dtype=torch.long)
         scores = torch.arange(pred.numel(), dtype=torch.float32).view(shape)
+        if return_diagnostics:
+            log_probs = torch.log_softmax(c_logits, dim=-1)
+            return pred, scores, {
+                "log_probs": log_probs,
+                "c_log_probs": log_probs,
+                "u_log_probs": torch.log_softmax(u_logits, dim=-1),
+            }
         return pred, scores
 
     _generate_iterative = OmniVoice._generate_iterative
@@ -304,6 +318,34 @@ def test_mixed_mask_counts_keep_schedule_and_topk_safe():
     )
     assert [tuple(output.shape) for output in outputs] == [(2, 3), (2, 5)]
     assert all(torch.all(output != 4) for output in outputs)
+
+
+def test_generation_trace_records_only_unmasked_positions_without_changing_tokens():
+    template = torch.full((2, 5), 4, dtype=torch.long)
+    template[:, 1:3] = torch.tensor([[2, 3], [1, 2]])
+    config = OmniVoiceGenerationConfig(
+        num_step=3, position_temperature=0.0, layer_penalty_factor=0.0
+    )
+    plain = _DiffusionHarness()._generate_iterative(
+        _diffusion_task(template), config
+    )[0]
+    trace = []
+    traced = _DiffusionHarness()._generate_iterative(
+        _diffusion_task(template), config, trace=trace
+    )[0]
+    assert torch.equal(plain, traced)
+    assert len(trace) == 1
+    item = trace[0]
+    fixed = template != 4
+    assert item["format"] == "omnivoice_generation_trace_v1"
+    assert item["tokens"].shape == template.shape
+    assert torch.all(item["unmask_step"][fixed] == -1)
+    assert torch.all(item["unmask_step"][~fixed] > 0)
+    assert torch.isnan(item["token_logprob"][fixed]).all()
+    assert torch.isfinite(item["token_logprob"][~fixed]).all()
+    assert torch.isfinite(item["entropy"][~fixed]).all()
+    assert torch.isfinite(item["cfg_delta"][~fixed]).all()
+    assert torch.equal(item["pause"], fixed)
 
 
 def test_controlled_postprocessing_preserves_internal_silence():

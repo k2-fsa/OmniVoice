@@ -49,6 +49,7 @@ class NarrationResult:
     tokens: torch.Tensor
     baseline_tokens: torch.Tensor
     report: dict[str, Any]
+    traces: Optional[dict[str, Any]] = None
 
 
 _CONTROL_TAG_RE = re.compile(
@@ -105,6 +106,37 @@ _CMU_CONSONANTS = {
     "Z",
     "ZH",
 }
+
+NARRATION_CAPABILITIES = {
+    "format": "omnivoice_narration_capabilities_v1",
+    "frame_rate": 25,
+    "short_form_only": True,
+    "regional_controls": {
+        "emphasis": {"values": ["reduced", "moderate", "strong"]},
+        "rate": {"min": 0.7, "max": 1.4, "step": 0.05},
+        "intonation": {"values": ["rising", "falling"]},
+        "aside": {"values": ["parenthetical"]},
+    },
+    "pause": {"min_seconds": 0.04, "max_seconds": 5.0, "frame_seconds": 0.04},
+    "trace": {
+        "format": "omnivoice_generation_trace_v1",
+        "fields": [
+            "unmask_step",
+            "token_logprob",
+            "entropy",
+            "cfg_delta",
+            "fixed",
+            "pause",
+        ],
+    },
+}
+
+
+def narration_capabilities() -> dict[str, Any]:
+    """Return stable controls/trace schema without loading model weights."""
+    import copy
+
+    return copy.deepcopy(NARRATION_CAPABILITIES)
 
 
 def _expand_shorthand(text: str) -> str:
@@ -213,33 +245,50 @@ def _normalize_cmu_pronunciation(value: str) -> str:
 
 def _resolve_pronunciations(
     plan: NarrationPlan, pronunciations: Optional[dict[str, str]]
-) -> dict[int, str]:
+) -> dict[int, str | tuple[tuple[int, int, str], ...]]:
     if pronunciations is None:
         return {}
     if not isinstance(pronunciations, dict):
         raise TypeError("pronunciations must be a dictionary")
 
-    surfaces: dict[str, list[int]] = {}
-    for index, control in enumerate(plan.controls):
-        surface = plan.text[control.start_char : control.end_char].strip().casefold()
-        surfaces.setdefault(surface, []).append(index)
-
-    resolved = {}
+    resolved_parts: dict[int, list[tuple[int, int, str]]] = {}
     seen_keys = set()
-    for raw_key, raw_value in pronunciations.items():
+    ordered = sorted(
+        pronunciations.items(), key=lambda item: len(str(item[0]).strip()), reverse=True
+    )
+    for raw_key, raw_value in ordered:
         if not isinstance(raw_key, str) or not raw_key.strip():
             raise TypeError("pronunciation keys must be nonempty strings")
         key = raw_key.strip().casefold()
         if key in seen_keys:
             raise ValueError(f"Duplicate pronunciation key: {raw_key!r}")
         seen_keys.add(key)
-        if key not in surfaces:
+        pronunciation = _normalize_cmu_pronunciation(raw_value)
+        matched = False
+        pattern = re.compile(r"(?<![A-Za-z0-9'])" + re.escape(key) + r"(?![A-Za-z0-9'])")
+        for control_index, control in enumerate(plan.controls):
+            surface = plan.text[control.start_char : control.end_char]
+            for match in pattern.finditer(surface.casefold()):
+                parts = resolved_parts.setdefault(control_index, [])
+                start, end = match.span()
+                if any(start < old_end and old_start < end for old_start, old_end, _ in parts):
+                    continue
+                parts.append((start, end, pronunciation))
+                matched = True
+        if not matched:
             raise ValueError(
                 f"Pronunciation key does not match a controlled span: {raw_key!r}"
             )
-        pronunciation = _normalize_cmu_pronunciation(raw_value)
-        for control_index in surfaces[key]:
-            resolved[control_index] = pronunciation
+
+    resolved: dict[int, str | tuple[tuple[int, int, str], ...]] = {}
+    for control_index, parts in resolved_parts.items():
+        control = plan.controls[control_index]
+        surface = plan.text[control.start_char : control.end_char]
+        parts.sort(key=lambda item: item[0])
+        if len(parts) == 1 and parts[0][0] == 0 and parts[0][1] == len(surface):
+            resolved[control_index] = parts[0][2]
+        else:
+            resolved[control_index] = tuple(parts)
     return resolved
 
 
@@ -394,12 +443,23 @@ def build_inpaint_template(
 def _conditioned_text(
     text: str,
     control: NarrationControl,
-    pronunciation: Optional[str] = None,
+    pronunciation: Optional[str | tuple[tuple[int, int, str], ...]] = None,
 ) -> str:
     before = text[: control.start_char]
     surface = text[control.start_char : control.end_char]
     after = text[control.end_char :]
-    spoken = pronunciation or surface
+    if isinstance(pronunciation, str):
+        spoken = pronunciation
+    elif pronunciation:
+        pieces = []
+        cursor = 0
+        for start, end, replacement in pronunciation:
+            pieces.extend((surface[cursor:start], replacement))
+            cursor = end
+        pieces.append(surface[cursor:])
+        spoken = "".join(pieces)
+    else:
+        spoken = surface
     if control.kind == "emphasis":
         if control.value == "reduced":
             replacement = f"({spoken})"
@@ -689,7 +749,6 @@ class NarrationController:
         task.controlled = [True]
         return task
 
-    @torch.inference_mode()
     def generate(
         self,
         text: str,
@@ -704,10 +763,43 @@ class NarrationController:
         seed: int = 1234,
         preprocess_prompt: bool = True,
         pronunciations: Optional[dict[str, str]] = None,
+        trace: bool = False,
     ) -> NarrationResult:
+        plan = parse_narration_controls(text, shorthand=shorthand)
+        return self.generate_plan(
+            plan,
+            ref_audio=ref_audio,
+            ref_text=ref_text,
+            voice_clone_prompt=voice_clone_prompt,
+            language=language,
+            num_step=num_step,
+            candidates=candidates,
+            seed=seed,
+            preprocess_prompt=preprocess_prompt,
+            pronunciations=pronunciations,
+            trace=trace,
+        )
+
+    @torch.inference_mode()
+    def generate_plan(
+        self,
+        plan: NarrationPlan,
+        *,
+        ref_audio=None,
+        ref_text: Optional[str] = None,
+        voice_clone_prompt: Optional[VoiceClonePrompt] = None,
+        language: Optional[str] = "English",
+        num_step: int = 32,
+        candidates: int = 3,
+        seed: int = 1234,
+        preprocess_prompt: bool = True,
+        pronunciations: Optional[dict[str, str]] = None,
+        trace: bool = False,
+    ) -> NarrationResult:
+        if not isinstance(plan, NarrationPlan):
+            raise TypeError("plan must be a NarrationPlan")
         if candidates < 1:
             raise ValueError("candidates must be at least 1")
-        plan = parse_narration_controls(text, shorthand=shorthand)
         resolved_pronunciations = _resolve_pronunciations(plan, pronunciations)
         prompt = self._resolve_prompt(
             voice_clone_prompt, ref_audio, ref_text, preprocess_prompt
@@ -731,7 +823,10 @@ class NarrationController:
         )
         if long_idx or short_idx != [0]:
             raise ValueError("Narration controls support one short-form item only")
-        baseline_tokens = self.model._generate_iterative(baseline_task, config)[0]
+        baseline_trace = [] if trace else None
+        baseline_tokens = self.model._generate_iterative(
+            baseline_task, config, trace=baseline_trace
+        )[0]
         baseline_raw = _decode_tokens(self.model, baseline_tokens)
         baseline_audio = self.model._decode_and_post_process(
             baseline_tokens,
@@ -745,6 +840,7 @@ class NarrationController:
         pause_spans = baseline_task.pause_spans[0]
         expected_words = normalized_words(plan.text)
         control_reports = []
+        selected_traces = []
         frame_rate = self.model.audio_tokenizer.config.frame_rate
 
         for control_index, control in enumerate(plan.controls):
@@ -815,7 +911,10 @@ class NarrationController:
                     template,
                     pause_spans,
                 )
-                candidate_tokens = self.model._generate_iterative(task, config)[0]
+                candidate_trace = [] if trace else None
+                candidate_tokens = self.model._generate_iterative(
+                    task, config, trace=candidate_trace
+                )[0]
                 fixed = template != self.model.config.audio_mask_id
                 fixed_tokens_unchanged = bool(
                     torch.equal(candidate_tokens[fixed], template[fixed])
@@ -844,7 +943,13 @@ class NarrationController:
                 }
                 candidate_reports.append(candidate_report)
                 if best is None or score > best[0]:
-                    best = (score, candidate_tokens, candidate_raw, candidate_index)
+                    best = (
+                        score,
+                        candidate_tokens,
+                        candidate_raw,
+                        candidate_index,
+                        candidate_trace[0] if candidate_trace else None,
+                    )
 
             assert best is not None
             current_tokens = best[1]
@@ -864,6 +969,9 @@ class NarrationController:
                     "candidates": candidate_reports,
                 }
             )
+            if trace:
+                control_reports[-1]["selected_trace_index"] = control_index
+                selected_traces.append(best[4])
 
         final_audio = self.model._decode_and_post_process(
             current_tokens,
@@ -874,19 +982,29 @@ class NarrationController:
         final_transcript = _transcribe(
             self.aligner, current_raw, self.model.sampling_rate
         )
+        pronunciation_report = {}
+        for index, value in resolved_pronunciations.items():
+            surface = plan.text[
+                plan.controls[index].start_char : plan.controls[index].end_char
+            ]
+            if isinstance(value, str):
+                pronunciation_report[surface] = value
+            else:
+                pronunciation_report[surface] = [
+                    {
+                        "surface": surface[start:end],
+                        "pronunciation": pronunciation,
+                    }
+                    for start, end, pronunciation in value
+                ]
         report = {
-            "format": "omnivoice_single_reference_narration_v1",
+            "format": "omnivoice_single_reference_narration_v2",
             "single_reference": True,
             "reference_switching": False,
             "seed": seed,
             "num_step": num_step,
             "candidate_count": candidates,
-            "pronunciations": {
-                plan.text[
-                    plan.controls[index].start_char : plan.controls[index].end_char
-                ]: value
-                for index, value in resolved_pronunciations.items()
-            },
+            "pronunciations": pronunciation_report,
             "baseline_frames": baseline_tokens.shape[-1],
             "final_frames": current_tokens.shape[-1],
             "baseline_transcript": _transcribe(
@@ -907,4 +1025,13 @@ class NarrationController:
             tokens=current_tokens.detach().cpu(),
             baseline_tokens=baseline_tokens.detach().cpu(),
             report=report,
+            traces=(
+                {
+                    "format": "omnivoice_narration_traces_v1",
+                    "baseline": baseline_trace[0] if baseline_trace else None,
+                    "controls": selected_traces,
+                }
+                if trace
+                else None
+            ),
         )

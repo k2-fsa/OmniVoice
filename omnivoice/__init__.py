@@ -30,6 +30,7 @@ from omnivoice.narration import (
     NarrationController,
     NarrationPlan,
     NarrationResult,
+    narration_capabilities,
     parse_narration_controls,
 )
 
@@ -43,5 +44,6 @@ __all__ = [
     "NarrationController",
     "NarrationPlan",
     "NarrationResult",
+    "narration_capabilities",
     "parse_narration_controls",
 ]
