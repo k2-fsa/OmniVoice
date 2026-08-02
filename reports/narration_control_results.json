@@ -1,0 +1,1673 @@
+{
+  "format": "omnivoice_single_reference_narration_smoke_v1",
+  "experiment_revision": "2aa39933b4002d2951df115c9363781d1a9f58d0",
+  "model_revision": "c5fdb5ccb189668d56333f77ba2629f4cd7535f4",
+  "aligner_revision": "d1d751a5f8271d482d14ca55d9e2deeebbae577f",
+  "single_reference": true,
+  "reference_switching": false,
+  "reference_basename": "explaining_sub_11s_24k.wav",
+  "reference_sha256": "26b2c81c114eb0d871287a153104a0810ed349fe66ddad3f5474cac3a377b2c0",
+  "num_step": 128,
+  "candidates": 3,
+  "runtime_seconds": 141.24918880999758,
+  "runtime": {
+    "python": "3.11.14",
+    "torch": "2.8.0+cu128",
+    "cuda": "12.8",
+    "gpu": "NVIDIA GeForce RTX 4070 SUPER"
+  },
+  "automated_pass": true,
+  "listening_status": "manual review pending",
+  "shared_baseline": "outputs/narration_controls/acceptance/shared_baseline.wav",
+  "cases": [
+    {
+      "case_id": "baseline",
+      "source_text": "The mechanism looked ordinary. But the hidden timing changed everything.",
+      "cleaned_text": "The mechanism looked ordinary. But the hidden timing changed everything.",
+      "controls": [],
+      "audio": "outputs/narration_controls/acceptance/baseline.wav",
+      "audio_sha256": "024481c3c1f0ca59aead7321ee266e032b066ae9b5b532976d7b0148958c0d39",
+      "runtime_seconds": 5.973691206003423,
+      "gpu_peak_memory_bytes": 2198793216,
+      "baseline_frames": 110,
+      "final_frames": 110,
+      "baseline_transcript": "The mechanism looked ordinary, but the hidden timing changed everything.",
+      "final_transcript": "The mechanism looked ordinary, but the hidden timing changed everything.",
+      "metrics": null,
+      "checks": {
+        "word_sequence_matches": true
+      },
+      "automated_pass": true,
+      "controller_report": {
+        "format": "omnivoice_single_reference_narration_v1",
+        "single_reference": true,
+        "reference_switching": false,
+        "seed": 1234,
+        "num_step": 128,
+        "candidate_count": 3,
+        "baseline_frames": 110,
+        "final_frames": 110,
+        "baseline_transcript": "The mechanism looked ordinary, but the hidden timing changed everything.",
+        "final_transcript": "The mechanism looked ordinary, but the hidden timing changed everything.",
+        "final_normalized_words": [
+          "the",
+          "mechanism",
+          "looked",
+          "ordinary",
+          "but",
+          "the",
+          "hidden",
+          "timing",
+          "changed",
+          "everything"
+        ],
+        "expected_normalized_words": [
+          "the",
+          "mechanism",
+          "looked",
+          "ordinary",
+          "but",
+          "the",
+          "hidden",
+          "timing",
+          "changed",
+          "everything"
+        ],
+        "word_sequence_matches": true,
+        "controls": []
+      }
+    },
+    {
+      "case_id": "rate_slow",
+      "source_text": "<rate value=\"0.85\">The mechanism looked ordinary.</rate> But the hidden timing changed everything.",
+      "cleaned_text": "The mechanism looked ordinary. But the hidden timing changed everything.",
+      "controls": [
+        {
+          "kind": "rate",
+          "start_char": 0,
+          "end_char": 30,
+          "value": 0.85,
+          "source": "explicit"
+        }
+      ],
+      "audio": "outputs/narration_controls/acceptance/rate_slow.wav",
+      "audio_sha256": "e6e068c22924a8705245b7d92aed81bac22253c1ed33f96058356ff99413d1a0",
+      "runtime_seconds": 20.284779818997777,
+      "gpu_peak_memory_bytes": 2201249792,
+      "baseline_frames": 110,
+      "final_frames": 117,
+      "baseline_transcript": "The mechanism looked ordinary, but the hidden timing changed everything.",
+      "final_transcript": "The mechanism looked ordinary but the hidden timing changed everything",
+      "metrics": {
+        "kind": "rate",
+        "value": 0.85,
+        "source_frames": 41,
+        "target_frames": 48,
+        "source_duration_seconds": 1.64,
+        "selected_duration_seconds": 1.92,
+        "target_duration_seconds": 1.92,
+        "duration_error_seconds": 0.0,
+        "source_prominence_db": 1.4526835937895832,
+        "selected_prominence_db": 0.5730838475925744,
+        "prominence_change_db": -0.8795997461970089,
+        "source_pitch_slope_semitones": -2.4703284354000576,
+        "selected_pitch_slope_semitones": -12.685727028332874,
+        "fixed_tokens_unchanged": true,
+        "fixed_token_fraction": 0.5470085740089417
+      },
+      "checks": {
+        "word_sequence_matches": true,
+        "fixed_tokens_unchanged": true,
+        "duration_within_150ms": true
+      },
+      "automated_pass": true,
+      "controller_report": {
+        "format": "omnivoice_single_reference_narration_v1",
+        "single_reference": true,
+        "reference_switching": false,
+        "seed": 1234,
+        "num_step": 128,
+        "candidate_count": 3,
+        "baseline_frames": 110,
+        "final_frames": 117,
+        "baseline_transcript": "The mechanism looked ordinary, but the hidden timing changed everything.",
+        "final_transcript": "The mechanism looked ordinary but the hidden timing changed everything",
+        "final_normalized_words": [
+          "the",
+          "mechanism",
+          "looked",
+          "ordinary",
+          "but",
+          "the",
+          "hidden",
+          "timing",
+          "changed",
+          "everything"
+        ],
+        "expected_normalized_words": [
+          "the",
+          "mechanism",
+          "looked",
+          "ordinary",
+          "but",
+          "the",
+          "hidden",
+          "timing",
+          "changed",
+          "everything"
+        ],
+        "word_sequence_matches": true,
+        "controls": [
+          {
+            "control": {
+              "kind": "rate",
+              "start_char": 0,
+              "end_char": 30,
+              "value": 0.85,
+              "source": "explicit"
+            },
+            "source_frame_span": [
+              0,
+              41
+            ],
+            "source_frames": 41,
+            "target_frames": 48,
+            "source_metrics": {
+              "first_word_index": 0,
+              "last_word_index": 3,
+              "start_seconds": 0.0,
+              "end_seconds": 1.64,
+              "duration_seconds": 1.64,
+              "rms_db": -17.896037828328765,
+              "pitch_slope_semitones": -2.4703284354000576,
+              "word_match_ratio": 1.0,
+              "whole_rms_db": -19.34872142211835,
+              "prominence_db": 1.4526835937895832
+            },
+            "inpaint_window": [
+              0,
+              46
+            ],
+            "new_core_span": [
+              0,
+              48
+            ],
+            "selected_candidate": 2,
+            "candidates": [
+              {
+                "candidate": 0,
+                "seed": 1334,
+                "score": 99.76,
+                "transcript": "The mechanism looked ordinary, but the hidden timing changed everything.",
+                "normalized_words": [
+                  "the",
+                  "mechanism",
+                  "looked",
+                  "ordinary",
+                  "but",
+                  "the",
+                  "hidden",
+                  "timing",
+                  "changed",
+                  "everything"
+                ],
+                "fixed_tokens_unchanged": true,
+                "fixed_token_fraction": 0.5470085740089417,
+                "metrics": {
+                  "first_word_index": 0,
+                  "last_word_index": 3,
+                  "start_seconds": 0.0,
+                  "end_seconds": 1.94,
+                  "duration_seconds": 1.94,
+                  "rms_db": -18.602201451673317,
+                  "pitch_slope_semitones": -14.955731302112799,
+                  "word_match_ratio": 1.0,
+                  "alignment_failed": false,
+                  "whole_rms_db": -19.603613420643644,
+                  "prominence_db": 1.0014119689703271,
+                  "target_duration_seconds": 1.92,
+                  "duration_error_seconds": 0.020000000000000018
+                }
+              },
+              {
+                "candidate": 1,
+                "seed": 1335,
+                "score": 99.76,
+                "transcript": "The mechanism looked ordinary, but the hidden timing changed everything.",
+                "normalized_words": [
+                  "the",
+                  "mechanism",
+                  "looked",
+                  "ordinary",
+                  "but",
+                  "the",
+                  "hidden",
+                  "timing",
+                  "changed",
+                  "everything"
+                ],
+                "fixed_tokens_unchanged": true,
+                "fixed_token_fraction": 0.5470085740089417,
+                "metrics": {
+                  "first_word_index": 0,
+                  "last_word_index": 3,
+                  "start_seconds": 0.0,
+                  "end_seconds": 1.9,
+                  "duration_seconds": 1.9,
+                  "rms_db": -18.035517183000525,
+                  "pitch_slope_semitones": -0.6136654174193157,
+                  "word_match_ratio": 1.0,
+                  "alignment_failed": false,
+                  "whole_rms_db": -19.349822929313852,
+                  "prominence_db": 1.3143057463133268,
+                  "target_duration_seconds": 1.92,
+                  "duration_error_seconds": 0.020000000000000018
+                }
+              },
+              {
+                "candidate": 2,
+                "seed": 1336,
+                "score": 100.0,
+                "transcript": "The mechanism looked ordinary but the hidden timing changed everything",
+                "normalized_words": [
+                  "the",
+                  "mechanism",
+                  "looked",
+                  "ordinary",
+                  "but",
+                  "the",
+                  "hidden",
+                  "timing",
+                  "changed",
+                  "everything"
+                ],
+                "fixed_tokens_unchanged": true,
+                "fixed_token_fraction": 0.5470085740089417,
+                "metrics": {
+                  "first_word_index": 0,
+                  "last_word_index": 3,
+                  "start_seconds": 0.0,
+                  "end_seconds": 1.92,
+                  "duration_seconds": 1.92,
+                  "rms_db": -19.49665234164515,
+                  "pitch_slope_semitones": -12.685727028332874,
+                  "word_match_ratio": 1.0,
+                  "alignment_failed": false,
+                  "whole_rms_db": -20.069736189237723,
+                  "prominence_db": 0.5730838475925744,
+                  "target_duration_seconds": 1.92,
+                  "duration_error_seconds": 0.0
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "rate_fast",
+      "source_text": "<rate value=\"1.20\">The mechanism looked ordinary.</rate> But the hidden timing changed everything.",
+      "cleaned_text": "The mechanism looked ordinary. But the hidden timing changed everything.",
+      "controls": [
+        {
+          "kind": "rate",
+          "start_char": 0,
+          "end_char": 30,
+          "value": 1.2,
+          "source": "explicit"
+        }
+      ],
+      "audio": "outputs/narration_controls/acceptance/rate_fast.wav",
+      "audio_sha256": "28ef7b4804a513b78308f221682e9d3d14b102b6cdf1c3eeee7f8203df36923e",
+      "runtime_seconds": 18.36582984699635,
+      "gpu_peak_memory_bytes": 2198793216,
+      "baseline_frames": 110,
+      "final_frames": 103,
+      "baseline_transcript": "The mechanism looked ordinary, but the hidden timing changed everything.",
+      "final_transcript": "The mechanism looked ordinary, but the hidden timing changed everything.",
+      "metrics": {
+        "kind": "rate",
+        "value": 1.2,
+        "source_frames": 41,
+        "target_frames": 34,
+        "source_duration_seconds": 1.64,
+        "selected_duration_seconds": 1.38,
+        "target_duration_seconds": 1.36,
+        "duration_error_seconds": 0.019999999999999796,
+        "source_prominence_db": 1.4526835937895832,
+        "selected_prominence_db": 1.6180820730414567,
+        "prominence_change_db": 0.16539847925187345,
+        "source_pitch_slope_semitones": -2.4703284354000576,
+        "selected_pitch_slope_semitones": -3.717393967046826,
+        "fixed_tokens_unchanged": true,
+        "fixed_token_fraction": 0.6213592290878296
+      },
+      "checks": {
+        "word_sequence_matches": true,
+        "fixed_tokens_unchanged": true,
+        "duration_within_150ms": true
+      },
+      "automated_pass": true,
+      "controller_report": {
+        "format": "omnivoice_single_reference_narration_v1",
+        "single_reference": true,
+        "reference_switching": false,
+        "seed": 1234,
+        "num_step": 128,
+        "candidate_count": 3,
+        "baseline_frames": 110,
+        "final_frames": 103,
+        "baseline_transcript": "The mechanism looked ordinary, but the hidden timing changed everything.",
+        "final_transcript": "The mechanism looked ordinary, but the hidden timing changed everything.",
+        "final_normalized_words": [
+          "the",
+          "mechanism",
+          "looked",
+          "ordinary",
+          "but",
+          "the",
+          "hidden",
+          "timing",
+          "changed",
+          "everything"
+        ],
+        "expected_normalized_words": [
+          "the",
+          "mechanism",
+          "looked",
+          "ordinary",
+          "but",
+          "the",
+          "hidden",
+          "timing",
+          "changed",
+          "everything"
+        ],
+        "word_sequence_matches": true,
+        "controls": [
+          {
+            "control": {
+              "kind": "rate",
+              "start_char": 0,
+              "end_char": 30,
+              "value": 1.2,
+              "source": "explicit"
+            },
+            "source_frame_span": [
+              0,
+              41
+            ],
+            "source_frames": 41,
+            "target_frames": 34,
+            "source_metrics": {
+              "first_word_index": 0,
+              "last_word_index": 3,
+              "start_seconds": 0.0,
+              "end_seconds": 1.64,
+              "duration_seconds": 1.64,
+              "rms_db": -17.896037828328765,
+              "pitch_slope_semitones": -2.4703284354000576,
+              "word_match_ratio": 1.0,
+              "whole_rms_db": -19.34872142211835,
+              "prominence_db": 1.4526835937895832
+            },
+            "inpaint_window": [
+              0,
+              46
+            ],
+            "new_core_span": [
+              0,
+              34
+            ],
+            "selected_candidate": 0,
+            "candidates": [
+              {
+                "candidate": 0,
+                "seed": 1334,
+                "score": 99.76,
+                "transcript": "The mechanism looked ordinary, but the hidden timing changed everything.",
+                "normalized_words": [
+                  "the",
+                  "mechanism",
+                  "looked",
+                  "ordinary",
+                  "but",
+                  "the",
+                  "hidden",
+                  "timing",
+                  "changed",
+                  "everything"
+                ],
+                "fixed_tokens_unchanged": true,
+                "fixed_token_fraction": 0.6213592290878296,
+                "metrics": {
+                  "first_word_index": 0,
+                  "last_word_index": 3,
+                  "start_seconds": 0.0,
+                  "end_seconds": 1.38,
+                  "duration_seconds": 1.38,
+                  "rms_db": -17.749288779499466,
+                  "pitch_slope_semitones": -3.717393967046826,
+                  "word_match_ratio": 1.0,
+                  "alignment_failed": false,
+                  "whole_rms_db": -19.367370852540922,
+                  "prominence_db": 1.6180820730414567,
+                  "target_duration_seconds": 1.36,
+                  "duration_error_seconds": 0.019999999999999796
+                }
+              },
+              {
+                "candidate": 1,
+                "seed": 1335,
+                "score": 99.52,
+                "transcript": "The mechanism looked ordinary, but the hidden timing changed everything.",
+                "normalized_words": [
+                  "the",
+                  "mechanism",
+                  "looked",
+                  "ordinary",
+                  "but",
+                  "the",
+                  "hidden",
+                  "timing",
+                  "changed",
+                  "everything"
+                ],
+                "fixed_tokens_unchanged": true,
+                "fixed_token_fraction": 0.6213592290878296,
+                "metrics": {
+                  "first_word_index": 0,
+                  "last_word_index": 3,
+                  "start_seconds": 0.0,
+                  "end_seconds": 1.4,
+                  "duration_seconds": 1.4,
+                  "rms_db": -18.184849765197427,
+                  "pitch_slope_semitones": -2.115007114949346,
+                  "word_match_ratio": 1.0,
+                  "alignment_failed": false,
+                  "whole_rms_db": -19.545861747440448,
+                  "prominence_db": 1.3610119822430207,
+                  "target_duration_seconds": 1.36,
+                  "duration_error_seconds": 0.039999999999999813
+                }
+              },
+              {
+                "candidate": 2,
+                "seed": 1336,
+                "score": 99.76,
+                "transcript": "The mechanism looked ordinary, but the hidden timing changed everything.",
+                "normalized_words": [
+                  "the",
+                  "mechanism",
+                  "looked",
+                  "ordinary",
+                  "but",
+                  "the",
+                  "hidden",
+                  "timing",
+                  "changed",
+                  "everything"
+                ],
+                "fixed_tokens_unchanged": true,
+                "fixed_token_fraction": 0.6213592290878296,
+                "metrics": {
+                  "first_word_index": 0,
+                  "last_word_index": 3,
+                  "start_seconds": 0.0,
+                  "end_seconds": 1.38,
+                  "duration_seconds": 1.38,
+                  "rms_db": -18.168769620253,
+                  "pitch_slope_semitones": -4.401389553051574,
+                  "word_match_ratio": 1.0,
+                  "alignment_failed": false,
+                  "whole_rms_db": -19.56440233107077,
+                  "prominence_db": 1.3956327108177717,
+                  "target_duration_seconds": 1.36,
+                  "duration_error_seconds": 0.019999999999999796
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "emphasis_moderate",
+      "source_text": "The mechanism looked ordinary. But the <emphasis strength=\"moderate\">hidden timing</emphasis> changed everything.",
+      "cleaned_text": "The mechanism looked ordinary. But the hidden timing changed everything.",
+      "controls": [
+        {
+          "kind": "emphasis",
+          "start_char": 39,
+          "end_char": 52,
+          "value": "moderate",
+          "source": "explicit"
+        }
+      ],
+      "audio": "outputs/narration_controls/acceptance/emphasis_moderate.wav",
+      "audio_sha256": "b40f938e41c33fb70fbbd32da4e8edfa194e21b5c89a511daa0b009a86e1cadb",
+      "runtime_seconds": 18.48809348099894,
+      "gpu_peak_memory_bytes": 2199486976,
+      "baseline_frames": 110,
+      "final_frames": 113,
+      "baseline_transcript": "The mechanism looked ordinary, but the hidden timing changed everything.",
+      "final_transcript": "The mechanism looked ordinary, but the hidden timing changed everything.",
+      "metrics": {
+        "kind": "emphasis",
+        "value": "moderate",
+        "source_frames": 19,
+        "target_frames": 22,
+        "source_duration_seconds": 0.7400000000000002,
+        "selected_duration_seconds": 0.7200000000000002,
+        "target_duration_seconds": 0.88,
+        "duration_error_seconds": 0.1599999999999998,
+        "source_prominence_db": 1.1372213232517474,
+        "selected_prominence_db": 1.747919560465757,
+        "prominence_change_db": 0.6106982372140095,
+        "source_pitch_slope_semitones": -0.6945700573803943,
+        "selected_pitch_slope_semitones": -2.6236832726007395,
+        "fixed_tokens_unchanged": true,
+        "fixed_token_fraction": 0.7168141603469849
+      },
+      "checks": {
+        "word_sequence_matches": true,
+        "fixed_tokens_unchanged": true,
+        "codec_span_expanded": true,
+        "emphasis_proxy_detected": true
+      },
+      "automated_pass": true,
+      "controller_report": {
+        "format": "omnivoice_single_reference_narration_v1",
+        "single_reference": true,
+        "reference_switching": false,
+        "seed": 1234,
+        "num_step": 128,
+        "candidate_count": 3,
+        "baseline_frames": 110,
+        "final_frames": 113,
+        "baseline_transcript": "The mechanism looked ordinary, but the hidden timing changed everything.",
+        "final_transcript": "The mechanism looked ordinary, but the hidden timing changed everything.",
+        "final_normalized_words": [
+          "the",
+          "mechanism",
+          "looked",
+          "ordinary",
+          "but",
+          "the",
+          "hidden",
+          "timing",
+          "changed",
+          "everything"
+        ],
+        "expected_normalized_words": [
+          "the",
+          "mechanism",
+          "looked",
+          "ordinary",
+          "but",
+          "the",
+          "hidden",
+          "timing",
+          "changed",
+          "everything"
+        ],
+        "word_sequence_matches": true,
+        "controls": [
+          {
+            "control": {
+              "kind": "emphasis",
+              "start_char": 39,
+              "end_char": 52,
+              "value": "moderate",
+              "source": "explicit"
+            },
+            "source_frame_span": [
+              62,
+              81
+            ],
+            "source_frames": 19,
+            "target_frames": 22,
+            "source_metrics": {
+              "first_word_index": 6,
+              "last_word_index": 7,
+              "start_seconds": 2.5,
+              "end_seconds": 3.24,
+              "duration_seconds": 0.7400000000000002,
+              "rms_db": -18.2115000988666,
+              "pitch_slope_semitones": -0.6945700573803943,
+              "word_match_ratio": 1.0,
+              "whole_rms_db": -19.34872142211835,
+              "prominence_db": 1.1372213232517474
+            },
+            "inpaint_window": [
+              57,
+              86
+            ],
+            "new_core_span": [
+              62,
+              84
+            ],
+            "selected_candidate": 1,
+            "candidates": [
+              {
+                "candidate": 0,
+                "seed": 1334,
+                "score": 98.65690770737201,
+                "transcript": "The mechanism looked ordinary, but the hidden timing changed everything.",
+                "normalized_words": [
+                  "the",
+                  "mechanism",
+                  "looked",
+                  "ordinary",
+                  "but",
+                  "the",
+                  "hidden",
+                  "timing",
+                  "changed",
+                  "everything"
+                ],
+                "fixed_tokens_unchanged": true,
+                "fixed_token_fraction": 0.7168141603469849,
+                "metrics": {
+                  "first_word_index": 6,
+                  "last_word_index": 7,
+                  "start_seconds": 2.5,
+                  "end_seconds": 3.2,
+                  "duration_seconds": 0.7000000000000002,
+                  "rms_db": -18.95851783239238,
+                  "pitch_slope_semitones": -0.9952383041697264,
+                  "word_match_ratio": 1.0,
+                  "alignment_failed": false,
+                  "whole_rms_db": -19.775425539764395,
+                  "prominence_db": 0.8169077073720139,
+                  "target_duration_seconds": 0.88,
+                  "duration_error_seconds": 0.17999999999999983
+                }
+              },
+              {
+                "candidate": 1,
+                "seed": 1335,
+                "score": 99.82791956046576,
+                "transcript": "The mechanism looked ordinary, but the hidden timing changed everything.",
+                "normalized_words": [
+                  "the",
+                  "mechanism",
+                  "looked",
+                  "ordinary",
+                  "but",
+                  "the",
+                  "hidden",
+                  "timing",
+                  "changed",
+                  "everything"
+                ],
+                "fixed_tokens_unchanged": true,
+                "fixed_token_fraction": 0.7168141603469849,
+                "metrics": {
+                  "first_word_index": 6,
+                  "last_word_index": 7,
+                  "start_seconds": 2.5,
+                  "end_seconds": 3.22,
+                  "duration_seconds": 0.7200000000000002,
+                  "rms_db": -17.98717098505864,
+                  "pitch_slope_semitones": -2.6236832726007395,
+                  "word_match_ratio": 1.0,
+                  "alignment_failed": false,
+                  "whole_rms_db": -19.735090545524397,
+                  "prominence_db": 1.747919560465757,
+                  "target_duration_seconds": 0.88,
+                  "duration_error_seconds": 0.1599999999999998
+                }
+              },
+              {
+                "candidate": 2,
+                "seed": 1336,
+                "score": 99.55135790204068,
+                "transcript": "The mechanism looked ordinary, but the hidden timing changed everything.",
+                "normalized_words": [
+                  "the",
+                  "mechanism",
+                  "looked",
+                  "ordinary",
+                  "but",
+                  "the",
+                  "hidden",
+                  "timing",
+                  "changed",
+                  "everything"
+                ],
+                "fixed_tokens_unchanged": true,
+                "fixed_token_fraction": 0.7168141603469849,
+                "metrics": {
+                  "first_word_index": 6,
+                  "last_word_index": 7,
+                  "start_seconds": 2.48,
+                  "end_seconds": 3.22,
+                  "duration_seconds": 0.7400000000000002,
+                  "rms_db": -18.495842220818332,
+                  "pitch_slope_semitones": -1.2829830193563896,
+                  "word_match_ratio": 1.0,
+                  "alignment_failed": false,
+                  "whole_rms_db": -19.727200122858996,
+                  "prominence_db": 1.2313579020406635,
+                  "target_duration_seconds": 0.88,
+                  "duration_error_seconds": 0.1399999999999998
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "emphasis_strong",
+      "source_text": "The mechanism looked ordinary. But the <emphasis strength=\"strong\">hidden timing</emphasis> changed everything.",
+      "cleaned_text": "The mechanism looked ordinary. But the hidden timing changed everything.",
+      "controls": [
+        {
+          "kind": "emphasis",
+          "start_char": 39,
+          "end_char": 52,
+          "value": "strong",
+          "source": "explicit"
+        }
+      ],
+      "audio": "outputs/narration_controls/acceptance/emphasis_strong.wav",
+      "audio_sha256": "acf01d49f1d66e7483f49e8a94f8fcfb68f7de246dc91d4665f89db75c72bbf5",
+      "runtime_seconds": 20.273489806000725,
+      "gpu_peak_memory_bytes": 2201546752,
+      "baseline_frames": 110,
+      "final_frames": 117,
+      "baseline_transcript": "The mechanism looked ordinary, but the hidden timing changed everything.",
+      "final_transcript": "The mechanism looked ordinary, but the hidden timing changed everything.",
+      "metrics": {
+        "kind": "emphasis",
+        "value": "strong",
+        "source_frames": 19,
+        "target_frames": 26,
+        "source_duration_seconds": 0.7400000000000002,
+        "selected_duration_seconds": 0.8999999999999999,
+        "target_duration_seconds": 1.04,
+        "duration_error_seconds": 0.14000000000000012,
+        "source_prominence_db": 1.1372213232517474,
+        "selected_prominence_db": 0.4392219097992829,
+        "prominence_change_db": -0.6979994134524645,
+        "source_pitch_slope_semitones": -0.6945700573803943,
+        "selected_pitch_slope_semitones": 4.492745120716597,
+        "fixed_tokens_unchanged": true,
+        "fixed_token_fraction": 0.692307710647583
+      },
+      "checks": {
+        "word_sequence_matches": true,
+        "fixed_tokens_unchanged": true,
+        "codec_span_expanded": true,
+        "emphasis_proxy_detected": true
+      },
+      "automated_pass": true,
+      "controller_report": {
+        "format": "omnivoice_single_reference_narration_v1",
+        "single_reference": true,
+        "reference_switching": false,
+        "seed": 1234,
+        "num_step": 128,
+        "candidate_count": 3,
+        "baseline_frames": 110,
+        "final_frames": 117,
+        "baseline_transcript": "The mechanism looked ordinary, but the hidden timing changed everything.",
+        "final_transcript": "The mechanism looked ordinary, but the hidden timing changed everything.",
+        "final_normalized_words": [
+          "the",
+          "mechanism",
+          "looked",
+          "ordinary",
+          "but",
+          "the",
+          "hidden",
+          "timing",
+          "changed",
+          "everything"
+        ],
+        "expected_normalized_words": [
+          "the",
+          "mechanism",
+          "looked",
+          "ordinary",
+          "but",
+          "the",
+          "hidden",
+          "timing",
+          "changed",
+          "everything"
+        ],
+        "word_sequence_matches": true,
+        "controls": [
+          {
+            "control": {
+              "kind": "emphasis",
+              "start_char": 39,
+              "end_char": 52,
+              "value": "strong",
+              "source": "explicit"
+            },
+            "source_frame_span": [
+              62,
+              81
+            ],
+            "source_frames": 19,
+            "target_frames": 26,
+            "source_metrics": {
+              "first_word_index": 6,
+              "last_word_index": 7,
+              "start_seconds": 2.5,
+              "end_seconds": 3.24,
+              "duration_seconds": 0.7400000000000002,
+              "rms_db": -18.2115000988666,
+              "pitch_slope_semitones": -0.6945700573803943,
+              "word_match_ratio": 1.0,
+              "whole_rms_db": -19.34872142211835,
+              "prominence_db": 1.1372213232517474
+            },
+            "inpaint_window": [
+              57,
+              86
+            ],
+            "new_core_span": [
+              62,
+              88
+            ],
+            "selected_candidate": 1,
+            "candidates": [
+              {
+                "candidate": 0,
+                "seed": 1334,
+                "score": 93.60719342606522,
+                "transcript": "The mechanism looked ordinary, but the hidden timing changed everything.",
+                "normalized_words": [
+                  "the",
+                  "mechanism",
+                  "looked",
+                  "ordinary",
+                  "but",
+                  "the",
+                  "hidden",
+                  "timing",
+                  "changed",
+                  "everything"
+                ],
+                "fixed_tokens_unchanged": true,
+                "fixed_token_fraction": 0.692307710647583,
+                "metrics": {
+                  "first_word_index": 6,
+                  "last_word_index": 7,
+                  "start_seconds": 2.52,
+                  "end_seconds": 3.3,
+                  "duration_seconds": 0.7799999999999998,
+                  "rms_db": -22.131879179485196,
+                  "pitch_slope_semitones": -7.490911170415535,
+                  "word_match_ratio": 1.0,
+                  "alignment_failed": false,
+                  "whole_rms_db": -20.49547589251781,
+                  "prominence_db": -1.6364032869673864,
+                  "target_duration_seconds": 1.04,
+                  "duration_error_seconds": 0.26000000000000023
+                }
+              },
+              {
+                "candidate": 1,
+                "seed": 1335,
+                "score": 99.19844381959857,
+                "transcript": "The mechanism looked ordinary, but the hidden timing changed everything.",
+                "normalized_words": [
+                  "the",
+                  "mechanism",
+                  "looked",
+                  "ordinary",
+                  "but",
+                  "the",
+                  "hidden",
+                  "timing",
+                  "changed",
+                  "everything"
+                ],
+                "fixed_tokens_unchanged": true,
+                "fixed_token_fraction": 0.692307710647583,
+                "metrics": {
+                  "first_word_index": 6,
+                  "last_word_index": 7,
+                  "start_seconds": 2.62,
+                  "end_seconds": 3.52,
+                  "duration_seconds": 0.8999999999999999,
+                  "rms_db": -19.194512289176522,
+                  "pitch_slope_semitones": 4.492745120716597,
+                  "word_match_ratio": 1.0,
+                  "alignment_failed": false,
+                  "whole_rms_db": -19.633734198975805,
+                  "prominence_db": 0.4392219097992829,
+                  "target_duration_seconds": 1.04,
+                  "duration_error_seconds": 0.14000000000000012
+                }
+              },
+              {
+                "candidate": 2,
+                "seed": 1336,
+                "score": 96.06987739406887,
+                "transcript": "The mechanism looked ordinary, but the hidden timing changed everything.",
+                "normalized_words": [
+                  "the",
+                  "mechanism",
+                  "looked",
+                  "ordinary",
+                  "but",
+                  "the",
+                  "hidden",
+                  "timing",
+                  "changed",
+                  "everything"
+                ],
+                "fixed_tokens_unchanged": true,
+                "fixed_token_fraction": 0.692307710647583,
+                "metrics": {
+                  "first_word_index": 6,
+                  "last_word_index": 7,
+                  "start_seconds": 2.52,
+                  "end_seconds": 3.4,
+                  "duration_seconds": 0.8799999999999999,
+                  "rms_db": -21.339528037717535,
+                  "pitch_slope_semitones": -2.865442876396781,
+                  "word_match_ratio": 1.0,
+                  "alignment_failed": false,
+                  "whole_rms_db": -20.334466734751974,
+                  "prominence_db": -1.0050613029655615,
+                  "target_duration_seconds": 1.04,
+                  "duration_error_seconds": 0.16000000000000014
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "intonation_rising",
+      "source_text": "The mechanism looked ordinary. <intonation type=\"rising\">But the hidden timing changed everything.</intonation>",
+      "cleaned_text": "The mechanism looked ordinary. But the hidden timing changed everything.",
+      "controls": [
+        {
+          "kind": "intonation",
+          "start_char": 31,
+          "end_char": 72,
+          "value": "rising",
+          "source": "explicit"
+        }
+      ],
+      "audio": "outputs/narration_controls/acceptance/intonation_rising.wav",
+      "audio_sha256": "8d39fd30533e9cd8bf8e42bf389cdac26838be71c36ffe369888b6dfb293c7de",
+      "runtime_seconds": 19.219477757003915,
+      "gpu_peak_memory_bytes": 2198823936,
+      "baseline_frames": 110,
+      "final_frames": 110,
+      "baseline_transcript": "The mechanism looked ordinary, but the hidden timing changed everything.",
+      "final_transcript": "The mechanism looked ordinary, but the hidden timing changed everything.",
+      "metrics": {
+        "kind": "intonation",
+        "value": "rising",
+        "source_frames": 51,
+        "target_frames": 51,
+        "source_duration_seconds": 1.46,
+        "selected_duration_seconds": 1.3399999999999999,
+        "target_duration_seconds": 1.46,
+        "duration_error_seconds": 0.1200000000000001,
+        "source_prominence_db": -0.7772871204835354,
+        "selected_prominence_db": -0.6867596222177568,
+        "prominence_change_db": 0.09052749826577866,
+        "source_pitch_slope_semitones": -0.8572218931635227,
+        "selected_pitch_slope_semitones": 0.0,
+        "fixed_tokens_unchanged": true,
+        "fixed_token_fraction": 0.44545453786849976
+      },
+      "checks": {
+        "word_sequence_matches": true,
+        "fixed_tokens_unchanged": true,
+        "pitch_direction_matches": true
+      },
+      "automated_pass": true,
+      "controller_report": {
+        "format": "omnivoice_single_reference_narration_v1",
+        "single_reference": true,
+        "reference_switching": false,
+        "seed": 1234,
+        "num_step": 128,
+        "candidate_count": 3,
+        "baseline_frames": 110,
+        "final_frames": 110,
+        "baseline_transcript": "The mechanism looked ordinary, but the hidden timing changed everything.",
+        "final_transcript": "The mechanism looked ordinary, but the hidden timing changed everything.",
+        "final_normalized_words": [
+          "the",
+          "mechanism",
+          "looked",
+          "ordinary",
+          "but",
+          "the",
+          "hidden",
+          "timing",
+          "changed",
+          "everything"
+        ],
+        "expected_normalized_words": [
+          "the",
+          "mechanism",
+          "looked",
+          "ordinary",
+          "but",
+          "the",
+          "hidden",
+          "timing",
+          "changed",
+          "everything"
+        ],
+        "word_sequence_matches": true,
+        "controls": [
+          {
+            "control": {
+              "kind": "intonation",
+              "start_char": 31,
+              "end_char": 72,
+              "value": "rising",
+              "source": "explicit"
+            },
+            "source_frame_span": [
+              54,
+              105
+            ],
+            "source_frames": 51,
+            "target_frames": 51,
+            "source_metrics": {
+              "first_word_index": 7,
+              "last_word_index": 9,
+              "start_seconds": 2.74,
+              "end_seconds": 4.2,
+              "duration_seconds": 1.46,
+              "rms_db": -20.126008542601884,
+              "pitch_slope_semitones": -0.8572218931635227,
+              "word_match_ratio": 1.0,
+              "whole_rms_db": -19.34872142211835,
+              "prominence_db": -0.7772871204835354
+            },
+            "inpaint_window": [
+              49,
+              110
+            ],
+            "new_core_span": [
+              54,
+              105
+            ],
+            "selected_candidate": 0,
+            "candidates": [
+              {
+                "candidate": 0,
+                "seed": 1334,
+                "score": 98.56,
+                "transcript": "The mechanism looked ordinary, but the hidden timing changed everything.",
+                "normalized_words": [
+                  "the",
+                  "mechanism",
+                  "looked",
+                  "ordinary",
+                  "but",
+                  "the",
+                  "hidden",
+                  "timing",
+                  "changed",
+                  "everything"
+                ],
+                "fixed_tokens_unchanged": true,
+                "fixed_token_fraction": 0.44545453786849976,
+                "metrics": {
+                  "first_word_index": 7,
+                  "last_word_index": 9,
+                  "start_seconds": 2.84,
+                  "end_seconds": 4.18,
+                  "duration_seconds": 1.3399999999999999,
+                  "rms_db": -20.368907057786878,
+                  "pitch_slope_semitones": 0.0,
+                  "word_match_ratio": 1.0,
+                  "alignment_failed": false,
+                  "whole_rms_db": -19.68214743556912,
+                  "prominence_db": -0.6867596222177568,
+                  "target_duration_seconds": 1.46,
+                  "duration_error_seconds": 0.1200000000000001
+                }
+              },
+              {
+                "candidate": 1,
+                "seed": 1335,
+                "score": 92.06210082720017,
+                "transcript": "The mechanism looked ordinary, but the hidden timing changed everything.",
+                "normalized_words": [
+                  "the",
+                  "mechanism",
+                  "looked",
+                  "ordinary",
+                  "but",
+                  "the",
+                  "hidden",
+                  "timing",
+                  "changed",
+                  "everything"
+                ],
+                "fixed_tokens_unchanged": true,
+                "fixed_token_fraction": 0.44545453786849976,
+                "metrics": {
+                  "first_word_index": 7,
+                  "last_word_index": 9,
+                  "start_seconds": 2.64,
+                  "end_seconds": 4.08,
+                  "duration_seconds": 1.44,
+                  "rms_db": -19.163085901011193,
+                  "pitch_slope_semitones": -2.5659663909332764,
+                  "word_match_ratio": 1.0,
+                  "alignment_failed": false,
+                  "whole_rms_db": -19.33738232689509,
+                  "prominence_db": 0.17429642588389527,
+                  "target_duration_seconds": 1.46,
+                  "duration_error_seconds": 0.020000000000000018
+                }
+              },
+              {
+                "candidate": 2,
+                "seed": 1336,
+                "score": 92.53536139164383,
+                "transcript": "The mechanism looked ordinary, but the hidden timing changed everything.",
+                "normalized_words": [
+                  "the",
+                  "mechanism",
+                  "looked",
+                  "ordinary",
+                  "but",
+                  "the",
+                  "hidden",
+                  "timing",
+                  "changed",
+                  "everything"
+                ],
+                "fixed_tokens_unchanged": true,
+                "fixed_token_fraction": 0.44545453786849976,
+                "metrics": {
+                  "first_word_index": 7,
+                  "last_word_index": 9,
+                  "start_seconds": 2.6,
+                  "end_seconds": 4.18,
+                  "duration_seconds": 1.5799999999999996,
+                  "rms_db": -20.741068278191722,
+                  "pitch_slope_semitones": -2.0082128694520556,
+                  "word_match_ratio": 1.0,
+                  "alignment_failed": false,
+                  "whole_rms_db": -19.71143028465487,
+                  "prominence_db": -1.029637993536852,
+                  "target_duration_seconds": 1.46,
+                  "duration_error_seconds": 0.11999999999999966
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "intonation_falling",
+      "source_text": "The mechanism looked ordinary. <intonation type=\"falling\">But the hidden timing changed everything.</intonation>",
+      "cleaned_text": "The mechanism looked ordinary. But the hidden timing changed everything.",
+      "controls": [
+        {
+          "kind": "intonation",
+          "start_char": 31,
+          "end_char": 72,
+          "value": "falling",
+          "source": "explicit"
+        }
+      ],
+      "audio": "outputs/narration_controls/acceptance/intonation_falling.wav",
+      "audio_sha256": "36d4988a73fc3c6a624590c995baf32f640a907feb560d5233c4bd2d7b5a6b58",
+      "runtime_seconds": 19.41069309100567,
+      "gpu_peak_memory_bytes": 2198823936,
+      "baseline_frames": 110,
+      "final_frames": 110,
+      "baseline_transcript": "The mechanism looked ordinary, but the hidden timing changed everything.",
+      "final_transcript": "The mechanism looked ordinary, but the hidden timing changed everything.",
+      "metrics": {
+        "kind": "intonation",
+        "value": "falling",
+        "source_frames": 51,
+        "target_frames": 51,
+        "source_duration_seconds": 1.46,
+        "selected_duration_seconds": 1.54,
+        "target_duration_seconds": 1.46,
+        "duration_error_seconds": 0.08000000000000007,
+        "source_prominence_db": -0.7772871204835354,
+        "selected_prominence_db": -0.8684975328992621,
+        "prominence_change_db": -0.0912104124157267,
+        "source_pitch_slope_semitones": -0.8572218931635227,
+        "selected_pitch_slope_semitones": -2.736895657290386,
+        "fixed_tokens_unchanged": true,
+        "fixed_token_fraction": 0.44545453786849976
+      },
+      "checks": {
+        "word_sequence_matches": true,
+        "fixed_tokens_unchanged": true,
+        "pitch_direction_matches": true
+      },
+      "automated_pass": true,
+      "controller_report": {
+        "format": "omnivoice_single_reference_narration_v1",
+        "single_reference": true,
+        "reference_switching": false,
+        "seed": 1234,
+        "num_step": 128,
+        "candidate_count": 3,
+        "baseline_frames": 110,
+        "final_frames": 110,
+        "baseline_transcript": "The mechanism looked ordinary, but the hidden timing changed everything.",
+        "final_transcript": "The mechanism looked ordinary, but the hidden timing changed everything.",
+        "final_normalized_words": [
+          "the",
+          "mechanism",
+          "looked",
+          "ordinary",
+          "but",
+          "the",
+          "hidden",
+          "timing",
+          "changed",
+          "everything"
+        ],
+        "expected_normalized_words": [
+          "the",
+          "mechanism",
+          "looked",
+          "ordinary",
+          "but",
+          "the",
+          "hidden",
+          "timing",
+          "changed",
+          "everything"
+        ],
+        "word_sequence_matches": true,
+        "controls": [
+          {
+            "control": {
+              "kind": "intonation",
+              "start_char": 31,
+              "end_char": 72,
+              "value": "falling",
+              "source": "explicit"
+            },
+            "source_frame_span": [
+              54,
+              105
+            ],
+            "source_frames": 51,
+            "target_frames": 51,
+            "source_metrics": {
+              "first_word_index": 7,
+              "last_word_index": 9,
+              "start_seconds": 2.74,
+              "end_seconds": 4.2,
+              "duration_seconds": 1.46,
+              "rms_db": -20.126008542601884,
+              "pitch_slope_semitones": -0.8572218931635227,
+              "word_match_ratio": 1.0,
+              "whole_rms_db": -19.34872142211835,
+              "prominence_db": -0.7772871204835354
+            },
+            "inpaint_window": [
+              49,
+              110
+            ],
+            "new_core_span": [
+              54,
+              105
+            ],
+            "selected_candidate": 0,
+            "candidates": [
+              {
+                "candidate": 0,
+                "seed": 1334,
+                "score": 107.25068697187115,
+                "transcript": "The mechanism looked ordinary, but the hidden timing changed everything.",
+                "normalized_words": [
+                  "the",
+                  "mechanism",
+                  "looked",
+                  "ordinary",
+                  "but",
+                  "the",
+                  "hidden",
+                  "timing",
+                  "changed",
+                  "everything"
+                ],
+                "fixed_tokens_unchanged": true,
+                "fixed_token_fraction": 0.44545453786849976,
+                "metrics": {
+                  "first_word_index": 7,
+                  "last_word_index": 9,
+                  "start_seconds": 2.58,
+                  "end_seconds": 4.12,
+                  "duration_seconds": 1.54,
+                  "rms_db": -20.106204417802246,
+                  "pitch_slope_semitones": -2.736895657290386,
+                  "word_match_ratio": 1.0,
+                  "alignment_failed": false,
+                  "whole_rms_db": -19.237706884902984,
+                  "prominence_db": -0.8684975328992621,
+                  "target_duration_seconds": 1.46,
+                  "duration_error_seconds": 0.08000000000000007
+                }
+              },
+              {
+                "candidate": 1,
+                "seed": 1335,
+                "score": 100.56762350298207,
+                "transcript": "The mechanism looked ordinary, but the hidden timing changed everything.",
+                "normalized_words": [
+                  "the",
+                  "mechanism",
+                  "looked",
+                  "ordinary",
+                  "but",
+                  "the",
+                  "hidden",
+                  "timing",
+                  "changed",
+                  "everything"
+                ],
+                "fixed_tokens_unchanged": true,
+                "fixed_token_fraction": 0.44545453786849976,
+                "metrics": {
+                  "first_word_index": 7,
+                  "last_word_index": 9,
+                  "start_seconds": 2.64,
+                  "end_seconds": 4.1,
+                  "duration_seconds": 1.4599999999999995,
+                  "rms_db": -19.935735326514354,
+                  "pitch_slope_semitones": -0.18920783432735755,
+                  "word_match_ratio": 1.0,
+                  "alignment_failed": false,
+                  "whole_rms_db": -19.38745252399907,
+                  "prominence_db": -0.5482828025152848,
+                  "target_duration_seconds": 1.46,
+                  "duration_error_seconds": 4.440892098500626e-16
+                }
+              },
+              {
+                "candidate": 2,
+                "seed": 1336,
+                "score": 101.60784953052345,
+                "transcript": "The mechanism looked ordinary, but the hidden timing changed everything.",
+                "normalized_words": [
+                  "the",
+                  "mechanism",
+                  "looked",
+                  "ordinary",
+                  "but",
+                  "the",
+                  "hidden",
+                  "timing",
+                  "changed",
+                  "everything"
+                ],
+                "fixed_tokens_unchanged": true,
+                "fixed_token_fraction": 0.44545453786849976,
+                "metrics": {
+                  "first_word_index": 7,
+                  "last_word_index": 9,
+                  "start_seconds": 2.56,
+                  "end_seconds": 3.9,
+                  "duration_seconds": 1.3399999999999999,
+                  "rms_db": -20.20022030670832,
+                  "pitch_slope_semitones": -1.015949843507816,
+                  "word_match_ratio": 1.0,
+                  "alignment_failed": false,
+                  "whole_rms_db": -19.884509222028935,
+                  "prominence_db": -0.3157110846793856,
+                  "target_duration_seconds": 1.46,
+                  "duration_error_seconds": 0.1200000000000001
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "case_id": "aside",
+      "source_text": "<aside>The mechanism looked ordinary.</aside> But the hidden timing changed everything.",
+      "cleaned_text": "The mechanism looked ordinary. But the hidden timing changed everything.",
+      "controls": [
+        {
+          "kind": "aside",
+          "start_char": 0,
+          "end_char": 30,
+          "value": "parenthetical",
+          "source": "explicit"
+        }
+      ],
+      "audio": "outputs/narration_controls/acceptance/aside.wav",
+      "audio_sha256": "cae6acc1086eea6c0a0d49b179b3397250723379d72e4616300c0231fbb9cfb8",
+      "runtime_seconds": 19.229451277999033,
+      "gpu_peak_memory_bytes": 2198793216,
+      "baseline_frames": 110,
+      "final_frames": 106,
+      "baseline_transcript": "The mechanism looked ordinary, but the hidden timing changed everything.",
+      "final_transcript": "the mechanism looked ordinary. But the hidden timing changed everything.",
+      "metrics": {
+        "kind": "aside",
+        "value": "parenthetical",
+        "source_frames": 41,
+        "target_frames": 37,
+        "source_duration_seconds": 1.64,
+        "selected_duration_seconds": 1.5,
+        "target_duration_seconds": 1.48,
+        "duration_error_seconds": 0.020000000000000018,
+        "source_prominence_db": 1.4526835937895832,
+        "selected_prominence_db": 0.0941698613972477,
+        "prominence_change_db": -1.3585137323923355,
+        "source_pitch_slope_semitones": -2.4703284354000576,
+        "selected_pitch_slope_semitones": -2.1723126625614335,
+        "fixed_tokens_unchanged": true,
+        "fixed_token_fraction": 0.6037735939025879
+      },
+      "checks": {
+        "word_sequence_matches": true,
+        "fixed_tokens_unchanged": true,
+        "delivery_faster": true,
+        "prominence_not_increased": true
+      },
+      "automated_pass": true,
+      "controller_report": {
+        "format": "omnivoice_single_reference_narration_v1",
+        "single_reference": true,
+        "reference_switching": false,
+        "seed": 1234,
+        "num_step": 128,
+        "candidate_count": 3,
+        "baseline_frames": 110,
+        "final_frames": 106,
+        "baseline_transcript": "The mechanism looked ordinary, but the hidden timing changed everything.",
+        "final_transcript": "the mechanism looked ordinary. But the hidden timing changed everything.",
+        "final_normalized_words": [
+          "the",
+          "mechanism",
+          "looked",
+          "ordinary",
+          "but",
+          "the",
+          "hidden",
+          "timing",
+          "changed",
+          "everything"
+        ],
+        "expected_normalized_words": [
+          "the",
+          "mechanism",
+          "looked",
+          "ordinary",
+          "but",
+          "the",
+          "hidden",
+          "timing",
+          "changed",
+          "everything"
+        ],
+        "word_sequence_matches": true,
+        "controls": [
+          {
+            "control": {
+              "kind": "aside",
+              "start_char": 0,
+              "end_char": 30,
+              "value": "parenthetical",
+              "source": "explicit"
+            },
+            "source_frame_span": [
+              0,
+              41
+            ],
+            "source_frames": 41,
+            "target_frames": 37,
+            "source_metrics": {
+              "first_word_index": 0,
+              "last_word_index": 3,
+              "start_seconds": 0.0,
+              "end_seconds": 1.64,
+              "duration_seconds": 1.64,
+              "rms_db": -17.896037828328765,
+              "pitch_slope_semitones": -2.4703284354000576,
+              "word_match_ratio": 1.0,
+              "whole_rms_db": -19.34872142211835,
+              "prominence_db": 1.4526835937895832
+            },
+            "inpaint_window": [
+              0,
+              46
+            ],
+            "new_core_span": [
+              0,
+              37
+            ],
+            "selected_candidate": 0,
+            "candidates": [
+              {
+                "candidate": 0,
+                "seed": 1334,
+                "score": 99.61874520790414,
+                "transcript": "the mechanism looked ordinary. But the hidden timing changed everything.",
+                "normalized_words": [
+                  "the",
+                  "mechanism",
+                  "looked",
+                  "ordinary",
+                  "but",
+                  "the",
+                  "hidden",
+                  "timing",
+                  "changed",
+                  "everything"
+                ],
+                "fixed_tokens_unchanged": true,
+                "fixed_token_fraction": 0.6037735939025879,
+                "metrics": {
+                  "first_word_index": 0,
+                  "last_word_index": 3,
+                  "start_seconds": 0.0,
+                  "end_seconds": 1.5,
+                  "duration_seconds": 1.5,
+                  "rms_db": -20.340842578228944,
+                  "pitch_slope_semitones": -2.1723126625614335,
+                  "word_match_ratio": 1.0,
+                  "alignment_failed": false,
+                  "whole_rms_db": -20.435012439626192,
+                  "prominence_db": 0.0941698613972477,
+                  "target_duration_seconds": 1.48,
+                  "duration_error_seconds": 0.020000000000000018
+                }
+              },
+              {
+                "candidate": 1,
+                "seed": 1335,
+                "score": 97.60184530602612,
+                "transcript": "The mechanism looked ordinary, but the hidden timing changed everything.",
+                "normalized_words": [
+                  "the",
+                  "mechanism",
+                  "looked",
+                  "ordinary",
+                  "but",
+                  "the",
+                  "hidden",
+                  "timing",
+                  "changed",
+                  "everything"
+                ],
+                "fixed_tokens_unchanged": true,
+                "fixed_token_fraction": 0.6037735939025879,
+                "metrics": {
+                  "first_word_index": 0,
+                  "last_word_index": 3,
+                  "start_seconds": 0.0,
+                  "end_seconds": 1.5,
+                  "duration_seconds": 1.5,
+                  "rms_db": -17.9946591878615,
+                  "pitch_slope_semitones": -4.525891189169039,
+                  "word_match_ratio": 1.0,
+                  "alignment_failed": false,
+                  "whole_rms_db": -19.43342898384409,
+                  "prominence_db": 1.4387697959825907,
+                  "target_duration_seconds": 1.48,
+                  "duration_error_seconds": 0.020000000000000018
+                }
+              },
+              {
+                "candidate": 2,
+                "seed": 1336,
+                "score": 97.45543920017624,
+                "transcript": "The mechanism looked ordinary, but the hidden timing changed everything.",
+                "normalized_words": [
+                  "the",
+                  "mechanism",
+                  "looked",
+                  "ordinary",
+                  "but",
+                  "the",
+                  "hidden",
+                  "timing",
+                  "changed",
+                  "everything"
+                ],
+                "fixed_tokens_unchanged": true,
+                "fixed_token_fraction": 0.6037735939025879,
+                "metrics": {
+                  "first_word_index": 0,
+                  "last_word_index": 3,
+                  "start_seconds": 0.0,
+                  "end_seconds": 1.46,
+                  "duration_seconds": 1.46,
+                  "rms_db": -17.916526891722913,
+                  "pitch_slope_semitones": -2.009482485679877,
+                  "word_match_ratio": 1.0,
+                  "alignment_failed": false,
+                  "whole_rms_db": -19.45290075827209,
+                  "prominence_db": 1.5363738665491766,
+                  "target_duration_seconds": 1.48,
+                  "duration_error_seconds": 0.020000000000000018
+                }
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -276,6 +276,102 @@ boundary midpoint, remasks five codec frames on each side, and regenerates only
 those transition windows. Alignment stays in the validation script;
 `OmniVoice.generate()` never invokes ASR or the fallback automatically.
 
+### Single-Reference Narration Controls Experiment
+
+This branch can change local delivery while reusing one permanent clone prompt.
+It does not switch reference recordings. Baseline codec tokens outside the
+selected control and five-frame transition windows remain fixed.
+
+Install the optional local aligner dependency:
+
+```bash
+pip install -e ".[narration]"
+```
+
+Create the clone prompt once, then reuse it for every controlled line:
+
+```python
+import soundfile as sf
+import torch
+
+from omnivoice import NarrationController, OmniVoice
+
+model = OmniVoice.from_pretrained(
+    "k2-fsa/OmniVoice",
+    device_map="cuda:0",
+    dtype=torch.float16,
+)
+prompt = model.create_voice_clone_prompt(
+    "ref.wav",
+    "Exact transcript of the one permanent reference recording.",
+)
+controller = NarrationController(model)
+
+result = controller.generate(
+    'The result looked ordinary, but it was '
+    '<emphasis strength="strong">not</emphasis> ordinary.',
+    voice_clone_prompt=prompt,
+    num_step=128,
+    candidates=3,
+)
+sf.write("controlled.wav", result.audio, result.sample_rate)
+```
+
+Supported explicit controls:
+
+```text
+<rate value="0.85">slower phrase</rate>
+<rate value="1.20">faster phrase</rate>
+<emphasis strength="reduced">de-emphasized words</emphasis>
+<emphasis strength="moderate">important words</emphasis>
+<emphasis strength="strong">critical words</emphasis>
+<intonation type="rising">A rising ending</intonation>
+<intonation type="falling">A final ending</intonation>
+<aside>parenthetical delivery</aside>
+<pause:0.80>
+```
+
+Optional shorthand is parsed only with `shorthand=True`:
+
+```python
+result = controller.generate(
+    "This is **important**. This is ***critical***. "
+    "(Keep this as an aside.) The answer — absolutely — changed.",
+    voice_clone_prompt=prompt,
+    shorthand=True,
+)
+```
+
+- `**text**` means moderate emphasis; `***text***` means strong emphasis.
+- `(text)` means aside delivery; `— text —` means isolated strong emphasis.
+- Explicit markup is safer when literal parentheses or em dashes should remain.
+- Rate values range from `0.7` to `1.4`; values above `1.0` are faster.
+- Controls cannot nest or overlap. Pause markers cannot sit inside another
+  control. Malformed controls raise before tokenization.
+- Current implementation supports one English short-form item per call because
+  it uses local faster-whisper word alignment. It never runs ASR through
+  `OmniVoice.generate()` itself.
+- All final speech remains codec-generated. No waveform concatenation or
+  reference switching is used.
+- Rate is most deterministic. Emphasis, aside, and intonation use candidate
+  generation and acoustic ranking, so strength can be subtle and must be
+  approved by listening.
+
+Generate local A/B audio examples:
+
+```bash
+.venv/bin/python scripts/narration_control_smoke.py \
+  --preset quick --num-step 32 --candidates 1
+.venv/bin/python scripts/narration_control_smoke.py \
+  --preset acceptance --num-step 128 --candidates 3 \
+  --report reports/narration_control_results.json
+```
+
+WAVs are written under ignored `outputs/narration_controls/`. Compare
+`acceptance/baseline.wav` with `rate_slow.wav`, `rate_fast.wav`,
+`emphasis_moderate.wav`, `emphasis_strong.wav`, `intonation_rising.wav`,
+`intonation_falling.wav`, and `aside.wav`.
+
 ### Non-Verbal & Pronunciation Control
 
 OmniVoice supports inline **non-verbal symbols** and **pronunciation correction** within the input text.

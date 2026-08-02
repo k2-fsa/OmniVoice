@@ -73,3 +73,58 @@ work for some durations but do not meet the complete acceptance matrix.
 
 Perceptual click, codec-artifact, and transition-naturalness status:
 `manual review pending`. Waveform and ASR metrics cannot approve this gate.
+
+# Single-Reference Narration Control Findings
+
+## Scope
+
+- Experiment revision: `2aa39933b4002d2951df115c9363781d1a9f58d0`
+- Branch: `experiment/clone-narration-controls`
+- Same model, aligner, reference basename, and reference SHA256 as the pause
+  experiment above.
+- One `VoiceClonePrompt` was created once and reused for baseline, phrase rate,
+  emphasis, intonation, and aside cases. Reference switching was disabled.
+- Pronunciation and alias behavior was intentionally excluded.
+
+## Implementation
+
+`NarrationController` first generates a marker-free baseline, aligns requested
+words, retains baseline codec tokens outside the selected local window, and
+regenerates only the controlled window plus five transition frames. It ranks
+multiple candidates using transcript, duration, prominence, or pitch direction.
+Output is decoded from model codec tokens; no waveform stitching is used.
+
+Explicit controls support phrase rate, reduced/moderate/strong emphasis,
+rising/falling endings, aside delivery, and existing pauses. Optional Markdown-
+like shorthand is disabled unless `shorthand=True`.
+
+## Automated Acceptance
+
+The 128-step, three-candidate matrix used one permanent reference. Runtime was
+`141.25s` on an RTX 4070 SUPER, with about `2.20 GB` peak allocated GPU memory.
+All controlled cases preserved normalized word sequence and fixed codec tokens.
+
+| Control | Baseline | Controlled | Automated result |
+|---|---:|---:|---|
+| Slow rate `0.85` | 1.64s | 1.92s; 1.92s target | Pass |
+| Fast rate `1.20` | 1.64s | 1.38s; 1.36s target | Pass |
+| Moderate emphasis | 19 frames | 22 frames; +0.61dB prominence | Pass |
+| Strong emphasis | 19 frames, 0.74s | 26 frames, 0.90s | Pass |
+| Rising ending | -0.86 semitone slope | 0.00 semitone slope | Pass, subtle |
+| Falling ending | -0.86 semitone slope | -2.74 semitone slope | Pass |
+| Aside | 1.64s | 1.50s; -1.36dB prominence | Pass |
+
+Full candidate reports, hashes, transcripts, settings, runtime, and GPU memory
+are tracked in `reports/narration_control_results.json`. Local A/B WAVs are in
+ignored `outputs/narration_controls/acceptance/`.
+
+## Decision
+
+Single-reference local narration control is technically viable. Rate and aside
+show strongest objective behavior. Moderate/strong emphasis produce distinct
+codec-span and acoustic changes, but emphasis does not always mean louder.
+Rising intonation can neutralize a falling baseline yet remain perceptually
+subtle. Keep all controls experimental until audio review confirms identity,
+naturalness, word stress, transitions, and intended pitch movement.
+
+Listening status: `manual review pending`.
