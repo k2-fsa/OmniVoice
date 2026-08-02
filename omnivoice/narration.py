@@ -473,7 +473,7 @@ def build_inpaint_template(
     frame_end: int,
     new_core_frames: int,
     mask_id: int,
-    transition_frames: int = 5,
+    transition_frames: int | tuple[int, int] = 5,
 ) -> tuple[torch.Tensor, tuple[int, int], tuple[int, int]]:
     """Replace one token span with masks while preserving every outside token."""
     total_frames = tokens.shape[-1]
@@ -481,8 +481,14 @@ def build_inpaint_template(
         raise ValueError("Invalid controlled frame span")
     if new_core_frames < 1:
         raise ValueError("Controlled span must retain at least one frame")
-    window_start = max(0, frame_start - transition_frames)
-    window_end = min(total_frames, frame_end + transition_frames)
+    if isinstance(transition_frames, tuple):
+        left_transition, right_transition = transition_frames
+    else:
+        left_transition = right_transition = transition_frames
+    if left_transition < 0 or right_transition < 0:
+        raise ValueError("Transition frames cannot be negative")
+    window_start = max(0, frame_start - left_transition)
+    window_end = min(total_frames, frame_end + right_transition)
     left_transition = frame_start - window_start
     right_transition = window_end - frame_end
     new_window_frames = left_transition + new_core_frames + right_transition
@@ -504,6 +510,23 @@ def build_inpaint_template(
             new_core_start + new_core_frames,
         ),
     )
+
+
+def _transition_frames_around_fixed_spans(
+    frame_start: int,
+    frame_end: int,
+    fixed_spans: tuple[tuple[int, int], ...],
+    wanted: int = 5,
+) -> tuple[int, int]:
+    left = right = wanted
+    for start, end in fixed_spans:
+        if end <= frame_start:
+            left = min(left, frame_start - end)
+        elif start >= frame_end:
+            right = min(right, start - frame_end)
+        else:
+            raise ValueError("Narration control overlaps a fixed pause-token span")
+    return left, right
 
 
 def _conditioned_text(
@@ -941,12 +964,16 @@ class NarrationController:
             )
             original_frames = frame_end - frame_start
             new_core_frames = _core_frame_target(control, original_frames)
+            transition_frames = _transition_frames_around_fixed_spans(
+                frame_start, frame_end, pause_spans
+            )
             template, old_window, new_core_span = build_inpaint_template(
                 current_tokens,
                 frame_start,
                 frame_end,
                 new_core_frames,
                 self.model.config.audio_mask_id,
+                transition_frames=transition_frames,
             )
             new_window_length = (
                 old_window[1]

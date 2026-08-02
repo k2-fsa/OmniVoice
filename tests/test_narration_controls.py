@@ -13,6 +13,7 @@ from omnivoice.narration import (
     _normalize_cmu_pronunciation,
     _resolve_pronunciations,
     _shift_fixed_spans,
+    _transition_frames_around_fixed_spans,
     _transcribe,
     align_expected_words,
     build_inpaint_template,
@@ -249,6 +250,21 @@ def test_fixed_pause_spans_shift_or_reject_overlap():
     assert _shift_fixed_spans(((3, 5), (15, 18)), (8, 12), 7) == ((3, 5), (18, 21))
     with pytest.raises(ValueError, match="fixed pause"):
         _shift_fixed_spans(((9, 11),), (8, 12), 7)
+
+
+def test_inpaint_transition_stops_at_adjacent_fixed_pause():
+    assert _transition_frames_around_fixed_spans(10, 20, ((20, 40),)) == (5, 0)
+    template, window, core = build_inpaint_template(
+        torch.arange(80).reshape(8, 10),
+        2,
+        5,
+        4,
+        mask_id=99,
+        transition_frames=(2, 0),
+    )
+    assert window == (0, 5)
+    assert core == (2, 6)
+    assert template.shape == (8, 11)
 
 
 def test_numpy_audio_is_resampled_to_whisper_sample_rate():
