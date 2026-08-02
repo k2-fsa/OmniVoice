@@ -59,6 +59,12 @@ from transformers import (
 from transformers.modeling_outputs import ModelOutput
 from transformers.models.auto import CONFIG_MAPPING, AutoConfig
 
+from omnivoice.controls import (
+    PausePlan,
+    canonicalize_pause_plan,
+    create_pause_layout,
+    parse_pause_markers,
+)
 from omnivoice.utils.audio import (
     cross_fade_chunks,
     fade_and_pad_audio,
@@ -128,6 +134,9 @@ class GenerationTask:
     ref_audio_tokens: List[Optional[torch.Tensor]]
     ref_rms: List[Optional[float]]
     speed: Optional[List[float]] = None
+    target_templates: Optional[List[Optional[torch.Tensor]]] = None
+    pause_spans: Optional[List[tuple[tuple[int, int], ...]]] = None
+    controlled: Optional[List[bool]] = None
 
     def get_indices(self, config: OmniVoiceGenerationConfig, frame_rate: int):
         threshold = int(config.audio_chunk_threshold * frame_rate)
@@ -148,6 +157,21 @@ class GenerationTask:
             ref_audio_tokens=[self.ref_audio_tokens[i] for i in indices],
             ref_rms=[self.ref_rms[i] for i in indices],
             speed=[self.speed[i] for i in indices] if self.speed else None,
+            target_templates=(
+                [self.target_templates[i] for i in indices]
+                if self.target_templates is not None
+                else None
+            ),
+            pause_spans=(
+                [self.pause_spans[i] for i in indices]
+                if self.pause_spans is not None
+                else None
+            ),
+            controlled=(
+                [self.controlled[i] for i in indices]
+                if self.controlled is not None
+                else None
+            ),
         )
 
 
@@ -493,6 +517,8 @@ class OmniVoice(PreTrainedModel):
         duration: Union[float, list[Optional[float]], None] = None,
         speed: Union[float, list[Optional[float]], None] = None,
         generation_config: Optional[OmniVoiceGenerationConfig] = None,
+        pause_plan: Union[PausePlan, list[Optional[PausePlan]], None] = None,
+        pause_audio: Union[str, tuple[torch.Tensor, int], None] = None,
         **kwargs,
     ) -> list[np.ndarray]:
         """Generate speech audio given text in various modes.
@@ -526,6 +552,12 @@ class OmniVoice(PreTrainedModel):
                 the model's default estimation.
             generation_config: Explicit config object. If provided, takes
                 precedence over ``**kwargs``.
+            pause_plan: Structured pause controls. Batch input requires one
+                plan or ``None`` per text item. Inline ``<pause:0.60>`` markers
+                are also supported, but cannot be combined with a structured
+                plan for the same item.
+            pause_audio: Optional shared room-tone audio used to encode fixed
+                pause tokens. ``None`` encodes digital silence.
             **kwargs: Generation config or its fields:
                 denoise: Whether to prepend the ``<|denoise|>`` token.
                 num_step: Number of iterative decoding steps.
@@ -574,11 +606,17 @@ class OmniVoice(PreTrainedModel):
             preprocess_prompt=gen_config.preprocess_prompt,
             speed=speed,
             duration=duration,
+            pause_plan=pause_plan,
+            pause_audio=pause_audio,
         )
 
         short_idx, long_idx = full_task.get_indices(
             gen_config, self.audio_tokenizer.config.frame_rate
         )
+        if full_task.controlled and any(full_task.controlled[i] for i in long_idx):
+            raise ValueError(
+                "Pause-controlled generation supports short-form items only"
+            )
 
         results = [None] * full_task.batch_size
 
@@ -602,6 +640,9 @@ class OmniVoice(PreTrainedModel):
                     results[i],
                     full_task.ref_rms[i],
                     gen_config,  # type: ignore[arg-type]
+                    preserve_internal_silence=(
+                        full_task.controlled[i] if full_task.controlled else False
+                    ),
                 )
             )
 
@@ -717,6 +758,7 @@ class OmniVoice(PreTrainedModel):
         tokens: Union[torch.Tensor, List[torch.Tensor]],
         rms: Union[float, None],
         gen_config: OmniVoiceGenerationConfig,
+        preserve_internal_silence: bool = False,
     ) -> np.ndarray:
         """
         Args:
@@ -749,6 +791,7 @@ class OmniVoice(PreTrainedModel):
             audio_waveform,
             ref_rms=rms,
             gen_config=gen_config,
+            preserve_internal_silence=preserve_internal_silence,
         )
         return audio_waveform.squeeze(0)
 
@@ -757,6 +800,7 @@ class OmniVoice(PreTrainedModel):
         generated_audio: np.ndarray,
         ref_rms: Union[float, None],
         gen_config: OmniVoiceGenerationConfig,
+        preserve_internal_silence: bool = False,
     ) -> np.ndarray:
         """Optionally remove long silences, adjust volume, and add edge padding.
 
@@ -771,7 +815,7 @@ class OmniVoice(PreTrainedModel):
             generated_audio = remove_silence(
                 generated_audio,
                 self.sampling_rate,
-                mid_sil=500,
+                mid_sil=0 if preserve_internal_silence else 500,
                 lead_sil=100,
                 trail_sil=100,
             )
@@ -921,7 +965,10 @@ class OmniVoice(PreTrainedModel):
         preprocess_prompt: bool = True,
         speed: Union[float, list[Optional[float]], None] = None,
         duration: Union[float, list[Optional[float]], None] = None,
+        pause_plan: Union[PausePlan, list[Optional[PausePlan]], None] = None,
+        pause_audio: Union[str, tuple[torch.Tensor, int], None] = None,
     ) -> GenerationTask:
+        text_is_batch = not isinstance(text, str)
         if isinstance(text, str):
             text_list = [text]
         else:
@@ -930,6 +977,25 @@ class OmniVoice(PreTrainedModel):
             )
             text_list = text
         batch_size = len(text_list)
+
+        explicit_plans = self._normalize_pause_plans(
+            pause_plan, batch_size, text_is_batch
+        )
+        selected_plans: list[Optional[PausePlan]] = []
+        cleaned_texts: list[str] = []
+        for i, item_text in enumerate(text_list):
+            cleaned_text, inline_plan = parse_pause_markers(item_text)
+            explicit_plan = explicit_plans[i]
+            if inline_plan.pauses and explicit_plan is not None:
+                raise ValueError(
+                    "Cannot combine inline pause markers and pause_plan for one item"
+                )
+            if explicit_plan is not None:
+                explicit_plan = canonicalize_pause_plan(cleaned_text, explicit_plan)
+            selected_plan = inline_plan if inline_plan.pauses else explicit_plan
+            cleaned_texts.append(cleaned_text)
+            selected_plans.append(selected_plan)
+        text_list = cleaned_texts
 
         language_list = self._ensure_list(language, batch_size)
         language_list = [_resolve_language(lang) for lang in language_list]
@@ -981,6 +1047,8 @@ class OmniVoice(PreTrainedModel):
                 user_speed = [float(speed)] * batch_size
             else:
                 user_speed = list(speed)
+                if len(user_speed) != batch_size:
+                    raise ValueError("speed list must match text batch size")
         else:
             user_speed = None
 
@@ -989,33 +1057,59 @@ class OmniVoice(PreTrainedModel):
                 durations = [float(duration)] * batch_size
             else:
                 durations = list(duration)
+                if len(durations) != batch_size:
+                    raise ValueError("duration list must match text batch size")
         else:
             durations = None
 
+        frame_rate = self.audio_tokenizer.config.frame_rate
         num_target_tokens_list = []
+        pause_layouts = []
         for i in range(batch_size):
-            # duration[i] overrides speed for estimation: use speed=1.0
-            # to get the raw estimate, then override target_lens below.
             has_dur = durations is not None and durations[i] is not None
-            item_speed = 1.0 if has_dur else (user_speed[i] if user_speed else 1.0)
+            item_speed = (
+                user_speed[i] if user_speed and user_speed[i] is not None else 1.0
+            )
+            plan = selected_plans[i]
+            controlled = bool(plan and plan.pauses)
+            estimate_speed = 1.0 if has_dur or controlled else item_speed
             est = self._estimate_target_tokens(
                 text_list[i],
                 ref_text_list[i],
                 ref_audio_tokens_list[i].size(-1)
                 if ref_audio_tokens_list[i] is not None
                 else None,
-                speed=item_speed,
+                speed=estimate_speed,
             )
-            num_target_tokens_list.append(est)
+            if controlled:
+                layout = create_pause_layout(
+                    text=text_list[i],
+                    plan=plan,
+                    estimated_speech_frames=est,
+                    speed=item_speed,
+                    duration=durations[i] if has_dur else None,
+                    frame_rate=frame_rate,
+                    weight_fn=self.duration_estimator.calculate_total_weight,
+                )
+                num_target_tokens_list.append(layout.total_frames)
+                pause_layouts.append(layout)
+            else:
+                num_target_tokens_list.append(est)
+                pause_layouts.append(None)
 
         # Per-item duration overrides: set target_lens to exact frame count
         # and compute speed ratio so chunked generation scales proportionally.
         speed_list: Optional[List[float]] = None
         if durations is not None:
-            frame_rate = self.audio_tokenizer.config.frame_rate
             speed_list = []
             for i in range(batch_size):
-                if durations[i] is not None:
+                if pause_layouts[i] is not None:
+                    speed_list.append(
+                        user_speed[i]
+                        if user_speed and user_speed[i] is not None
+                        else 1.0
+                    )
+                elif durations[i] is not None:
                     target_tokens = max(1, int(durations[i] * frame_rate))
                     est = num_target_tokens_list[i]
                     speed_list.append(est / target_tokens if target_tokens > 0 else 1.0)
@@ -1025,6 +1119,25 @@ class OmniVoice(PreTrainedModel):
                     speed_list.append(s if s is not None else 1.0)
         elif user_speed is not None:
             speed_list = [s if s is not None else 1.0 for s in user_speed]
+
+        target_templates: list[Optional[torch.Tensor]] = [None] * batch_size
+        pause_spans: list[tuple[tuple[int, int], ...]] = [()] * batch_size
+        pause_token_cache: dict[int, torch.Tensor] = {}
+        pause_source = None
+        controlled_layouts = [layout for layout in pause_layouts if layout is not None]
+        if controlled_layouts and pause_audio is not None:
+            longest_pause = max(
+                frame_count
+                for layout in controlled_layouts
+                for frame_count in layout.pause_frames
+            )
+            pause_source = self._load_pause_source(pause_audio, longest_pause)
+        for i, layout in enumerate(pause_layouts):
+            if layout is None:
+                continue
+            target_templates[i], pause_spans[i] = self._create_pause_template(
+                layout, pause_source, pause_token_cache
+            )
 
         return GenerationTask(
             batch_size=batch_size,
@@ -1036,7 +1149,113 @@ class OmniVoice(PreTrainedModel):
             ref_audio_tokens=ref_audio_tokens_list,
             ref_rms=ref_rms_list,
             speed=speed_list,
+            target_templates=target_templates,
+            pause_spans=pause_spans,
+            controlled=[layout is not None for layout in pause_layouts],
         )
+
+    def _normalize_pause_plans(
+        self,
+        pause_plan: Union[PausePlan, list[Optional[PausePlan]], None],
+        batch_size: int,
+        text_is_batch: bool,
+    ) -> list[Optional[PausePlan]]:
+        if pause_plan is None:
+            return [None] * batch_size
+        if isinstance(pause_plan, PausePlan):
+            if text_is_batch:
+                raise ValueError(
+                    "Batch text requires a pause_plan list matching batch size"
+                )
+            return [pause_plan]
+        if not isinstance(pause_plan, list) or len(pause_plan) != batch_size:
+            raise ValueError("pause_plan list must match text batch size")
+        if any(
+            item is not None and not isinstance(item, PausePlan) for item in pause_plan
+        ):
+            raise TypeError("pause_plan items must be PausePlan or None")
+        return list(pause_plan)
+
+    def _load_pause_source(
+        self,
+        pause_audio: Union[str, tuple[torch.Tensor, int]],
+        longest_pause_frames: int,
+    ) -> torch.Tensor:
+        if isinstance(pause_audio, str):
+            waveform = torch.from_numpy(load_audio(pause_audio, self.sampling_rate))
+        else:
+            waveform, sample_rate = pause_audio
+            waveform = torch.as_tensor(waveform).detach().cpu().to(torch.float32)
+            if waveform.ndim == 1:
+                waveform = waveform.unsqueeze(0)
+            if waveform.ndim != 2:
+                raise ValueError("pause_audio waveform must be one- or two-dimensional")
+            if waveform.size(0) > 1:
+                waveform = waveform.mean(dim=0, keepdim=True)
+            if sample_rate != self.sampling_rate:
+                waveform = torchaudio.functional.resample(
+                    waveform, orig_freq=sample_rate, new_freq=self.sampling_rate
+                )
+        waveform = waveform.to(torch.float32)
+        if not torch.isfinite(waveform).all():
+            raise ValueError("pause_audio contains nonfinite samples")
+        required_samples = longest_pause_frames * 960
+        if waveform.shape[-1] < required_samples:
+            raise ValueError("pause_audio is shorter than the longest requested pause")
+        return waveform
+
+    def _encode_pause_tokens(
+        self,
+        pause_frames: int,
+        pause_source: Optional[torch.Tensor],
+    ) -> torch.Tensor:
+        num_samples = pause_frames * 960
+        if pause_source is None:
+            waveform = torch.zeros((1, num_samples), dtype=torch.float32)
+        else:
+            start = (pause_source.shape[-1] - num_samples) // 2
+            waveform = pause_source[:, start : start + num_samples]
+        tokens = self.audio_tokenizer.encode(
+            waveform.to(self.audio_tokenizer.device).unsqueeze(0)
+        ).audio_codes.squeeze(0)
+        expected_shape = (self.config.num_audio_codebook, pause_frames)
+        if tuple(tokens.shape) != expected_shape:
+            raise RuntimeError(
+                f"Pause tokenizer returned {tuple(tokens.shape)}, expected {expected_shape}"
+            )
+        if torch.any(tokens == self.config.audio_mask_id):
+            raise RuntimeError("Pause tokenizer returned audio mask tokens")
+        return tokens.to(self.device)
+
+    def _create_pause_template(
+        self,
+        layout,
+        pause_source: Optional[torch.Tensor],
+        cache: dict[int, torch.Tensor],
+    ) -> tuple[torch.Tensor, tuple[tuple[int, int], ...]]:
+        template = torch.full(
+            (self.config.num_audio_codebook, layout.total_frames),
+            self.config.audio_mask_id,
+            dtype=torch.long,
+            device=self.device,
+        )
+        spans = []
+        cursor = 0
+        for phrase_frames, pause_frames in zip(
+            layout.phrase_frames[:-1], layout.pause_frames
+        ):
+            cursor += phrase_frames
+            end = cursor + pause_frames
+            if pause_frames not in cache:
+                cache[pause_frames] = self._encode_pause_tokens(
+                    pause_frames, pause_source
+                )
+            template[:, cursor:end] = cache[pause_frames]
+            spans.append((cursor, end))
+            cursor = end
+        cursor += layout.phrase_frames[-1]
+        assert cursor == layout.total_frames
+        return template, tuple(spans)
 
     def _estimate_target_tokens(self, text, ref_text, num_ref_audio_tokens, speed=1.0):
         """Estimate number of target audio tokens."""
@@ -1076,6 +1295,7 @@ class OmniVoice(PreTrainedModel):
         lang: Optional[str] = None,
         instruct: Optional[str] = None,
         denoise: bool = True,
+        target_template: Optional[torch.Tensor] = None,
     ):
         """Prepare input_ids and audio masks for inference.
         Args:
@@ -1114,13 +1334,20 @@ class OmniVoice(PreTrainedModel):
             .unsqueeze(0)
         ).to(self.device)  # [1, C, N2]
 
-        # Target: all MASK
-        target_audio_tokens = torch.full(
-            (1, self.config.num_audio_codebook, num_target_tokens),
-            self.config.audio_mask_id,
-            dtype=torch.long,
-            device=self.device,
-        )
+        if target_template is None:
+            target_audio_tokens = torch.full(
+                (1, self.config.num_audio_codebook, num_target_tokens),
+                self.config.audio_mask_id,
+                dtype=torch.long,
+                device=self.device,
+            )
+        else:
+            expected_shape = (self.config.num_audio_codebook, num_target_tokens)
+            if tuple(target_template.shape) != expected_shape:
+                raise ValueError(
+                    f"Target template has {tuple(target_template.shape)}, expected {expected_shape}"
+                )
+            target_audio_tokens = target_template.to(self.device).unsqueeze(0)
 
         # Conditional input
         parts = [style_tokens, text_tokens]
@@ -1181,6 +1408,7 @@ class OmniVoice(PreTrainedModel):
                 task.langs[i],
                 task.instructs[i],
                 gen_config.denoise,
+                task.target_templates[i] if task.target_templates else None,
             )
             for i in range(B)
         ]
@@ -1224,6 +1452,10 @@ class OmniVoice(PreTrainedModel):
             dtype=torch.long,
             device=self.device,
         )
+        if task.target_templates is not None:
+            for i, template in enumerate(task.target_templates):
+                if template is not None:
+                    tokens[i, :, : task.target_lens[i]] = template
 
         timesteps = _get_time_steps(
             t_start=0.0,
@@ -1232,8 +1464,13 @@ class OmniVoice(PreTrainedModel):
             t_shift=gen_config.t_shift,
         ).tolist()
         schedules = []
-        for t_len in task.target_lens:
-            total_mask = t_len * self.config.num_audio_codebook
+        for i, t_len in enumerate(task.target_lens):
+            template = task.target_templates[i] if task.target_templates else None
+            total_mask = (
+                t_len * self.config.num_audio_codebook
+                if template is None
+                else int((template == self.config.audio_mask_id).sum().item())
+            )
             rem = total_mask
             sched = []
             for step in range(gen_config.num_step):
@@ -1252,8 +1489,13 @@ class OmniVoice(PreTrainedModel):
         layer_ids = torch.arange(
             self.config.num_audio_codebook, device=self.device
         ).view(1, -1, 1)
+        fixed_checks = torch.ones(
+            (gen_config.num_step, B), dtype=torch.bool, device=self.device
+        )
 
         for step in range(gen_config.num_step):
+            if not any(schedules[i][step] > 0 for i in range(B)):
+                continue
             batch_logits = self(
                 input_ids=batch_input_ids,
                 audio_mask=batch_audio_mask,
@@ -1286,6 +1528,12 @@ class OmniVoice(PreTrainedModel):
                     sample_tokens != self.config.audio_mask_id, -float("inf")
                 )
 
+                remaining_masks = int(
+                    (sample_tokens == self.config.audio_mask_id).sum().item()
+                )
+                k = min(k, remaining_masks)
+                if k <= 0:
+                    continue
                 _, topk_idx = torch.topk(scores.flatten(), k)
                 flat_tokens = sample_tokens.flatten()
                 flat_tokens[topk_idx] = pred_tokens.flatten()[topk_idx]
@@ -1295,6 +1543,22 @@ class OmniVoice(PreTrainedModel):
                 tokens[i : i + 1, :, :t_len] = sample_tokens
                 batch_input_ids[i : i + 1, :, c_len - t_len : c_len] = sample_tokens
                 batch_input_ids[B + i : B + i + 1, :, :t_len] = sample_tokens
+
+            if task.target_templates is not None:
+                for i, template in enumerate(task.target_templates):
+                    if template is None:
+                        continue
+                    t_len = task.target_lens[i]
+                    fixed = template != self.config.audio_mask_id
+                    fixed_checks[step, i] = torch.all(
+                        tokens[i, :, :t_len][fixed] == template[fixed]
+                    )
+
+        if not bool(fixed_checks.all().item()):
+            first = torch.nonzero(~fixed_checks, as_tuple=False)[0]
+            raise RuntimeError(
+                f"Fixed pause token mutated at diffusion step {int(first[0].item()) + 1}"
+            )
 
         return [tokens[i, :, : task.target_lens[i]] for i in range(B)]
 

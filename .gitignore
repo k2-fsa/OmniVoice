@@ -16,6 +16,7 @@ build/
 /exp*/
 /.tmp/
 /results/
+/outputs/
 /data/
 /download
 /local/

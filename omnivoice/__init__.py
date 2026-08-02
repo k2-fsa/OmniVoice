@@ -24,5 +24,12 @@ from omnivoice.models.omnivoice import (
     OmniVoiceConfig,
     OmniVoiceGenerationConfig,
 )
+from omnivoice.controls import PausePlan, PauseSpec
 
-__all__ = ["OmniVoice", "OmniVoiceConfig", "OmniVoiceGenerationConfig"]
+__all__ = [
+    "OmniVoice",
+    "OmniVoiceConfig",
+    "OmniVoiceGenerationConfig",
+    "PausePlan",
+    "PauseSpec",
+]
