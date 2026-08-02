@@ -51,9 +51,25 @@ strict gate, despite exact fixed-frame counts and intact text.
 
 ## Decision
 
-One-pass latent pause control is not sufficient for integration. Decision:
-`two-pass required` for failing cases. Boundary inpainting remains conditional
-and must preserve all baseline tokens outside five-frame transition windows.
+One-pass latent pause control is not sufficient for integration. Conditional
+two-pass boundary inpainting was attempted only for the three failed cases. It
+inserted fixed pause tokens at the baseline ASR boundary midpoint, remasked five
+frames on each side, and preserved every other baseline token.
+
+| Fallback case | Requested | Raw incremental | Final incremental | Result |
+|---|---:|---:|---:|---|
+| Primary 0.40 | 0.40s | 0.39s | 0.36s | Pass |
+| Primary 1.20 | 1.20s | 1.09s | 1.04s | Final exceeds tolerance |
+| Secondary 0.80 | 0.80s | 0.78s | 0.84s | Pass |
+
+All fallback cases retain WER `0.0`, exact pause-frame counts, unchanged fixed
+tokens, and unchanged baseline tokens outside transition windows. Primary 1.20
+still misses the final-output gate by 160 ms. Per experiment rules, no further
+tuning or waveform concatenation was attempted.
+
+Final decision: `latent-pause approach failed`. Do not integrate this branch as
+production pause control. Keep it as evidence that native fixed-token pauses
+work for some durations but do not meet the complete acceptance matrix.
 
 Perceptual click, codec-artifact, and transition-naturalness status:
 `manual review pending`. Waveform and ASR metrics cannot approve this gate.

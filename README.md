@@ -263,11 +263,18 @@ Validation commands:
 ```bash
 .venv/bin/python scripts/pause_smoke.py --preset quick --num-step 32
 .venv/bin/python scripts/pause_smoke.py --preset acceptance --num-step 128 \
+  --two-pass-fallback \
   --report reports/pause_smoke_results.json
 ```
 
 Generated WAVs and token tensors live under ignored `outputs/pause_smoke/`.
 See `findings.md` and `reports/pause_smoke_results.json` for measured results.
+
+`--two-pass-fallback` runs only for failed one-pass cases. It retains the
+marker-free baseline tokens, inserts fixed pause tokens at the ASR-aligned
+boundary midpoint, remasks five codec frames on each side, and regenerates only
+those transition windows. Alignment stays in the validation script;
+`OmniVoice.generate()` never invokes ASR or the fallback automatically.
 
 ### Non-Verbal & Pronunciation Control
 

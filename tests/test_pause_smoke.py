@@ -7,6 +7,7 @@ import soundfile as sf
 from scripts.pause_smoke import (
     find_boundary_anchors,
     low_energy_measurement,
+    merge_windows,
     normalized_words,
 )
 
@@ -55,3 +56,7 @@ def test_low_energy_measurement_finds_longest_10ms_run(tmp_path: Path):
     measurement = low_energy_measurement(path, anchors)
     assert measurement["longest_low_energy_seconds"] == pytest.approx(0.4)
     assert measurement["asr_word_gap_seconds"] == pytest.approx(0.6)
+
+
+def test_transition_windows_merge_overlaps_and_touching_edges():
+    assert merge_windows([(8, 12), (3, 5), (5, 9), (20, 20)]) == [(3, 12)]

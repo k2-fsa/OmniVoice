@@ -366,6 +366,164 @@ def generate_case(
     }
 
 
+def merge_windows(windows: list[tuple[int, int]]) -> list[tuple[int, int]]:
+    merged = []
+    for start, end in sorted(windows):
+        if start >= end:
+            continue
+        if merged and start <= merged[-1][1]:
+            merged[-1] = (merged[-1][0], max(merged[-1][1], end))
+        else:
+            merged.append((start, end))
+    return merged
+
+
+def generate_two_pass_case(
+    model: OmniVoice,
+    prompt,
+    case: SmokeCase,
+    failed_result: dict,
+    baseline_result: dict,
+    output_dir: Path,
+    num_step: int,
+) -> dict:
+    baseline_tokens = torch.load(
+        baseline_result["files"]["tokens"], map_location=model.device
+    )
+    anchors = baseline_result["boundary_anchors"]["raw"]
+    if anchors is None:
+        raise RuntimeError("Two-pass fallback requires baseline boundary anchors")
+    midpoint_seconds = (
+        anchors["preceding_word"]["end"] + anchors["following_word"]["start"]
+    ) / 2.0
+    insertion_frame = int(np.floor(midpoint_seconds * FRAME_RATE + 0.5))
+    insertion_frame = max(1, min(baseline_tokens.shape[-1] - 1, insertion_frame))
+    pause_frames = int(np.floor(case.requested_pause_seconds * FRAME_RATE + 0.5))
+    pause_tokens = model._encode_pause_tokens(pause_frames, None)
+    template = torch.cat(
+        (
+            baseline_tokens[:, :insertion_frame],
+            pause_tokens,
+            baseline_tokens[:, insertion_frame:],
+        ),
+        dim=-1,
+    )
+
+    transition_windows = merge_windows(
+        [
+            (max(0, insertion_frame - 5), insertion_frame),
+            (
+                insertion_frame + pause_frames,
+                min(template.shape[-1], insertion_frame + pause_frames + 5),
+            ),
+        ]
+    )
+    for start, end in transition_windows:
+        template[:, start:end] = model.config.audio_mask_id
+
+    config = OmniVoiceGenerationConfig(num_step=num_step)
+    task = model._preprocess_all(
+        text=failed_result["cleaned_text"],
+        language="English",
+        voice_clone_prompt=prompt,
+        preprocess_prompt=config.preprocess_prompt,
+        speed=1.0,
+        duration=None,
+    )
+    if task.target_lens[0] != baseline_tokens.shape[-1]:
+        raise RuntimeError("Two-pass baseline token length no longer matches text plan")
+    task.target_lens = [template.shape[-1]]
+    task.target_templates = [template]
+    task.pause_spans = [((insertion_frame, insertion_frame + pause_frames),)]
+    task.controlled = [True]
+
+    set_seed(SEED)
+    torch.cuda.reset_peak_memory_stats()
+    started = time.perf_counter()
+    with torch.inference_mode():
+        tokens = model._generate_iterative(task, config)[0]
+        raw = (
+            model.audio_tokenizer.decode(
+                tokens.to(model.audio_tokenizer.device).unsqueeze(0)
+            )
+            .audio_values[0]
+            .cpu()
+            .numpy()
+            .squeeze(0)
+        )
+        final = model._decode_and_post_process(
+            tokens,
+            task.ref_rms[0],
+            config,
+            preserve_internal_silence=True,
+        )
+    runtime = time.perf_counter() - started
+
+    fallback_id = f"{case.case_id}_two_pass"
+    raw_path = output_dir / f"{fallback_id}_raw.wav"
+    final_path = output_dir / f"{fallback_id}_final.wav"
+    token_path = output_dir / f"{fallback_id}_tokens.pt"
+    sf.write(raw_path, raw, model.sampling_rate, subtype="FLOAT")
+    sf.write(final_path, final, model.sampling_rate, subtype="FLOAT")
+    torch.save(tokens.cpu(), token_path)
+
+    fixed = template != model.config.audio_mask_id
+    fixed_unchanged = bool(torch.equal(tokens[fixed], template[fixed]))
+    left_preserved = bool(
+        torch.equal(
+            tokens[:, : max(0, insertion_frame - 5)],
+            baseline_tokens[:, : max(0, insertion_frame - 5)],
+        )
+    )
+    right_baseline_start = min(baseline_tokens.shape[-1], insertion_frame + 5)
+    right_output_start = right_baseline_start + pause_frames
+    right_preserved = bool(
+        torch.equal(
+            tokens[:, right_output_start:], baseline_tokens[:, right_baseline_start:]
+        )
+    )
+    return {
+        "case_id": fallback_id,
+        "fallback_for_case_id": case.case_id,
+        "group": case.group,
+        "original_text": case.original_text,
+        "cleaned_text": failed_result["cleaned_text"],
+        "canonical_plan": failed_result["canonical_plan"],
+        "requested_pause_seconds": case.requested_pause_seconds,
+        "requested_pause_frames": pause_frames,
+        "pause_token_spans": [[insertion_frame, insertion_frame + pause_frames]],
+        "baseline_insertion_midpoint_seconds": midpoint_seconds,
+        "baseline_insertion_frame": insertion_frame,
+        "transition_windows": [list(window) for window in transition_windows],
+        "baseline_tokens_preserved_outside_transitions": left_preserved
+        and right_preserved,
+        "target_frames": template.shape[-1],
+        "raw_samples": len(raw),
+        "final_samples": len(final),
+        "exact_raw_codec_length": len(raw) == template.shape[-1] * SAMPLES_PER_FRAME,
+        "fixed_tokens_unchanged": fixed_unchanged,
+        "seed": SEED,
+        "speed": 1.0,
+        "duration": None,
+        "language": "English",
+        "num_step": num_step,
+        "runtime_seconds": runtime,
+        "gpu_peak_memory_bytes": torch.cuda.max_memory_allocated(),
+        "reference_basename": case.reference_basename,
+        "reference_sha256": failed_result["reference_sha256"],
+        "files": {
+            "raw": str(raw_path),
+            "final": str(final_path),
+            "tokens": str(token_path),
+        },
+        "hashes": {
+            "raw_sha256": sha256(raw_path),
+            "final_sha256": sha256(final_path),
+            "tokens_sha256": sha256(token_path),
+        },
+    }
+
+
 def add_measurements(aligner: WhisperModel, result: dict) -> None:
     cleaned = result["cleaned_text"]
     pauses = result["canonical_plan"]["pauses"]
@@ -477,6 +635,11 @@ def main() -> None:
     parser.add_argument("--model-path", type=Path, default=MODEL_PATH)
     parser.add_argument("--aligner-path", type=Path, default=ALIGNER_PATH)
     parser.add_argument("--reference-dir", type=Path, default=REFERENCE_DIR)
+    parser.add_argument(
+        "--two-pass-fallback",
+        action="store_true",
+        help="Attempt boundary inpainting only for failed one-pass cases.",
+    )
     args = parser.parse_args()
 
     root = Path(__file__).resolve().parents[1]
@@ -523,12 +686,60 @@ def main() -> None:
     for result in results:
         add_measurements(aligner, result)
     evaluate_group(results)
-    relative_output_paths(results, root)
 
     controlled = [item for item in results if item["canonical_plan"]["pauses"]]
-    automated_pass = bool(controlled) and all(
+    one_pass_automated_pass = bool(controlled) and all(
         item["automated_pass"] for item in controlled
     )
+    fallback_results = []
+    if args.two_pass_fallback and not one_pass_automated_pass:
+        case_map = {case.case_id: case for case in cases}
+        baselines = {
+            item["group"]: item
+            for item in results
+            if not item["canonical_plan"]["pauses"]
+        }
+        for failed in controlled:
+            if failed["automated_pass"]:
+                continue
+            case = case_map[failed["case_id"]]
+            fallback = generate_two_pass_case(
+                model,
+                prompt_cache[case.reference_basename],
+                case,
+                failed,
+                baselines[case.group],
+                output_dir,
+                num_step,
+            )
+            add_measurements(aligner, fallback)
+            evaluate_group([baselines[case.group], fallback])
+            fallback["pass_checks"]["baseline_tokens_preserved_outside_transitions"] = (
+                fallback["baseline_tokens_preserved_outside_transitions"]
+            )
+            fallback["automated_pass"] = all(fallback["pass_checks"].values())
+            fallback_results.append(fallback)
+
+    fallback_by_case = {item["fallback_for_case_id"]: item for item in fallback_results}
+    automated_pass = bool(controlled) and all(
+        item["automated_pass"]
+        or (
+            item["case_id"] in fallback_by_case
+            and fallback_by_case[item["case_id"]]["automated_pass"]
+        )
+        for item in controlled
+    )
+    if one_pass_automated_pass:
+        decision = "one-pass accepted"
+    elif automated_pass:
+        decision = "two-pass required"
+    elif args.two_pass_fallback:
+        decision = "latent-pause approach failed"
+    else:
+        decision = "two-pass required"
+
+    relative_output_paths(results, root)
+    relative_output_paths(fallback_results, root)
     report = {
         "format": "omnivoice_native_pause_smoke_v1",
         "preset": args.preset,
@@ -544,10 +755,12 @@ def main() -> None:
         "gpu": torch.cuda.get_device_name(0),
         "num_step": num_step,
         "seed": SEED,
+        "one_pass_automated_pass": one_pass_automated_pass,
         "automated_pass": automated_pass,
         "listening_status": "manual review pending",
-        "decision": "one-pass accepted" if automated_pass else "two-pass required",
+        "decision": decision,
         "cases": results,
+        "fallback_attempts": fallback_results,
     }
     report_path.write_text(json.dumps(report, indent=2) + "\n")
     print(
@@ -567,6 +780,18 @@ def main() -> None:
                         ),
                     }
                     for item in results
+                },
+                "fallback_attempts": {
+                    item["case_id"]: {
+                        "automated_pass": item["automated_pass"],
+                        "raw_incremental": item["pause_measurements"]["raw"].get(
+                            "baseline_relative_seconds"
+                        ),
+                        "final_incremental": item["pause_measurements"]["final"].get(
+                            "baseline_relative_seconds"
+                        ),
+                    }
+                    for item in fallback_results
                 },
             },
             indent=2,
