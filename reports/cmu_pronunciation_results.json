@@ -1,0 +1,186 @@
+{
+  "format": "omnivoice_cmu_pronunciation_smoke_v1",
+  "experiment_revision": "7561686e3405ff504778d293bdf42d47c925111b",
+  "reference_basename": "explaining_sub_11s_24k.wav",
+  "reference_sha256": "26b2c81c114eb0d871287a153104a0810ed349fe66ddad3f5474cac3a377b2c0",
+  "reference_switching": false,
+  "num_step": 128,
+  "candidates": 3,
+  "dictionary_source": "CMUdict master and cmudict.0.7a",
+  "listening_status": "manual review pending",
+  "controlled_cases": [
+    {
+      "case_id": "unexpected",
+      "variants": [
+        {
+          "id": "legacy",
+          "audio": "legacy.wav",
+          "audio_sha256": "4592bd7f94ea3e9a43680e2987c7b4849b5a07a82c24f78ca6317897c9dfd9eb",
+          "baseline_transcript": "This was unexpected.",
+          "final_transcript": "This was unexpected",
+          "word_sequence_matches": true,
+          "metrics": {
+            "source_frames": 13,
+            "target_frames": 18,
+            "pronunciation": null,
+            "conditioned_text": "This was \u2014UNEXPECTED\u2014.",
+            "selected_candidate": 0,
+            "fixed_tokens_unchanged": true,
+            "source_duration_seconds": 0.52,
+            "selected_duration_seconds": 0.58,
+            "prominence_change_db": -2.932924177321514,
+            "pitch_slope_change_semitones": 1.4405772587297578
+          }
+        },
+        {
+          "id": "cmu",
+          "audio": "cmu.wav",
+          "audio_sha256": "080cd065c91df9ca8432e586dd41b1f791646cca28525836d6efce541c58dfed",
+          "baseline_transcript": "This was unexpected.",
+          "final_transcript": "This was unexpected.",
+          "word_sequence_matches": true,
+          "metrics": {
+            "source_frames": 13,
+            "target_frames": 18,
+            "pronunciation": "[AH2 N IH0 K S P EH1 K T IH0 D]",
+            "conditioned_text": "This was \u2014[AH2 N IH0 K S P EH1 K T IH0 D]\u2014.",
+            "selected_candidate": 1,
+            "fixed_tokens_unchanged": true,
+            "source_duration_seconds": 0.52,
+            "selected_duration_seconds": 0.62,
+            "prominence_change_db": -5.401168964205169,
+            "pitch_slope_change_semitones": 5.76247759274856
+          }
+        }
+      ],
+      "baseline": "00_baseline.wav",
+      "baseline_sha256": "0265eb3ad232a561a134008f5c1cfa803ec87f2055b8e41d2c9a838d8b1b4ab8"
+    },
+    {
+      "case_id": "nobody",
+      "variants": [
+        {
+          "id": "legacy",
+          "audio": "legacy.wav",
+          "audio_sha256": "6b95f20ed28c73c899789dbc0f080e75204b071e0d89c0ec6a76b5f7ec51aaf6",
+          "baseline_transcript": "This was important, but nobody understood why.",
+          "final_transcript": "This was important, but nobody understood why.",
+          "word_sequence_matches": true,
+          "metrics": {
+            "source_frames": 7,
+            "target_frames": 9,
+            "pronunciation": null,
+            "conditioned_text": "This was important, but \u2014NOBODY\u2014 understood why.",
+            "selected_candidate": 2,
+            "fixed_tokens_unchanged": true,
+            "source_duration_seconds": 0.26,
+            "selected_duration_seconds": 0.32000000000000006,
+            "prominence_change_db": -0.24831280338557526,
+            "pitch_slope_change_semitones": -0.4815837336459712
+          }
+        },
+        {
+          "id": "cmu_primary",
+          "audio": "cmu_primary.wav",
+          "audio_sha256": "09a34023ac65040f700d879fa9103bf065dbf67756f2f0cc6c9a566580156be7",
+          "baseline_transcript": "This was important, but nobody understood why.",
+          "final_transcript": "This was important, but nobody understood why.",
+          "word_sequence_matches": true,
+          "metrics": {
+            "source_frames": 7,
+            "target_frames": 9,
+            "pronunciation": "[N OW1 B AA2 D IY2]",
+            "conditioned_text": "This was important, but \u2014[N OW1 B AA2 D IY2]\u2014 understood why.",
+            "selected_candidate": 0,
+            "fixed_tokens_unchanged": true,
+            "source_duration_seconds": 0.26,
+            "selected_duration_seconds": 0.30000000000000004,
+            "prominence_change_db": -1.2333271384651177,
+            "pitch_slope_change_semitones": -0.6486819787351101
+          }
+        },
+        {
+          "id": "cmu_reduced",
+          "audio": "cmu_reduced.wav",
+          "audio_sha256": "e636b40ab8f82d206c7659b4f8210bbcd8d3f309d506201f09493c9b76568f4d",
+          "baseline_transcript": "This was important, but nobody understood why.",
+          "final_transcript": "This was important, but nobody understood why.",
+          "word_sequence_matches": true,
+          "metrics": {
+            "source_frames": 7,
+            "target_frames": 9,
+            "pronunciation": "[N OW1 B AH0 D IY0]",
+            "conditioned_text": "This was important, but \u2014[N OW1 B AH0 D IY0]\u2014 understood why.",
+            "selected_candidate": 2,
+            "fixed_tokens_unchanged": true,
+            "source_duration_seconds": 0.26,
+            "selected_duration_seconds": 0.3400000000000001,
+            "prominence_change_db": -0.7251850620668634,
+            "pitch_slope_change_semitones": 0.23944908685681998
+          }
+        }
+      ],
+      "baseline": "00_baseline.wav",
+      "baseline_sha256": "5e1ce150112fcffdb2becfcfa1824e7fe3584fc9a80640239f8a315cfd1e4d7c"
+    }
+  ],
+  "native_bracket_case": {
+    "case_id": "genuine_native_brackets",
+    "variants": [
+      {
+        "id": "plain",
+        "generation_text": "The final signature was genuine, and everyone knew it.",
+        "audio": "plain.wav",
+        "audio_sha256": "5b967f132c58bc3ddfe626576f68d96037848a0631996a22ed85bdab5c5ef155",
+        "transcript": "The final signature was genuine and everyone knew it.",
+        "normalized_words": [
+          "the",
+          "final",
+          "signature",
+          "was",
+          "genuine",
+          "and",
+          "everyone",
+          "knew",
+          "it"
+        ]
+      },
+      {
+        "id": "cmu_primary",
+        "generation_text": "The final signature was [JH EH1 N Y AH0 W AH0 N], and everyone knew it.",
+        "audio": "cmu_primary.wav",
+        "audio_sha256": "0c7eca29a6a2f505f761674974871f397802347224b76a568521024d2f67f224",
+        "transcript": "The final signature was genuine, and everyone knew it.",
+        "normalized_words": [
+          "the",
+          "final",
+          "signature",
+          "was",
+          "genuine",
+          "and",
+          "everyone",
+          "knew",
+          "it"
+        ]
+      },
+      {
+        "id": "cmu_alternate",
+        "generation_text": "The final signature was [JH EH1 N Y UW1 W AY2 N], and everyone knew it.",
+        "audio": "cmu_alternate.wav",
+        "audio_sha256": "32805d4104cf403866fa564effb52d2cce0a2c100c4d82c94226a4b4f27af5d5",
+        "transcript": "The final signature was genuine, and everyone knew it.",
+        "normalized_words": [
+          "the",
+          "final",
+          "signature",
+          "was",
+          "genuine",
+          "and",
+          "everyone",
+          "knew",
+          "it"
+        ]
+      }
+    ]
+  }
+}

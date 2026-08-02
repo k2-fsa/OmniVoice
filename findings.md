@@ -128,3 +128,46 @@ subtle. Keep all controls experimental until audio review confirms identity,
 naturalness, word stress, transitions, and intended pitch movement.
 
 Listening status: `manual review pending`.
+
+# CMU-Conditioned Narration Findings
+
+## Scope
+
+- Stable legacy commit: `e248cd42dba132849d2f23bb9f29e8fbe86a2ec9`
+- CMU implementation: `7561686e3405ff504778d293bdf42d47c925111b`
+- Experiment branch: `experiment/cmu-conditioned-controls`
+- Dictionary entries verified against CMUdict master and `cmudict.0.7a`.
+- Legacy full-codebook inpainting, duration expansion, candidate generation, and
+  acoustic ranking remain unchanged.
+
+The controller keeps normal words in cleaned/alignment text and substitutes
+validated bracketed ARPABET only in internal generation conditioning. This
+avoids treating individual phonemes as expected ASR words.
+
+## Automated Matrix
+
+The 128-step, three-candidate matrix used the original short clone reference.
+All controlled and native-bracket cases retained expected ASR words.
+
+| Word | Variant | Frames | Prominence change | Pitch-slope change |
+|---|---|---:|---:|---:|
+| `unexpected` | Legacy | 13 to 18 | -2.93dB | +1.44 semitones |
+| `unexpected` | CMU | 13 to 18 | -5.40dB | +5.76 semitones |
+| `nobody` | Legacy | 7 to 9 | -0.25dB | -0.48 semitones |
+| `nobody` | CMU primary | 7 to 9 | -1.23dB | -0.65 semitones |
+| `nobody` | CMU reduced vowel | 7 to 9 | -0.73dB | +0.24 semitones |
+
+Native bracket generation for plain `genuine` and both official CMU variants
+was transcribed as `genuine`. Full reports are tracked in
+`reports/cmu_pronunciation_results.json`; local WAVs are under ignored
+`outputs/narration_controls/cmu_pronunciation/`.
+
+## Decision
+
+CMU conditioning preserves legacy emphasis freedom and gives explicit phoneme
+guidance. Automated metrics cannot determine whether it fixed the audible
+mispronunciations, and the CMU variants shifted emphasis away from loudness
+toward pitch or duration. Human A/B listening is required before enabling CMU
+conditioning by default or combining it with candidate filtering.
+
+Pronunciation, emphasis, and identity status: `manual review pending`.

@@ -357,6 +357,28 @@ result = controller.generate(
   generation and acoustic ranking, so strength can be subtle and must be
   approved by listening.
 
+CMU conditioning can guide pronunciation during legacy full-codebook
+regeneration without changing alignment text:
+
+```python
+result = controller.generate(
+    'This was <emphasis strength="strong">unexpected</emphasis>.',
+    voice_clone_prompt=prompt,
+    pronunciations={
+        "unexpected": "AH2 N IH0 K S P EH1 K T IH0 D",
+    },
+    num_step=128,
+    candidates=3,
+)
+```
+
+Pronunciation keys must exactly match controlled text spans. Values accept CMU
+ARPABET with or without surrounding brackets. The controller keeps normal text
+for offsets and ASR, but internally conditions generation with the bracketed
+phonemes. Phones are validated before model generation. Use verified CMUdict
+entries; this option cannot fix a word already mispronounced in the marker-free
+baseline.
+
 Generate local A/B audio examples:
 
 ```bash
@@ -371,6 +393,17 @@ WAVs are written under ignored `outputs/narration_controls/`. Compare
 `acceptance/baseline.wav` with `rate_slow.wav`, `rate_fast.wav`,
 `emphasis_moderate.wav`, `emphasis_strong.wav`, `intonation_rising.wav`,
 `intonation_falling.wav`, and `aside.wav`.
+
+Generate the CMU pronunciation comparison matrix:
+
+```bash
+.venv/bin/python scripts/cmu_pronunciation_smoke.py \
+  --num-step 128 --candidates 3
+```
+
+WAVs are written under ignored
+`outputs/narration_controls/cmu_pronunciation/`. Automated measurements are
+tracked in `reports/cmu_pronunciation_results.json`.
 
 ### Non-Verbal & Pronunciation Control
 
