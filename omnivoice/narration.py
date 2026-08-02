@@ -62,6 +62,49 @@ _CONTROL_FRAGMENT_RE = re.compile(
 _ATTR_RE = re.compile(r"([a-zA-Z_][\w-]*)\s*=\s*(['\"])(.*?)\2")
 _WORD_RE = re.compile(r"[A-Za-z0-9]+(?:'[A-Za-z0-9]+)?")
 _PAUSE_RE = re.compile(r"<pause:[^<>]*>")
+_CMU_VOWELS = {
+    "AA",
+    "AE",
+    "AH",
+    "AO",
+    "AW",
+    "AY",
+    "EH",
+    "ER",
+    "EY",
+    "IH",
+    "IY",
+    "OW",
+    "OY",
+    "UH",
+    "UW",
+}
+_CMU_CONSONANTS = {
+    "B",
+    "CH",
+    "D",
+    "DH",
+    "F",
+    "G",
+    "HH",
+    "JH",
+    "K",
+    "L",
+    "M",
+    "N",
+    "NG",
+    "P",
+    "R",
+    "S",
+    "SH",
+    "T",
+    "TH",
+    "V",
+    "W",
+    "Y",
+    "Z",
+    "ZH",
+}
 
 
 def _expand_shorthand(text: str) -> str:
@@ -141,6 +184,63 @@ def _remap_unchanged_span(
                 after_start + end_char - before_start,
             )
     raise ValueError("Could not map narration control after pause removal")
+
+
+def _normalize_cmu_pronunciation(value: str) -> str:
+    if not isinstance(value, str):
+        raise TypeError("CMU pronunciation values must be strings")
+    raw = value.strip()
+    if raw.startswith("[") or raw.endswith("]"):
+        if not (raw.startswith("[") and raw.endswith("]")):
+            raise ValueError("CMU pronunciation brackets must be balanced")
+        raw = raw[1:-1].strip()
+    tokens = raw.upper().split()
+    if not tokens:
+        raise ValueError("CMU pronunciation cannot be empty")
+    for token in tokens:
+        base = token.rstrip("012")
+        stress = token[len(base) :]
+        if base in _CMU_VOWELS:
+            if stress not in {"0", "1", "2"}:
+                raise ValueError(f"CMU vowel requires stress 0, 1, or 2: {token}")
+        elif base in _CMU_CONSONANTS:
+            if stress:
+                raise ValueError(f"CMU consonant cannot have stress: {token}")
+        else:
+            raise ValueError(f"Unknown CMU phoneme: {token}")
+    return f"[{' '.join(tokens)}]"
+
+
+def _resolve_pronunciations(
+    plan: NarrationPlan, pronunciations: Optional[dict[str, str]]
+) -> dict[int, str]:
+    if pronunciations is None:
+        return {}
+    if not isinstance(pronunciations, dict):
+        raise TypeError("pronunciations must be a dictionary")
+
+    surfaces: dict[str, list[int]] = {}
+    for index, control in enumerate(plan.controls):
+        surface = plan.text[control.start_char : control.end_char].strip().casefold()
+        surfaces.setdefault(surface, []).append(index)
+
+    resolved = {}
+    seen_keys = set()
+    for raw_key, raw_value in pronunciations.items():
+        if not isinstance(raw_key, str) or not raw_key.strip():
+            raise TypeError("pronunciation keys must be nonempty strings")
+        key = raw_key.strip().casefold()
+        if key in seen_keys:
+            raise ValueError(f"Duplicate pronunciation key: {raw_key!r}")
+        seen_keys.add(key)
+        if key not in surfaces:
+            raise ValueError(
+                f"Pronunciation key does not match a controlled span: {raw_key!r}"
+            )
+        pronunciation = _normalize_cmu_pronunciation(raw_value)
+        for control_index in surfaces[key]:
+            resolved[control_index] = pronunciation
+    return resolved
 
 
 def parse_narration_controls(text: str, shorthand: bool = False) -> NarrationPlan:
@@ -291,25 +391,30 @@ def build_inpaint_template(
     )
 
 
-def _conditioned_text(text: str, control: NarrationControl) -> str:
+def _conditioned_text(
+    text: str,
+    control: NarrationControl,
+    pronunciation: Optional[str] = None,
+) -> str:
     before = text[: control.start_char]
     surface = text[control.start_char : control.end_char]
     after = text[control.end_char :]
+    spoken = pronunciation or surface
     if control.kind == "emphasis":
         if control.value == "reduced":
-            replacement = f"({surface})"
+            replacement = f"({spoken})"
         elif control.value == "strong":
-            replacement = f"—{surface.upper()}—"
+            replacement = f"—{spoken if pronunciation else surface.upper()}—"
         else:
-            replacement = f"—{surface}—"
+            replacement = f"—{spoken}—"
     elif control.kind == "aside":
-        replacement = f"({surface})"
+        replacement = f"({spoken})"
     elif control.kind == "intonation":
-        replacement = surface.rstrip(".!?") + (
+        replacement = (spoken if pronunciation else surface.rstrip(".!?")) + (
             "?" if control.value == "rising" else "."
         )
     else:
-        replacement = surface
+        replacement = spoken
     return before + replacement + after
 
 
@@ -598,10 +703,12 @@ class NarrationController:
         candidates: int = 3,
         seed: int = 1234,
         preprocess_prompt: bool = True,
+        pronunciations: Optional[dict[str, str]] = None,
     ) -> NarrationResult:
         if candidates < 1:
             raise ValueError("candidates must be at least 1")
         plan = parse_narration_controls(text, shorthand=shorthand)
+        resolved_pronunciations = _resolve_pronunciations(plan, pronunciations)
         prompt = self._resolve_prompt(
             voice_clone_prompt, ref_audio, ref_text, preprocess_prompt
         )
@@ -683,7 +790,12 @@ class NarrationController:
                 - current_tokens.shape[-1]
             )
             pause_spans = _shift_fixed_spans(pause_spans, old_window, new_window_length)
-            conditioned_text = _conditioned_text(plan.text, control)
+            pronunciation = resolved_pronunciations.get(control_index)
+            conditioned_text = _conditioned_text(
+                plan.text,
+                control,
+                pronunciation=pronunciation,
+            )
             target_duration = (
                 source_metrics["duration_seconds"]
                 if control.kind == "intonation"
@@ -743,6 +855,8 @@ class NarrationController:
                     "source_frame_span": [frame_start, frame_end],
                     "source_frames": original_frames,
                     "target_frames": new_core_frames,
+                    "pronunciation": pronunciation,
+                    "conditioned_text": conditioned_text,
                     "source_metrics": source_metrics,
                     "inpaint_window": list(old_window),
                     "new_core_span": list(new_core_span),
@@ -767,6 +881,12 @@ class NarrationController:
             "seed": seed,
             "num_step": num_step,
             "candidate_count": candidates,
+            "pronunciations": {
+                plan.text[
+                    plan.controls[index].start_char : plan.controls[index].end_char
+                ]: value
+                for index, value in resolved_pronunciations.items()
+            },
             "baseline_frames": baseline_tokens.shape[-1],
             "final_frames": current_tokens.shape[-1],
             "baseline_transcript": _transcribe(

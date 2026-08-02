@@ -8,6 +8,8 @@ from omnivoice.narration import (
     _aligned_control_audio,
     _conditioned_text,
     _core_frame_target,
+    _normalize_cmu_pronunciation,
+    _resolve_pronunciations,
     _shift_fixed_spans,
     _transcribe,
     align_expected_words,
@@ -137,6 +139,47 @@ def test_conditioned_text_adds_model_cues_without_changing_surface_words():
     assert _conditioned_text(text, strong) == "This was —NOT— ordinary."
     rising = NarrationControl("intonation", 0, len(text), "rising")
     assert _conditioned_text(text, rising) == "This was not ordinary?"
+
+
+def test_conditioned_text_can_use_cmu_without_changing_alignment_text():
+    text = "This was unexpected."
+    start = text.index("unexpected")
+    control = NarrationControl("emphasis", start, start + 10, "strong")
+    pronunciation = "[AH2 N IH0 K S P EH1 K T IH0 D]"
+    assert _conditioned_text(text, control, pronunciation) == (
+        "This was —[AH2 N IH0 K S P EH1 K T IH0 D]—."
+    )
+
+
+def test_cmu_pronunciation_normalization_and_control_resolution():
+    assert (
+        _normalize_cmu_pronunciation("ah2 n ih0 k s p eh1 k t ih0 d")
+        == "[AH2 N IH0 K S P EH1 K T IH0 D]"
+    )
+    plan = parse_narration_controls(
+        'This was <emphasis strength="strong">unexpected</emphasis>.'
+    )
+    assert _resolve_pronunciations(
+        plan,
+        {"unexpected": "AH2 N IH0 K S P EH1 K T IH0 D"},
+    ) == {0: "[AH2 N IH0 K S P EH1 K T IH0 D]"}
+
+
+@pytest.mark.parametrize(
+    "value",
+    ["", "[AH2 N", "AH N", "N1 OW1", "XX1"],
+)
+def test_invalid_cmu_pronunciations_raise(value):
+    with pytest.raises((TypeError, ValueError)):
+        _normalize_cmu_pronunciation(value)
+
+
+def test_pronunciation_key_must_match_controlled_surface():
+    plan = parse_narration_controls(
+        'This was <emphasis strength="strong">unexpected</emphasis>.'
+    )
+    with pytest.raises(ValueError, match="controlled span"):
+        _resolve_pronunciations(plan, {"nobody": "N OW1 B AA2 D IY2"})
 
 
 def test_fixed_pause_spans_shift_or_reject_overlap():
