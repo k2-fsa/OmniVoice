@@ -218,6 +218,57 @@ audio = model.generate(
 ```
 See more detailed control in [docs/generation-parameters.md](docs/generation-parameters.md).
 
+### Native Pause Control Experiment
+
+This branch adds fixed codec-token pauses without inserting silence into the
+decoded waveform. Inline markers are removed before text tokenization:
+
+```python
+audio = model.generate(
+    text="The first result passed.<pause:0.80> The second exposed the bug.",
+    ref_audio="ref.wav",
+    ref_text="Reference transcript.",
+)
+```
+
+Structured controls use character offsets in cleaned text:
+
+```python
+from omnivoice import PausePlan, PauseSpec
+
+text = "The first result passed. The second exposed the bug."
+audio = model.generate(
+    text=text,
+    pause_plan=PausePlan((PauseSpec(after_char=24, seconds=0.8),)),
+)
+```
+
+- Batch text requires a same-length `pause_plan` list; use `None` for
+  uncontrolled items.
+- Inline markers and a structured plan cannot control the same item.
+- `duration` keeps its existing final-total meaning. Fixed pause frames consume
+  part of that total, while `speed` changes speech frames only.
+- `pause_audio=None` encodes digital silence. A mono/stereo path or
+  `(waveform, sample_rate)` tuple supplies shared room tone, which must be long
+  enough for the longest requested pause.
+- Controlled items are short-form only and raise if they cross
+  `audio_chunk_threshold`. Uncontrolled long-form items can remain in a mixed
+  batch.
+- Controlled postprocessing keeps internal silence while retaining edge trim,
+  normalization, fade, and padding. `postprocess_output=False` keeps upstream
+  behavior.
+
+Validation commands:
+
+```bash
+.venv/bin/python scripts/pause_smoke.py --preset quick --num-step 32
+.venv/bin/python scripts/pause_smoke.py --preset acceptance --num-step 128 \
+  --report reports/pause_smoke_results.json
+```
+
+Generated WAVs and token tensors live under ignored `outputs/pause_smoke/`.
+See `findings.md` and `reports/pause_smoke_results.json` for measured results.
+
 ### Non-Verbal & Pronunciation Control
 
 OmniVoice supports inline **non-verbal symbols** and **pronunciation correction** within the input text.

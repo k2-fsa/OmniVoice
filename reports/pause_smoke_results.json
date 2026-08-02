@@ -1,0 +1,2375 @@
+{
+  "format": "omnivoice_native_pause_smoke_v1",
+  "preset": "acceptance",
+  "source_revision": "3d2bd9d07bbe8d16c2439745b0ded450dc41e215",
+  "experiment_revision": "dc21d796df0ade536d728e9607b3c6d814f73eb7",
+  "model_revision": "c5fdb5ccb189668d56333f77ba2629f4cd7535f4",
+  "aligner_revision": "d1d751a5f8271d482d14ca55d9e2deeebbae577f",
+  "python": "Python 3.11.14",
+  "torch": "2.8.0+cu128",
+  "cuda_runtime": "12.8",
+  "gpu": "NVIDIA GeForce RTX 4070 SUPER",
+  "num_step": 128,
+  "seed": 1234,
+  "automated_pass": false,
+  "listening_status": "manual review pending",
+  "decision": "two-pass required",
+  "cases": [
+    {
+      "case_id": "primary_baseline",
+      "group": "primary",
+      "original_text": "The first result looked convincing. The second test revealed a hidden timing problem.",
+      "cleaned_text": "The first result looked convincing. The second test revealed a hidden timing problem.",
+      "canonical_plan": {
+        "pauses": []
+      },
+      "requested_pause_seconds": 0.0,
+      "requested_pause_frames": 0,
+      "pause_token_spans": [],
+      "target_frames": 129,
+      "raw_samples": 123840,
+      "final_samples": 128640,
+      "exact_raw_codec_length": true,
+      "fixed_tokens_unchanged": true,
+      "seed": 1234,
+      "speed": 1.0,
+      "duration": null,
+      "language": "English",
+      "num_step": 128,
+      "runtime_seconds": 3.786480668000877,
+      "gpu_peak_memory_bytes": 2203179008,
+      "files": {
+        "raw": "outputs/pause_smoke/acceptance/primary_baseline_raw.wav",
+        "final": "outputs/pause_smoke/acceptance/primary_baseline_final.wav",
+        "tokens": "outputs/pause_smoke/acceptance/primary_baseline_tokens.pt"
+      },
+      "hashes": {
+        "raw_sha256": "6ca63570168d2de5c41c7b98c3e7f7aa03cfccc837722b36078ffb04c8e69247",
+        "final_sha256": "5adf73df74cbaf27b567dee3ecd3f091f8a911afa4b556f582deacee94d7b111",
+        "tokens_sha256": "d71b24bb593c4c54b1601c8dc035705e4673041cdfc062f198e2bc9aac8800e7"
+      },
+      "reference_basename": "explaining_sub_11s_24k.wav",
+      "reference_sha256": "26b2c81c114eb0d871287a153104a0810ed349fe66ddad3f5474cac3a377b2c0",
+      "asr": {
+        "raw": {
+          "text": "The first result looked convincing. The second test revealed a hidden timing problem.",
+          "normalized_words": [
+            "the",
+            "first",
+            "result",
+            "looked",
+            "convincing",
+            "the",
+            "second",
+            "test",
+            "revealed",
+            "a",
+            "hidden",
+            "timing",
+            "problem"
+          ],
+          "words": [
+            {
+              "word": "The",
+              "normalized": "the",
+              "start": 0.0,
+              "end": 0.44,
+              "probability": 0.7680720090866089
+            },
+            {
+              "word": "first",
+              "normalized": "first",
+              "start": 0.44,
+              "end": 0.68,
+              "probability": 0.9923047423362732
+            },
+            {
+              "word": "result",
+              "normalized": "result",
+              "start": 0.68,
+              "end": 1.08,
+              "probability": 0.9967334270477295
+            },
+            {
+              "word": "looked",
+              "normalized": "looked",
+              "start": 1.08,
+              "end": 1.34,
+              "probability": 0.9924853444099426
+            },
+            {
+              "word": "convincing.",
+              "normalized": "convincing",
+              "start": 1.34,
+              "end": 1.9,
+              "probability": 0.9820961952209473
+            },
+            {
+              "word": "The",
+              "normalized": "the",
+              "start": 2.48,
+              "end": 2.6,
+              "probability": 0.9904286861419678
+            },
+            {
+              "word": "second",
+              "normalized": "second",
+              "start": 2.6,
+              "end": 2.88,
+              "probability": 0.9896654486656189
+            },
+            {
+              "word": "test",
+              "normalized": "test",
+              "start": 2.88,
+              "end": 3.28,
+              "probability": 0.9958802461624146
+            },
+            {
+              "word": "revealed",
+              "normalized": "revealed",
+              "start": 3.28,
+              "end": 3.6,
+              "probability": 0.9931516647338867
+            },
+            {
+              "word": "a",
+              "normalized": "a",
+              "start": 3.6,
+              "end": 3.86,
+              "probability": 0.9973415732383728
+            },
+            {
+              "word": "hidden",
+              "normalized": "hidden",
+              "start": 3.86,
+              "end": 4.06,
+              "probability": 0.988921046257019
+            },
+            {
+              "word": "timing",
+              "normalized": "timing",
+              "start": 4.06,
+              "end": 4.52,
+              "probability": 0.969077467918396
+            },
+            {
+              "word": "problem.",
+              "normalized": "problem",
+              "start": 4.52,
+              "end": 4.94,
+              "probability": 0.9976271986961365
+            }
+          ],
+          "language": "en",
+          "language_probability": 1.0
+        },
+        "final": {
+          "text": "The first result looked convincing. The second test revealed a hidden timing problem.",
+          "normalized_words": [
+            "the",
+            "first",
+            "result",
+            "looked",
+            "convincing",
+            "the",
+            "second",
+            "test",
+            "revealed",
+            "a",
+            "hidden",
+            "timing",
+            "problem"
+          ],
+          "words": [
+            {
+              "word": "The",
+              "normalized": "the",
+              "start": 0.0,
+              "end": 0.54,
+              "probability": 0.9471043944358826
+            },
+            {
+              "word": "first",
+              "normalized": "first",
+              "start": 0.54,
+              "end": 0.78,
+              "probability": 0.9951794147491455
+            },
+            {
+              "word": "result",
+              "normalized": "result",
+              "start": 0.78,
+              "end": 1.18,
+              "probability": 0.9981334805488586
+            },
+            {
+              "word": "looked",
+              "normalized": "looked",
+              "start": 1.18,
+              "end": 1.44,
+              "probability": 0.994219183921814
+            },
+            {
+              "word": "convincing.",
+              "normalized": "convincing",
+              "start": 1.44,
+              "end": 2.0,
+              "probability": 0.9841777086257935
+            },
+            {
+              "word": "The",
+              "normalized": "the",
+              "start": 2.54,
+              "end": 2.7,
+              "probability": 0.9895126223564148
+            },
+            {
+              "word": "second",
+              "normalized": "second",
+              "start": 2.7,
+              "end": 2.98,
+              "probability": 0.9895867109298706
+            },
+            {
+              "word": "test",
+              "normalized": "test",
+              "start": 2.98,
+              "end": 3.38,
+              "probability": 0.9974961876869202
+            },
+            {
+              "word": "revealed",
+              "normalized": "revealed",
+              "start": 3.38,
+              "end": 3.7,
+              "probability": 0.9955174326896667
+            },
+            {
+              "word": "a",
+              "normalized": "a",
+              "start": 3.7,
+              "end": 3.96,
+              "probability": 0.9978742599487305
+            },
+            {
+              "word": "hidden",
+              "normalized": "hidden",
+              "start": 3.96,
+              "end": 4.16,
+              "probability": 0.9904149770736694
+            },
+            {
+              "word": "timing",
+              "normalized": "timing",
+              "start": 4.16,
+              "end": 4.62,
+              "probability": 0.9692562222480774
+            },
+            {
+              "word": "problem.",
+              "normalized": "problem",
+              "start": 4.62,
+              "end": 5.06,
+              "probability": 0.998241662979126
+            }
+          ],
+          "language": "en",
+          "language_probability": 1.0
+        }
+      },
+      "boundary_anchors": {
+        "raw": {
+          "preceding_word": {
+            "word": "convincing.",
+            "normalized": "convincing",
+            "start": 1.34,
+            "end": 1.9,
+            "probability": 0.9820961952209473
+          },
+          "following_word": {
+            "word": "The",
+            "normalized": "the",
+            "start": 2.48,
+            "end": 2.6,
+            "probability": 0.9904286861419678
+          },
+          "expected_preceding": "convincing",
+          "expected_following": "the"
+        },
+        "final": {
+          "preceding_word": {
+            "word": "convincing.",
+            "normalized": "convincing",
+            "start": 1.44,
+            "end": 2.0,
+            "probability": 0.9841777086257935
+          },
+          "following_word": {
+            "word": "The",
+            "normalized": "the",
+            "start": 2.54,
+            "end": 2.7,
+            "probability": 0.9895126223564148
+          },
+          "expected_preceding": "convincing",
+          "expected_following": "the"
+        }
+      },
+      "pause_measurements": {
+        "raw": {
+          "anchor_window_seconds": [
+            1.9,
+            2.48
+          ],
+          "asr_word_gap_seconds": 0.5800000000000001,
+          "longest_low_energy_seconds": 0.29,
+          "low_energy_start_seconds": 2.19,
+          "low_energy_end_seconds": 2.48,
+          "minimum_frame_dbfs": -104.82085715640429,
+          "baseline_relative_seconds": 0.0
+        },
+        "final": {
+          "anchor_window_seconds": [
+            2.0,
+            2.54
+          ],
+          "asr_word_gap_seconds": 0.54,
+          "longest_low_energy_seconds": 0.26,
+          "low_energy_start_seconds": 2.28,
+          "low_energy_end_seconds": 2.54,
+          "minimum_frame_dbfs": -240.0,
+          "baseline_relative_seconds": 0.0
+        }
+      },
+      "transient_metrics": {
+        "raw": {
+          "entry_max_abs_delta": 0.002342957304790616,
+          "exit_max_abs_delta": 0.0792938619852066,
+          "global_p999_abs_delta": 0.14816875755786896,
+          "abnormal_spike_limit": 0.7408437877893448,
+          "abnormal_spike": false
+        },
+        "final": {
+          "entry_max_abs_delta": 0.0026870258152484894,
+          "exit_max_abs_delta": 0.014903039671480656,
+          "global_p999_abs_delta": 0.11922859400510788,
+          "abnormal_spike_limit": 0.5961429700255394,
+          "abnormal_spike": false
+        }
+      },
+      "word_order_matches_baseline": true,
+      "wer_vs_baseline": 0.0,
+      "pass_checks": {},
+      "automated_pass": true
+    },
+    {
+      "case_id": "primary_pause_040",
+      "group": "primary",
+      "original_text": "The first result looked convincing.<pause:0.40> The second test revealed a hidden timing problem.",
+      "cleaned_text": "The first result looked convincing. The second test revealed a hidden timing problem.",
+      "canonical_plan": {
+        "pauses": [
+          {
+            "after_char": 35,
+            "seconds": 0.4
+          }
+        ]
+      },
+      "requested_pause_seconds": 0.4,
+      "requested_pause_frames": 10,
+      "pause_token_spans": [
+        [
+          54,
+          64
+        ]
+      ],
+      "target_frames": 139,
+      "raw_samples": 133440,
+      "final_samples": 135600,
+      "exact_raw_codec_length": true,
+      "fixed_tokens_unchanged": true,
+      "seed": 1234,
+      "speed": 1.0,
+      "duration": null,
+      "language": "English",
+      "num_step": 128,
+      "runtime_seconds": 3.6560297690011794,
+      "gpu_peak_memory_bytes": 2217320960,
+      "files": {
+        "raw": "outputs/pause_smoke/acceptance/primary_pause_040_raw.wav",
+        "final": "outputs/pause_smoke/acceptance/primary_pause_040_final.wav",
+        "tokens": "outputs/pause_smoke/acceptance/primary_pause_040_tokens.pt"
+      },
+      "hashes": {
+        "raw_sha256": "9adf00db6b4f4a845d46800a666825df7228662d0cb79066048136b00c8b3893",
+        "final_sha256": "61065934946253018b5ebbcb4d1d2c50c5537252bdbb20772374623d7ea4e8c5",
+        "tokens_sha256": "6a685eacaad4ff549f257a7bbb7961888a7a767f7636a52058b9d45f65f0677f"
+      },
+      "reference_basename": "explaining_sub_11s_24k.wav",
+      "reference_sha256": "26b2c81c114eb0d871287a153104a0810ed349fe66ddad3f5474cac3a377b2c0",
+      "asr": {
+        "raw": {
+          "text": "The first result looked convincing. The second test revealed a hidden timing problem.",
+          "normalized_words": [
+            "the",
+            "first",
+            "result",
+            "looked",
+            "convincing",
+            "the",
+            "second",
+            "test",
+            "revealed",
+            "a",
+            "hidden",
+            "timing",
+            "problem"
+          ],
+          "words": [
+            {
+              "word": "The",
+              "normalized": "the",
+              "start": 0.0,
+              "end": 0.26,
+              "probability": 0.6130384206771851
+            },
+            {
+              "word": "first",
+              "normalized": "first",
+              "start": 0.26,
+              "end": 0.46,
+              "probability": 0.9927375912666321
+            },
+            {
+              "word": "result",
+              "normalized": "result",
+              "start": 0.46,
+              "end": 0.84,
+              "probability": 0.9980219602584839
+            },
+            {
+              "word": "looked",
+              "normalized": "looked",
+              "start": 0.84,
+              "end": 1.12,
+              "probability": 0.9934132695198059
+            },
+            {
+              "word": "convincing.",
+              "normalized": "convincing",
+              "start": 1.12,
+              "end": 1.68,
+              "probability": 0.9945946335792542
+            },
+            {
+              "word": "The",
+              "normalized": "the",
+              "start": 2.68,
+              "end": 2.82,
+              "probability": 0.9912870526313782
+            },
+            {
+              "word": "second",
+              "normalized": "second",
+              "start": 2.82,
+              "end": 3.08,
+              "probability": 0.9885784387588501
+            },
+            {
+              "word": "test",
+              "normalized": "test",
+              "start": 3.08,
+              "end": 3.42,
+              "probability": 0.9971568584442139
+            },
+            {
+              "word": "revealed",
+              "normalized": "revealed",
+              "start": 3.42,
+              "end": 3.8,
+              "probability": 0.9965568780899048
+            },
+            {
+              "word": "a",
+              "normalized": "a",
+              "start": 3.8,
+              "end": 4.1,
+              "probability": 0.9980242252349854
+            },
+            {
+              "word": "hidden",
+              "normalized": "hidden",
+              "start": 4.1,
+              "end": 4.32,
+              "probability": 0.9787060618400574
+            },
+            {
+              "word": "timing",
+              "normalized": "timing",
+              "start": 4.32,
+              "end": 4.78,
+              "probability": 0.9750979542732239
+            },
+            {
+              "word": "problem.",
+              "normalized": "problem",
+              "start": 4.78,
+              "end": 5.26,
+              "probability": 0.9979382157325745
+            }
+          ],
+          "language": "en",
+          "language_probability": 1.0
+        },
+        "final": {
+          "text": "The first result looked convincing. The second test revealed a hidden timing problem.",
+          "normalized_words": [
+            "the",
+            "first",
+            "result",
+            "looked",
+            "convincing",
+            "the",
+            "second",
+            "test",
+            "revealed",
+            "a",
+            "hidden",
+            "timing",
+            "problem"
+          ],
+          "words": [
+            {
+              "word": "The",
+              "normalized": "the",
+              "start": 0.0,
+              "end": 0.3,
+              "probability": 0.7394185662269592
+            },
+            {
+              "word": "first",
+              "normalized": "first",
+              "start": 0.3,
+              "end": 0.5,
+              "probability": 0.9943265318870544
+            },
+            {
+              "word": "result",
+              "normalized": "result",
+              "start": 0.5,
+              "end": 0.88,
+              "probability": 0.9984475374221802
+            },
+            {
+              "word": "looked",
+              "normalized": "looked",
+              "start": 0.88,
+              "end": 1.16,
+              "probability": 0.9937847852706909
+            },
+            {
+              "word": "convincing.",
+              "normalized": "convincing",
+              "start": 1.16,
+              "end": 1.72,
+              "probability": 0.9948861002922058
+            },
+            {
+              "word": "The",
+              "normalized": "the",
+              "start": 2.72,
+              "end": 2.86,
+              "probability": 0.9911160469055176
+            },
+            {
+              "word": "second",
+              "normalized": "second",
+              "start": 2.86,
+              "end": 3.12,
+              "probability": 0.9890698194503784
+            },
+            {
+              "word": "test",
+              "normalized": "test",
+              "start": 3.12,
+              "end": 3.46,
+              "probability": 0.996737539768219
+            },
+            {
+              "word": "revealed",
+              "normalized": "revealed",
+              "start": 3.46,
+              "end": 3.82,
+              "probability": 0.9953945279121399
+            },
+            {
+              "word": "a",
+              "normalized": "a",
+              "start": 3.82,
+              "end": 4.14,
+              "probability": 0.9981839060783386
+            },
+            {
+              "word": "hidden",
+              "normalized": "hidden",
+              "start": 4.14,
+              "end": 4.36,
+              "probability": 0.9831526875495911
+            },
+            {
+              "word": "timing",
+              "normalized": "timing",
+              "start": 4.36,
+              "end": 4.82,
+              "probability": 0.975233793258667
+            },
+            {
+              "word": "problem.",
+              "normalized": "problem",
+              "start": 4.82,
+              "end": 5.3,
+              "probability": 0.9977049231529236
+            }
+          ],
+          "language": "en",
+          "language_probability": 1.0
+        }
+      },
+      "boundary_anchors": {
+        "raw": {
+          "preceding_word": {
+            "word": "convincing.",
+            "normalized": "convincing",
+            "start": 1.12,
+            "end": 1.68,
+            "probability": 0.9945946335792542
+          },
+          "following_word": {
+            "word": "The",
+            "normalized": "the",
+            "start": 2.68,
+            "end": 2.82,
+            "probability": 0.9912870526313782
+          },
+          "expected_preceding": "convincing",
+          "expected_following": "the"
+        },
+        "final": {
+          "preceding_word": {
+            "word": "convincing.",
+            "normalized": "convincing",
+            "start": 1.16,
+            "end": 1.72,
+            "probability": 0.9948861002922058
+          },
+          "following_word": {
+            "word": "The",
+            "normalized": "the",
+            "start": 2.72,
+            "end": 2.86,
+            "probability": 0.9911160469055176
+          },
+          "expected_preceding": "convincing",
+          "expected_following": "the"
+        }
+      },
+      "pause_measurements": {
+        "raw": {
+          "anchor_window_seconds": [
+            1.68,
+            2.68
+          ],
+          "asr_word_gap_seconds": 1.0000000000000002,
+          "longest_low_energy_seconds": 0.79,
+          "low_energy_start_seconds": 1.89,
+          "low_energy_end_seconds": 2.68,
+          "minimum_frame_dbfs": -104.77139053785207,
+          "baseline_relative_seconds": 0.5
+        },
+        "final": {
+          "anchor_window_seconds": [
+            1.72,
+            2.72
+          ],
+          "asr_word_gap_seconds": 1.0000000000000002,
+          "longest_low_energy_seconds": 0.79,
+          "low_energy_start_seconds": 1.93,
+          "low_energy_end_seconds": 2.72,
+          "minimum_frame_dbfs": -240.0,
+          "baseline_relative_seconds": 0.53
+        }
+      },
+      "transient_metrics": {
+        "raw": {
+          "entry_max_abs_delta": 0.002130117267370224,
+          "exit_max_abs_delta": 0.024554895237088203,
+          "global_p999_abs_delta": 0.15132834017276764,
+          "abnormal_spike_limit": 0.7566417008638382,
+          "abnormal_spike": false
+        },
+        "final": {
+          "entry_max_abs_delta": 0.0017415909096598625,
+          "exit_max_abs_delta": 0.020028293132781982,
+          "global_p999_abs_delta": 0.12323509901762009,
+          "abnormal_spike_limit": 0.6161754950881004,
+          "abnormal_spike": false
+        }
+      },
+      "word_order_matches_baseline": true,
+      "wer_vs_baseline": 0.0,
+      "pass_checks": {
+        "exact_requested_codec_frames": true,
+        "raw_pause_within_120ms": true,
+        "final_pause_within_120ms": false,
+        "boundary_words_present": true,
+        "word_sequence_matches_baseline": true,
+        "no_boundary_word_omission_or_duplication": true,
+        "fixed_tokens_unchanged": true,
+        "no_abnormal_transient_spike": true
+      },
+      "automated_pass": false
+    },
+    {
+      "case_id": "primary_pause_080",
+      "group": "primary",
+      "original_text": "The first result looked convincing.<pause:0.80> The second test revealed a hidden timing problem.",
+      "cleaned_text": "The first result looked convincing. The second test revealed a hidden timing problem.",
+      "canonical_plan": {
+        "pauses": [
+          {
+            "after_char": 35,
+            "seconds": 0.8
+          }
+        ]
+      },
+      "requested_pause_seconds": 0.8,
+      "requested_pause_frames": 20,
+      "pause_token_spans": [
+        [
+          54,
+          74
+        ]
+      ],
+      "target_frames": 149,
+      "raw_samples": 143040,
+      "final_samples": 146880,
+      "exact_raw_codec_length": true,
+      "fixed_tokens_unchanged": true,
+      "seed": 1234,
+      "speed": 1.0,
+      "duration": null,
+      "language": "English",
+      "num_step": 128,
+      "runtime_seconds": 3.726295186999778,
+      "gpu_peak_memory_bytes": 2346553856,
+      "files": {
+        "raw": "outputs/pause_smoke/acceptance/primary_pause_080_raw.wav",
+        "final": "outputs/pause_smoke/acceptance/primary_pause_080_final.wav",
+        "tokens": "outputs/pause_smoke/acceptance/primary_pause_080_tokens.pt"
+      },
+      "hashes": {
+        "raw_sha256": "496883d1847a1d18b7ee0f0bab87c7e41417f7492ededb9fde1a0a4b4caade10",
+        "final_sha256": "988eb5c710b405ffc73121c88d2ca740ca67ac0616a668a6b04e3c70ca10896f",
+        "tokens_sha256": "e33341931c9e176038c0a18cfa8ab001baa4b897d5210d779e115a9ed6935cfe"
+      },
+      "reference_basename": "explaining_sub_11s_24k.wav",
+      "reference_sha256": "26b2c81c114eb0d871287a153104a0810ed349fe66ddad3f5474cac3a377b2c0",
+      "asr": {
+        "raw": {
+          "text": "the first result looked convincing. The second test revealed a hidden timing problem.",
+          "normalized_words": [
+            "the",
+            "first",
+            "result",
+            "looked",
+            "convincing",
+            "the",
+            "second",
+            "test",
+            "revealed",
+            "a",
+            "hidden",
+            "timing",
+            "problem"
+          ],
+          "words": [
+            {
+              "word": "the",
+              "normalized": "the",
+              "start": 0.0,
+              "end": 0.28,
+              "probability": 0.7974075675010681
+            },
+            {
+              "word": "first",
+              "normalized": "first",
+              "start": 0.28,
+              "end": 0.48,
+              "probability": 0.9950404763221741
+            },
+            {
+              "word": "result",
+              "normalized": "result",
+              "start": 0.48,
+              "end": 0.86,
+              "probability": 0.9965984225273132
+            },
+            {
+              "word": "looked",
+              "normalized": "looked",
+              "start": 0.86,
+              "end": 1.12,
+              "probability": 0.9943844079971313
+            },
+            {
+              "word": "convincing.",
+              "normalized": "convincing",
+              "start": 1.12,
+              "end": 1.68,
+              "probability": 0.9891142845153809
+            },
+            {
+              "word": "The",
+              "normalized": "the",
+              "start": 3.02,
+              "end": 3.22,
+              "probability": 0.9775525331497192
+            },
+            {
+              "word": "second",
+              "normalized": "second",
+              "start": 3.22,
+              "end": 3.54,
+              "probability": 0.9762874245643616
+            },
+            {
+              "word": "test",
+              "normalized": "test",
+              "start": 3.54,
+              "end": 4.0,
+              "probability": 0.9957557916641235
+            },
+            {
+              "word": "revealed",
+              "normalized": "revealed",
+              "start": 4.0,
+              "end": 4.44,
+              "probability": 0.98847496509552
+            },
+            {
+              "word": "a",
+              "normalized": "a",
+              "start": 4.44,
+              "end": 4.76,
+              "probability": 0.9983332753181458
+            },
+            {
+              "word": "hidden",
+              "normalized": "hidden",
+              "start": 4.76,
+              "end": 5.0,
+              "probability": 0.9756548404693604
+            },
+            {
+              "word": "timing",
+              "normalized": "timing",
+              "start": 5.0,
+              "end": 5.46,
+              "probability": 0.9773328304290771
+            },
+            {
+              "word": "problem.",
+              "normalized": "problem",
+              "start": 5.46,
+              "end": 5.86,
+              "probability": 0.9970826506614685
+            }
+          ],
+          "language": "en",
+          "language_probability": 1.0
+        },
+        "final": {
+          "text": "The first result looked convincing. The second test revealed a hidden timing problem.",
+          "normalized_words": [
+            "the",
+            "first",
+            "result",
+            "looked",
+            "convincing",
+            "the",
+            "second",
+            "test",
+            "revealed",
+            "a",
+            "hidden",
+            "timing",
+            "problem"
+          ],
+          "words": [
+            {
+              "word": "The",
+              "normalized": "the",
+              "start": 0.0,
+              "end": 0.34,
+              "probability": 0.612982988357544
+            },
+            {
+              "word": "first",
+              "normalized": "first",
+              "start": 0.34,
+              "end": 0.54,
+              "probability": 0.9926202297210693
+            },
+            {
+              "word": "result",
+              "normalized": "result",
+              "start": 0.54,
+              "end": 0.92,
+              "probability": 0.9979063272476196
+            },
+            {
+              "word": "looked",
+              "normalized": "looked",
+              "start": 0.92,
+              "end": 1.18,
+              "probability": 0.9926427006721497
+            },
+            {
+              "word": "convincing.",
+              "normalized": "convincing",
+              "start": 1.18,
+              "end": 1.76,
+              "probability": 0.9911404252052307
+            },
+            {
+              "word": "The",
+              "normalized": "the",
+              "start": 3.16,
+              "end": 3.28,
+              "probability": 0.9923416376113892
+            },
+            {
+              "word": "second",
+              "normalized": "second",
+              "start": 3.28,
+              "end": 3.58,
+              "probability": 0.9858456254005432
+            },
+            {
+              "word": "test",
+              "normalized": "test",
+              "start": 3.58,
+              "end": 4.04,
+              "probability": 0.9962645173072815
+            },
+            {
+              "word": "revealed",
+              "normalized": "revealed",
+              "start": 4.04,
+              "end": 4.52,
+              "probability": 0.9860509037971497
+            },
+            {
+              "word": "a",
+              "normalized": "a",
+              "start": 4.52,
+              "end": 4.82,
+              "probability": 0.9985398054122925
+            },
+            {
+              "word": "hidden",
+              "normalized": "hidden",
+              "start": 4.82,
+              "end": 5.06,
+              "probability": 0.968578577041626
+            },
+            {
+              "word": "timing",
+              "normalized": "timing",
+              "start": 5.06,
+              "end": 5.54,
+              "probability": 0.9827411770820618
+            },
+            {
+              "word": "problem.",
+              "normalized": "problem",
+              "start": 5.54,
+              "end": 5.96,
+              "probability": 0.9979496598243713
+            }
+          ],
+          "language": "en",
+          "language_probability": 1.0
+        }
+      },
+      "boundary_anchors": {
+        "raw": {
+          "preceding_word": {
+            "word": "convincing.",
+            "normalized": "convincing",
+            "start": 1.12,
+            "end": 1.68,
+            "probability": 0.9891142845153809
+          },
+          "following_word": {
+            "word": "The",
+            "normalized": "the",
+            "start": 3.02,
+            "end": 3.22,
+            "probability": 0.9775525331497192
+          },
+          "expected_preceding": "convincing",
+          "expected_following": "the"
+        },
+        "final": {
+          "preceding_word": {
+            "word": "convincing.",
+            "normalized": "convincing",
+            "start": 1.18,
+            "end": 1.76,
+            "probability": 0.9911404252052307
+          },
+          "following_word": {
+            "word": "The",
+            "normalized": "the",
+            "start": 3.16,
+            "end": 3.28,
+            "probability": 0.9923416376113892
+          },
+          "expected_preceding": "convincing",
+          "expected_following": "the"
+        }
+      },
+      "pause_measurements": {
+        "raw": {
+          "anchor_window_seconds": [
+            1.68,
+            3.02
+          ],
+          "asr_word_gap_seconds": 1.34,
+          "longest_low_energy_seconds": 1.08,
+          "low_energy_start_seconds": 1.94,
+          "low_energy_end_seconds": 3.02,
+          "minimum_frame_dbfs": -104.47019606731035,
+          "baseline_relative_seconds": 0.79
+        },
+        "final": {
+          "anchor_window_seconds": [
+            1.76,
+            3.16
+          ],
+          "asr_word_gap_seconds": 1.4000000000000001,
+          "longest_low_energy_seconds": 1.16,
+          "low_energy_start_seconds": 2.0,
+          "low_energy_end_seconds": 3.16,
+          "minimum_frame_dbfs": -240.0,
+          "baseline_relative_seconds": 0.8999999999999999
+        }
+      },
+      "transient_metrics": {
+        "raw": {
+          "entry_max_abs_delta": 0.0016885861987248063,
+          "exit_max_abs_delta": 4.280418579583056e-05,
+          "global_p999_abs_delta": 0.1893031895160675,
+          "abnormal_spike_limit": 0.9465159475803375,
+          "abnormal_spike": false
+        },
+        "final": {
+          "entry_max_abs_delta": 0.0013683928409591317,
+          "exit_max_abs_delta": 0.06297092884778976,
+          "global_p999_abs_delta": 0.15395966172218323,
+          "abnormal_spike_limit": 0.7697983086109161,
+          "abnormal_spike": false
+        }
+      },
+      "word_order_matches_baseline": true,
+      "wer_vs_baseline": 0.0,
+      "pass_checks": {
+        "exact_requested_codec_frames": true,
+        "raw_pause_within_120ms": true,
+        "final_pause_within_120ms": true,
+        "boundary_words_present": true,
+        "word_sequence_matches_baseline": true,
+        "no_boundary_word_omission_or_duplication": true,
+        "fixed_tokens_unchanged": true,
+        "no_abnormal_transient_spike": true
+      },
+      "automated_pass": true
+    },
+    {
+      "case_id": "primary_pause_120",
+      "group": "primary",
+      "original_text": "The first result looked convincing.<pause:1.20> The second test revealed a hidden timing problem.",
+      "cleaned_text": "The first result looked convincing. The second test revealed a hidden timing problem.",
+      "canonical_plan": {
+        "pauses": [
+          {
+            "after_char": 35,
+            "seconds": 1.2
+          }
+        ]
+      },
+      "requested_pause_seconds": 1.2,
+      "requested_pause_frames": 30,
+      "pause_token_spans": [
+        [
+          54,
+          84
+        ]
+      ],
+      "target_frames": 159,
+      "raw_samples": 152640,
+      "final_samples": 156960,
+      "exact_raw_codec_length": true,
+      "fixed_tokens_unchanged": true,
+      "seed": 1234,
+      "speed": 1.0,
+      "duration": null,
+      "language": "English",
+      "num_step": 128,
+      "runtime_seconds": 4.055667208995146,
+      "gpu_peak_memory_bytes": 2474312192,
+      "files": {
+        "raw": "outputs/pause_smoke/acceptance/primary_pause_120_raw.wav",
+        "final": "outputs/pause_smoke/acceptance/primary_pause_120_final.wav",
+        "tokens": "outputs/pause_smoke/acceptance/primary_pause_120_tokens.pt"
+      },
+      "hashes": {
+        "raw_sha256": "b39ab890e01a811e1d2d6625b9e5be65aefc1f0e629762cdb0e45427b34248b8",
+        "final_sha256": "60cc45dd8ab12863f1f675c34bc3e2441b17431a4492813d4f141575a714647a",
+        "tokens_sha256": "43a72b70eb1ab17121c40265918d2d04d1bce3381772351791643686cf1465da"
+      },
+      "reference_basename": "explaining_sub_11s_24k.wav",
+      "reference_sha256": "26b2c81c114eb0d871287a153104a0810ed349fe66ddad3f5474cac3a377b2c0",
+      "asr": {
+        "raw": {
+          "text": "The first result looked convincing. The second test revealed a hidden timing problem.",
+          "normalized_words": [
+            "the",
+            "first",
+            "result",
+            "looked",
+            "convincing",
+            "the",
+            "second",
+            "test",
+            "revealed",
+            "a",
+            "hidden",
+            "timing",
+            "problem"
+          ],
+          "words": [
+            {
+              "word": "The",
+              "normalized": "the",
+              "start": 0.0,
+              "end": 0.26,
+              "probability": 0.3612489104270935
+            },
+            {
+              "word": "first",
+              "normalized": "first",
+              "start": 0.26,
+              "end": 0.46,
+              "probability": 0.9845291972160339
+            },
+            {
+              "word": "result",
+              "normalized": "result",
+              "start": 0.46,
+              "end": 0.84,
+              "probability": 0.9960928559303284
+            },
+            {
+              "word": "looked",
+              "normalized": "looked",
+              "start": 0.84,
+              "end": 1.18,
+              "probability": 0.9859646558761597
+            },
+            {
+              "word": "convincing.",
+              "normalized": "convincing",
+              "start": 1.18,
+              "end": 1.8,
+              "probability": 0.9859597682952881
+            },
+            {
+              "word": "The",
+              "normalized": "the",
+              "start": 3.6,
+              "end": 3.84,
+              "probability": 0.9886924028396606
+            },
+            {
+              "word": "second",
+              "normalized": "second",
+              "start": 3.84,
+              "end": 4.08,
+              "probability": 0.9842645525932312
+            },
+            {
+              "word": "test",
+              "normalized": "test",
+              "start": 4.08,
+              "end": 4.48,
+              "probability": 0.9946797490119934
+            },
+            {
+              "word": "revealed",
+              "normalized": "revealed",
+              "start": 4.48,
+              "end": 4.94,
+              "probability": 0.9846377968788147
+            },
+            {
+              "word": "a",
+              "normalized": "a",
+              "start": 4.94,
+              "end": 5.28,
+              "probability": 0.9971222281455994
+            },
+            {
+              "word": "hidden",
+              "normalized": "hidden",
+              "start": 5.28,
+              "end": 5.44,
+              "probability": 0.9864046573638916
+            },
+            {
+              "word": "timing",
+              "normalized": "timing",
+              "start": 5.44,
+              "end": 5.94,
+              "probability": 0.9797555208206177
+            },
+            {
+              "word": "problem.",
+              "normalized": "problem",
+              "start": 5.94,
+              "end": 6.26,
+              "probability": 0.9912370443344116
+            }
+          ],
+          "language": "en",
+          "language_probability": 1.0
+        },
+        "final": {
+          "text": "The first result looked convincing. The second test revealed a hidden timing problem.",
+          "normalized_words": [
+            "the",
+            "first",
+            "result",
+            "looked",
+            "convincing",
+            "the",
+            "second",
+            "test",
+            "revealed",
+            "a",
+            "hidden",
+            "timing",
+            "problem"
+          ],
+          "words": [
+            {
+              "word": "The",
+              "normalized": "the",
+              "start": 0.0,
+              "end": 0.36,
+              "probability": 0.5732807517051697
+            },
+            {
+              "word": "first",
+              "normalized": "first",
+              "start": 0.36,
+              "end": 0.54,
+              "probability": 0.9865308403968811
+            },
+            {
+              "word": "result",
+              "normalized": "result",
+              "start": 0.54,
+              "end": 0.92,
+              "probability": 0.9977656602859497
+            },
+            {
+              "word": "looked",
+              "normalized": "looked",
+              "start": 0.92,
+              "end": 1.26,
+              "probability": 0.9885092377662659
+            },
+            {
+              "word": "convincing.",
+              "normalized": "convincing",
+              "start": 1.26,
+              "end": 1.9,
+              "probability": 0.9856483936309814
+            },
+            {
+              "word": "The",
+              "normalized": "the",
+              "start": 3.68,
+              "end": 3.92,
+              "probability": 0.9892207980155945
+            },
+            {
+              "word": "second",
+              "normalized": "second",
+              "start": 3.92,
+              "end": 4.16,
+              "probability": 0.9877112507820129
+            },
+            {
+              "word": "test",
+              "normalized": "test",
+              "start": 4.16,
+              "end": 4.56,
+              "probability": 0.9935160875320435
+            },
+            {
+              "word": "revealed",
+              "normalized": "revealed",
+              "start": 4.56,
+              "end": 5.04,
+              "probability": 0.9889188408851624
+            },
+            {
+              "word": "a",
+              "normalized": "a",
+              "start": 5.04,
+              "end": 5.36,
+              "probability": 0.9970850348472595
+            },
+            {
+              "word": "hidden",
+              "normalized": "hidden",
+              "start": 5.36,
+              "end": 5.52,
+              "probability": 0.9908252358436584
+            },
+            {
+              "word": "timing",
+              "normalized": "timing",
+              "start": 5.52,
+              "end": 6.02,
+              "probability": 0.9800926446914673
+            },
+            {
+              "word": "problem.",
+              "normalized": "problem",
+              "start": 6.02,
+              "end": 6.36,
+              "probability": 0.9927669763565063
+            }
+          ],
+          "language": "en",
+          "language_probability": 1.0
+        }
+      },
+      "boundary_anchors": {
+        "raw": {
+          "preceding_word": {
+            "word": "convincing.",
+            "normalized": "convincing",
+            "start": 1.18,
+            "end": 1.8,
+            "probability": 0.9859597682952881
+          },
+          "following_word": {
+            "word": "The",
+            "normalized": "the",
+            "start": 3.6,
+            "end": 3.84,
+            "probability": 0.9886924028396606
+          },
+          "expected_preceding": "convincing",
+          "expected_following": "the"
+        },
+        "final": {
+          "preceding_word": {
+            "word": "convincing.",
+            "normalized": "convincing",
+            "start": 1.26,
+            "end": 1.9,
+            "probability": 0.9856483936309814
+          },
+          "following_word": {
+            "word": "The",
+            "normalized": "the",
+            "start": 3.68,
+            "end": 3.92,
+            "probability": 0.9892207980155945
+          },
+          "expected_preceding": "convincing",
+          "expected_following": "the"
+        }
+      },
+      "pause_measurements": {
+        "raw": {
+          "anchor_window_seconds": [
+            1.8,
+            3.6
+          ],
+          "asr_word_gap_seconds": 1.8,
+          "longest_low_energy_seconds": 1.58,
+          "low_energy_start_seconds": 2.02,
+          "low_energy_end_seconds": 3.6,
+          "minimum_frame_dbfs": -104.01157750597417,
+          "baseline_relative_seconds": 1.29
+        },
+        "final": {
+          "anchor_window_seconds": [
+            1.9,
+            3.68
+          ],
+          "asr_word_gap_seconds": 1.7800000000000002,
+          "longest_low_energy_seconds": 1.59,
+          "low_energy_start_seconds": 2.09,
+          "low_energy_end_seconds": 3.68,
+          "minimum_frame_dbfs": -240.0,
+          "baseline_relative_seconds": 1.33
+        }
+      },
+      "transient_metrics": {
+        "raw": {
+          "entry_max_abs_delta": 0.0017071417532861233,
+          "exit_max_abs_delta": 9.036524716066197e-06,
+          "global_p999_abs_delta": 0.1803865283727646,
+          "abnormal_spike_limit": 0.9019326418638229,
+          "abnormal_spike": false
+        },
+        "final": {
+          "entry_max_abs_delta": 0.0014430324081331491,
+          "exit_max_abs_delta": 0.0,
+          "global_p999_abs_delta": 0.1460832804441452,
+          "abnormal_spike_limit": 0.730416402220726,
+          "abnormal_spike": false
+        }
+      },
+      "word_order_matches_baseline": true,
+      "wer_vs_baseline": 0.0,
+      "pass_checks": {
+        "exact_requested_codec_frames": true,
+        "raw_pause_within_120ms": true,
+        "final_pause_within_120ms": false,
+        "boundary_words_present": true,
+        "word_sequence_matches_baseline": true,
+        "no_boundary_word_omission_or_duplication": true,
+        "fixed_tokens_unchanged": true,
+        "no_abnormal_transient_spike": true
+      },
+      "automated_pass": false
+    },
+    {
+      "case_id": "secondary_baseline",
+      "group": "secondary",
+      "original_text": "From a distance, the mechanism looks perfectly ordinary. But the hidden timing is what makes the whole system work.",
+      "cleaned_text": "From a distance, the mechanism looks perfectly ordinary. But the hidden timing is what makes the whole system work.",
+      "canonical_plan": {
+        "pauses": []
+      },
+      "requested_pause_seconds": 0.0,
+      "requested_pause_frames": 0,
+      "pause_token_spans": [],
+      "target_frames": 181,
+      "raw_samples": 173760,
+      "final_samples": 178560,
+      "exact_raw_codec_length": true,
+      "fixed_tokens_unchanged": true,
+      "seed": 1234,
+      "speed": 1.0,
+      "duration": null,
+      "language": "English",
+      "num_step": 128,
+      "runtime_seconds": 5.295256814999448,
+      "gpu_peak_memory_bytes": 2270086144,
+      "files": {
+        "raw": "outputs/pause_smoke/acceptance/secondary_baseline_raw.wav",
+        "final": "outputs/pause_smoke/acceptance/secondary_baseline_final.wav",
+        "tokens": "outputs/pause_smoke/acceptance/secondary_baseline_tokens.pt"
+      },
+      "hashes": {
+        "raw_sha256": "56092dc6555edc69600fc65e31ea3274aef7e5ba439644ad4354f47f905642da",
+        "final_sha256": "2152502d447e2000f6090ebcd02cb3ae00fc676770bd95194a1a876bce9a9920",
+        "tokens_sha256": "e3c057f4512355cdbb220b65f4bf13fdff25cf9a0f97db9cf179b3e48bf9ab1a"
+      },
+      "reference_basename": "explaining_24k.wav",
+      "reference_sha256": "6409ff2b4dd0f0a72249e1754c42df47ecd98c64f9a34cb71df2f52f17a25fad",
+      "asr": {
+        "raw": {
+          "text": "From a distance, the mechanism looks perfectly ordinary, but the hidden timing is what makes the whole system work.",
+          "normalized_words": [
+            "from",
+            "a",
+            "distance",
+            "the",
+            "mechanism",
+            "looks",
+            "perfectly",
+            "ordinary",
+            "but",
+            "the",
+            "hidden",
+            "timing",
+            "is",
+            "what",
+            "makes",
+            "the",
+            "whole",
+            "system",
+            "work"
+          ],
+          "words": [
+            {
+              "word": "From",
+              "normalized": "from",
+              "start": 0.0,
+              "end": 0.36,
+              "probability": 0.8583801984786987
+            },
+            {
+              "word": "a",
+              "normalized": "a",
+              "start": 0.36,
+              "end": 0.5,
+              "probability": 0.9918943047523499
+            },
+            {
+              "word": "distance,",
+              "normalized": "distance",
+              "start": 0.5,
+              "end": 0.92,
+              "probability": 0.9987695813179016
+            },
+            {
+              "word": "the",
+              "normalized": "the",
+              "start": 1.42,
+              "end": 1.48,
+              "probability": 0.9953076243400574
+            },
+            {
+              "word": "mechanism",
+              "normalized": "mechanism",
+              "start": 1.48,
+              "end": 1.86,
+              "probability": 0.9788612723350525
+            },
+            {
+              "word": "looks",
+              "normalized": "looks",
+              "start": 1.86,
+              "end": 2.26,
+              "probability": 0.9963839054107666
+            },
+            {
+              "word": "perfectly",
+              "normalized": "perfectly",
+              "start": 2.26,
+              "end": 2.8,
+              "probability": 0.9956353306770325
+            },
+            {
+              "word": "ordinary,",
+              "normalized": "ordinary",
+              "start": 2.8,
+              "end": 3.34,
+              "probability": 0.9991104006767273
+            },
+            {
+              "word": "but",
+              "normalized": "but",
+              "start": 3.8,
+              "end": 4.06,
+              "probability": 0.9884983897209167
+            },
+            {
+              "word": "the",
+              "normalized": "the",
+              "start": 4.06,
+              "end": 4.26,
+              "probability": 0.9925974607467651
+            },
+            {
+              "word": "hidden",
+              "normalized": "hidden",
+              "start": 4.26,
+              "end": 4.5,
+              "probability": 0.9848339557647705
+            },
+            {
+              "word": "timing",
+              "normalized": "timing",
+              "start": 4.5,
+              "end": 5.0,
+              "probability": 0.9953303337097168
+            },
+            {
+              "word": "is",
+              "normalized": "is",
+              "start": 5.0,
+              "end": 5.28,
+              "probability": 0.9969174861907959
+            },
+            {
+              "word": "what",
+              "normalized": "what",
+              "start": 5.28,
+              "end": 5.46,
+              "probability": 0.9990372657775879
+            },
+            {
+              "word": "makes",
+              "normalized": "makes",
+              "start": 5.46,
+              "end": 5.72,
+              "probability": 0.9964415431022644
+            },
+            {
+              "word": "the",
+              "normalized": "the",
+              "start": 5.72,
+              "end": 5.98,
+              "probability": 0.9934410452842712
+            },
+            {
+              "word": "whole",
+              "normalized": "whole",
+              "start": 5.98,
+              "end": 6.24,
+              "probability": 0.9977781176567078
+            },
+            {
+              "word": "system",
+              "normalized": "system",
+              "start": 6.24,
+              "end": 6.68,
+              "probability": 0.9971677660942078
+            },
+            {
+              "word": "work.",
+              "normalized": "work",
+              "start": 6.68,
+              "end": 7.06,
+              "probability": 0.9977383613586426
+            }
+          ],
+          "language": "en",
+          "language_probability": 1.0
+        },
+        "final": {
+          "text": "From a distance, the mechanism looks perfectly ordinary, but the hidden timing is what makes the whole system work.",
+          "normalized_words": [
+            "from",
+            "a",
+            "distance",
+            "the",
+            "mechanism",
+            "looks",
+            "perfectly",
+            "ordinary",
+            "but",
+            "the",
+            "hidden",
+            "timing",
+            "is",
+            "what",
+            "makes",
+            "the",
+            "whole",
+            "system",
+            "work"
+          ],
+          "words": [
+            {
+              "word": "From",
+              "normalized": "from",
+              "start": 0.0,
+              "end": 0.46,
+              "probability": 0.9086955785751343
+            },
+            {
+              "word": "a",
+              "normalized": "a",
+              "start": 0.46,
+              "end": 0.6,
+              "probability": 0.9882806539535522
+            },
+            {
+              "word": "distance,",
+              "normalized": "distance",
+              "start": 0.6,
+              "end": 1.02,
+              "probability": 0.9990890026092529
+            },
+            {
+              "word": "the",
+              "normalized": "the",
+              "start": 1.54,
+              "end": 1.58,
+              "probability": 0.9939782619476318
+            },
+            {
+              "word": "mechanism",
+              "normalized": "mechanism",
+              "start": 1.58,
+              "end": 1.96,
+              "probability": 0.9780092239379883
+            },
+            {
+              "word": "looks",
+              "normalized": "looks",
+              "start": 1.96,
+              "end": 2.36,
+              "probability": 0.9947279095649719
+            },
+            {
+              "word": "perfectly",
+              "normalized": "perfectly",
+              "start": 2.36,
+              "end": 2.9,
+              "probability": 0.9937875270843506
+            },
+            {
+              "word": "ordinary,",
+              "normalized": "ordinary",
+              "start": 2.9,
+              "end": 3.44,
+              "probability": 0.9988710284233093
+            },
+            {
+              "word": "but",
+              "normalized": "but",
+              "start": 3.94,
+              "end": 4.16,
+              "probability": 0.9893667101860046
+            },
+            {
+              "word": "the",
+              "normalized": "the",
+              "start": 4.16,
+              "end": 4.36,
+              "probability": 0.9918115139007568
+            },
+            {
+              "word": "hidden",
+              "normalized": "hidden",
+              "start": 4.36,
+              "end": 4.6,
+              "probability": 0.9886539578437805
+            },
+            {
+              "word": "timing",
+              "normalized": "timing",
+              "start": 4.6,
+              "end": 5.12,
+              "probability": 0.9932361245155334
+            },
+            {
+              "word": "is",
+              "normalized": "is",
+              "start": 5.12,
+              "end": 5.38,
+              "probability": 0.9964112639427185
+            },
+            {
+              "word": "what",
+              "normalized": "what",
+              "start": 5.38,
+              "end": 5.56,
+              "probability": 0.9986647367477417
+            },
+            {
+              "word": "makes",
+              "normalized": "makes",
+              "start": 5.56,
+              "end": 5.82,
+              "probability": 0.994722843170166
+            },
+            {
+              "word": "the",
+              "normalized": "the",
+              "start": 5.82,
+              "end": 6.08,
+              "probability": 0.9889194369316101
+            },
+            {
+              "word": "whole",
+              "normalized": "whole",
+              "start": 6.08,
+              "end": 6.34,
+              "probability": 0.9965528249740601
+            },
+            {
+              "word": "system",
+              "normalized": "system",
+              "start": 6.34,
+              "end": 6.8,
+              "probability": 0.9971150159835815
+            },
+            {
+              "word": "work.",
+              "normalized": "work",
+              "start": 6.8,
+              "end": 7.18,
+              "probability": 0.9957589507102966
+            }
+          ],
+          "language": "en",
+          "language_probability": 1.0
+        }
+      },
+      "boundary_anchors": {
+        "raw": {
+          "preceding_word": {
+            "word": "ordinary,",
+            "normalized": "ordinary",
+            "start": 2.8,
+            "end": 3.34,
+            "probability": 0.9991104006767273
+          },
+          "following_word": {
+            "word": "but",
+            "normalized": "but",
+            "start": 3.8,
+            "end": 4.06,
+            "probability": 0.9884983897209167
+          },
+          "expected_preceding": "ordinary",
+          "expected_following": "but"
+        },
+        "final": {
+          "preceding_word": {
+            "word": "ordinary,",
+            "normalized": "ordinary",
+            "start": 2.9,
+            "end": 3.44,
+            "probability": 0.9988710284233093
+          },
+          "following_word": {
+            "word": "but",
+            "normalized": "but",
+            "start": 3.94,
+            "end": 4.16,
+            "probability": 0.9893667101860046
+          },
+          "expected_preceding": "ordinary",
+          "expected_following": "but"
+        }
+      },
+      "pause_measurements": {
+        "raw": {
+          "anchor_window_seconds": [
+            3.34,
+            3.8
+          ],
+          "asr_word_gap_seconds": 0.45999999999999996,
+          "longest_low_energy_seconds": 0.28,
+          "low_energy_start_seconds": 3.52,
+          "low_energy_end_seconds": 3.8,
+          "minimum_frame_dbfs": -104.48099882875822,
+          "baseline_relative_seconds": 0.0
+        },
+        "final": {
+          "anchor_window_seconds": [
+            3.44,
+            3.94
+          ],
+          "asr_word_gap_seconds": 0.5,
+          "longest_low_energy_seconds": 0.32,
+          "low_energy_start_seconds": 3.62,
+          "low_energy_end_seconds": 3.94,
+          "minimum_frame_dbfs": -240.0,
+          "baseline_relative_seconds": 0.0
+        }
+      },
+      "transient_metrics": {
+        "raw": {
+          "entry_max_abs_delta": 0.003413112834095955,
+          "exit_max_abs_delta": 1.862699537014123e-05,
+          "global_p999_abs_delta": 0.1378099024295807,
+          "abnormal_spike_limit": 0.6890495121479034,
+          "abnormal_spike": false
+        },
+        "final": {
+          "entry_max_abs_delta": 0.0028911083936691284,
+          "exit_max_abs_delta": 0.0,
+          "global_p999_abs_delta": 0.11606813967227936,
+          "abnormal_spike_limit": 0.5803406983613968,
+          "abnormal_spike": false
+        }
+      },
+      "word_order_matches_baseline": true,
+      "wer_vs_baseline": 0.0,
+      "pass_checks": {},
+      "automated_pass": true
+    },
+    {
+      "case_id": "secondary_pause_080",
+      "group": "secondary",
+      "original_text": "From a distance, the mechanism looks perfectly ordinary.<pause:0.80> But the hidden timing is what makes the whole system work.",
+      "cleaned_text": "From a distance, the mechanism looks perfectly ordinary. But the hidden timing is what makes the whole system work.",
+      "canonical_plan": {
+        "pauses": [
+          {
+            "after_char": 56,
+            "seconds": 0.8
+          }
+        ]
+      },
+      "requested_pause_seconds": 0.8,
+      "requested_pause_frames": 20,
+      "pause_token_spans": [
+        [
+          90,
+          110
+        ]
+      ],
+      "target_frames": 201,
+      "raw_samples": 192960,
+      "final_samples": 187920,
+      "exact_raw_codec_length": true,
+      "fixed_tokens_unchanged": true,
+      "seed": 1234,
+      "speed": 1.0,
+      "duration": null,
+      "language": "English",
+      "num_step": 128,
+      "runtime_seconds": 5.323387582997384,
+      "gpu_peak_memory_bytes": 2346582528,
+      "files": {
+        "raw": "outputs/pause_smoke/acceptance/secondary_pause_080_raw.wav",
+        "final": "outputs/pause_smoke/acceptance/secondary_pause_080_final.wav",
+        "tokens": "outputs/pause_smoke/acceptance/secondary_pause_080_tokens.pt"
+      },
+      "hashes": {
+        "raw_sha256": "d2df88971b63035fdb7458a29f195bfe029965af3792d8d780330aab658a9400",
+        "final_sha256": "8d13b141b92904a71991075e56be231a14a36abe14af2d8b04fd0e4bd9c84c20",
+        "tokens_sha256": "2d8b59ab044f18b07489ee78798ea1782d46039ce4ce3c5f62dfbfcb44982da3"
+      },
+      "reference_basename": "explaining_24k.wav",
+      "reference_sha256": "6409ff2b4dd0f0a72249e1754c42df47ecd98c64f9a34cb71df2f52f17a25fad",
+      "asr": {
+        "raw": {
+          "text": "From a distance, the mechanism looks perfectly ordinary. But the hidden timing is what makes the whole system work.",
+          "normalized_words": [
+            "from",
+            "a",
+            "distance",
+            "the",
+            "mechanism",
+            "looks",
+            "perfectly",
+            "ordinary",
+            "but",
+            "the",
+            "hidden",
+            "timing",
+            "is",
+            "what",
+            "makes",
+            "the",
+            "whole",
+            "system",
+            "work"
+          ],
+          "words": [
+            {
+              "word": "From",
+              "normalized": "from",
+              "start": 0.0,
+              "end": 0.26,
+              "probability": 0.7765002846717834
+            },
+            {
+              "word": "a",
+              "normalized": "a",
+              "start": 0.26,
+              "end": 0.4,
+              "probability": 0.9950729012489319
+            },
+            {
+              "word": "distance,",
+              "normalized": "distance",
+              "start": 0.4,
+              "end": 0.82,
+              "probability": 0.9989246726036072
+            },
+            {
+              "word": "the",
+              "normalized": "the",
+              "start": 1.4,
+              "end": 1.48,
+              "probability": 0.9965519905090332
+            },
+            {
+              "word": "mechanism",
+              "normalized": "mechanism",
+              "start": 1.48,
+              "end": 1.84,
+              "probability": 0.9879401922225952
+            },
+            {
+              "word": "looks",
+              "normalized": "looks",
+              "start": 1.84,
+              "end": 2.22,
+              "probability": 0.9965623021125793
+            },
+            {
+              "word": "perfectly",
+              "normalized": "perfectly",
+              "start": 2.22,
+              "end": 2.72,
+              "probability": 0.995524525642395
+            },
+            {
+              "word": "ordinary.",
+              "normalized": "ordinary",
+              "start": 2.72,
+              "end": 3.24,
+              "probability": 0.9994707703590393
+            },
+            {
+              "word": "But",
+              "normalized": "but",
+              "start": 4.42,
+              "end": 4.66,
+              "probability": 0.9892216920852661
+            },
+            {
+              "word": "the",
+              "normalized": "the",
+              "start": 4.66,
+              "end": 4.82,
+              "probability": 0.9712091088294983
+            },
+            {
+              "word": "hidden",
+              "normalized": "hidden",
+              "start": 4.82,
+              "end": 5.04,
+              "probability": 0.9773241877555847
+            },
+            {
+              "word": "timing",
+              "normalized": "timing",
+              "start": 5.04,
+              "end": 5.56,
+              "probability": 0.9917984008789062
+            },
+            {
+              "word": "is",
+              "normalized": "is",
+              "start": 5.56,
+              "end": 5.9,
+              "probability": 0.9926723837852478
+            },
+            {
+              "word": "what",
+              "normalized": "what",
+              "start": 5.9,
+              "end": 6.1,
+              "probability": 0.9988981485366821
+            },
+            {
+              "word": "makes",
+              "normalized": "makes",
+              "start": 6.1,
+              "end": 6.3,
+              "probability": 0.9961254000663757
+            },
+            {
+              "word": "the",
+              "normalized": "the",
+              "start": 6.3,
+              "end": 6.52,
+              "probability": 0.9905161261558533
+            },
+            {
+              "word": "whole",
+              "normalized": "whole",
+              "start": 6.52,
+              "end": 6.72,
+              "probability": 0.9926020503044128
+            },
+            {
+              "word": "system",
+              "normalized": "system",
+              "start": 6.72,
+              "end": 7.04,
+              "probability": 0.9981990456581116
+            },
+            {
+              "word": "work.",
+              "normalized": "work",
+              "start": 7.04,
+              "end": 7.4,
+              "probability": 0.9987552165985107
+            }
+          ],
+          "language": "en",
+          "language_probability": 1.0
+        },
+        "final": {
+          "text": "From a distance, the mechanism looks perfectly ordinary. But the hidden timing is what makes the whole system work.",
+          "normalized_words": [
+            "from",
+            "a",
+            "distance",
+            "the",
+            "mechanism",
+            "looks",
+            "perfectly",
+            "ordinary",
+            "but",
+            "the",
+            "hidden",
+            "timing",
+            "is",
+            "what",
+            "makes",
+            "the",
+            "whole",
+            "system",
+            "work"
+          ],
+          "words": [
+            {
+              "word": "From",
+              "normalized": "from",
+              "start": 0.0,
+              "end": 0.3,
+              "probability": 0.8031082153320312
+            },
+            {
+              "word": "a",
+              "normalized": "a",
+              "start": 0.3,
+              "end": 0.44,
+              "probability": 0.9947086572647095
+            },
+            {
+              "word": "distance,",
+              "normalized": "distance",
+              "start": 0.44,
+              "end": 0.84,
+              "probability": 0.9988316893577576
+            },
+            {
+              "word": "the",
+              "normalized": "the",
+              "start": 1.48,
+              "end": 1.52,
+              "probability": 0.9963006973266602
+            },
+            {
+              "word": "mechanism",
+              "normalized": "mechanism",
+              "start": 1.52,
+              "end": 1.88,
+              "probability": 0.9861400127410889
+            },
+            {
+              "word": "looks",
+              "normalized": "looks",
+              "start": 1.88,
+              "end": 2.26,
+              "probability": 0.9964170455932617
+            },
+            {
+              "word": "perfectly",
+              "normalized": "perfectly",
+              "start": 2.26,
+              "end": 2.78,
+              "probability": 0.9940952062606812
+            },
+            {
+              "word": "ordinary.",
+              "normalized": "ordinary",
+              "start": 2.78,
+              "end": 3.3,
+              "probability": 0.9993153810501099
+            },
+            {
+              "word": "But",
+              "normalized": "but",
+              "start": 4.46,
+              "end": 4.7,
+              "probability": 0.9876141548156738
+            },
+            {
+              "word": "the",
+              "normalized": "the",
+              "start": 4.7,
+              "end": 4.86,
+              "probability": 0.9659265279769897
+            },
+            {
+              "word": "hidden",
+              "normalized": "hidden",
+              "start": 4.86,
+              "end": 5.08,
+              "probability": 0.9768335819244385
+            },
+            {
+              "word": "timing",
+              "normalized": "timing",
+              "start": 5.08,
+              "end": 5.6,
+              "probability": 0.9922577738761902
+            },
+            {
+              "word": "is",
+              "normalized": "is",
+              "start": 5.6,
+              "end": 5.94,
+              "probability": 0.9923595786094666
+            },
+            {
+              "word": "what",
+              "normalized": "what",
+              "start": 5.94,
+              "end": 6.14,
+              "probability": 0.9988899827003479
+            },
+            {
+              "word": "makes",
+              "normalized": "makes",
+              "start": 6.14,
+              "end": 6.36,
+              "probability": 0.995895266532898
+            },
+            {
+              "word": "the",
+              "normalized": "the",
+              "start": 6.36,
+              "end": 6.56,
+              "probability": 0.9901081323623657
+            },
+            {
+              "word": "whole",
+              "normalized": "whole",
+              "start": 6.56,
+              "end": 6.76,
+              "probability": 0.9933885335922241
+            },
+            {
+              "word": "system",
+              "normalized": "system",
+              "start": 6.76,
+              "end": 7.08,
+              "probability": 0.9982171654701233
+            },
+            {
+              "word": "work.",
+              "normalized": "work",
+              "start": 7.08,
+              "end": 7.44,
+              "probability": 0.9984111785888672
+            }
+          ],
+          "language": "en",
+          "language_probability": 1.0
+        }
+      },
+      "boundary_anchors": {
+        "raw": {
+          "preceding_word": {
+            "word": "ordinary.",
+            "normalized": "ordinary",
+            "start": 2.72,
+            "end": 3.24,
+            "probability": 0.9994707703590393
+          },
+          "following_word": {
+            "word": "But",
+            "normalized": "but",
+            "start": 4.42,
+            "end": 4.66,
+            "probability": 0.9892216920852661
+          },
+          "expected_preceding": "ordinary",
+          "expected_following": "but"
+        },
+        "final": {
+          "preceding_word": {
+            "word": "ordinary.",
+            "normalized": "ordinary",
+            "start": 2.78,
+            "end": 3.3,
+            "probability": 0.9993153810501099
+          },
+          "following_word": {
+            "word": "But",
+            "normalized": "but",
+            "start": 4.46,
+            "end": 4.7,
+            "probability": 0.9876141548156738
+          },
+          "expected_preceding": "ordinary",
+          "expected_following": "but"
+        }
+      },
+      "pause_measurements": {
+        "raw": {
+          "anchor_window_seconds": [
+            3.24,
+            4.42
+          ],
+          "asr_word_gap_seconds": 1.1799999999999997,
+          "longest_low_energy_seconds": 0.95,
+          "low_energy_start_seconds": 3.47,
+          "low_energy_end_seconds": 4.42,
+          "minimum_frame_dbfs": -103.85970945759917,
+          "baseline_relative_seconds": 0.6699999999999999
+        },
+        "final": {
+          "anchor_window_seconds": [
+            3.3,
+            4.46
+          ],
+          "asr_word_gap_seconds": 1.1600000000000001,
+          "longest_low_energy_seconds": 0.95,
+          "low_energy_start_seconds": 3.51,
+          "low_energy_end_seconds": 4.46,
+          "minimum_frame_dbfs": -240.0,
+          "baseline_relative_seconds": 0.6299999999999999
+        }
+      },
+      "transient_metrics": {
+        "raw": {
+          "entry_max_abs_delta": 0.0023641474545001984,
+          "exit_max_abs_delta": 1.621037517907098e-05,
+          "global_p999_abs_delta": 0.13124196231365204,
+          "abnormal_spike_limit": 0.6562098115682602,
+          "abnormal_spike": false
+        },
+        "final": {
+          "entry_max_abs_delta": 0.0020134493242949247,
+          "exit_max_abs_delta": 0.0,
+          "global_p999_abs_delta": 0.11144515126943588,
+          "abnormal_spike_limit": 0.5572257563471794,
+          "abnormal_spike": false
+        }
+      },
+      "word_order_matches_baseline": true,
+      "wer_vs_baseline": 0.0,
+      "pass_checks": {
+        "exact_requested_codec_frames": true,
+        "raw_pause_within_120ms": false,
+        "final_pause_within_120ms": false,
+        "boundary_words_present": true,
+        "word_sequence_matches_baseline": true,
+        "no_boundary_word_omission_or_duplication": true,
+        "fixed_tokens_unchanged": true,
+        "no_abnormal_transient_spike": true
+      },
+      "automated_pass": false
+    }
+  ]
+}
