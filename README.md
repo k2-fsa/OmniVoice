@@ -220,6 +220,10 @@ See more detailed control in [docs/generation-parameters.md](docs/generation-par
 
 ### Native Pause Control Experiment
 
+Full implementation notes, experiment history, validation, and limitations are
+documented in
+[`docs/narration-control-experiments.md`](docs/narration-control-experiments.md).
+
 This branch adds fixed codec-token pauses without inserting silence into the
 decoded waveform. Inline markers are removed before text tokenization:
 
