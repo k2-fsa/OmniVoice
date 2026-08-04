@@ -94,6 +94,10 @@ To start training from a pretrained OmniVoice checkpoint (for fine-tuning):
 }
 ```
 
+## LoRA Finetuning
+
+For parameter-efficient finetuning, set `"use_lora": true` in your training config to train low-rank adapters instead of the full model. See [lora_finetuning.md](lora_finetuning.md) for configuration, adapter inference, and merging back into a standalone checkpoint.
+
 ## Monitoring
 
 Training logs to TensorBoard:

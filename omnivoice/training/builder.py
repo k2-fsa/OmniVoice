@@ -33,6 +33,7 @@ Key functions:
 """
 
 import logging
+import os
 from functools import partial
 from typing import Tuple
 
@@ -125,7 +126,35 @@ def build_model_and_tokenizer(
     model.config.bos_token_id = tokenizer.bos_token_id
     model.config.eos_token_id = tokenizer.eos_token_id
 
+    # 5. Wrap with LoRA adapters (optional)
+    if config.use_lora:
+        model = _apply_lora(model, config)
+
     return model, tokenizer
+
+
+def _apply_lora(model: OmniVoice, config: TrainingConfig) -> OmniVoice:
+    """Wrap the model with PEFT LoRA adapters.
+
+    ``lora_target_modules`` (LLM attention/MLP projections) are trained as
+    low-rank adapters; ``lora_modules_to_save`` (the audio embedding and
+    output head) are OmniVoice-specific I/O layers with no LLM-pretrained
+    knowledge to preserve, so they are kept fully trainable instead.
+    """
+    from peft import LoraConfig, get_peft_model
+
+    lora_config = LoraConfig(
+        r=config.lora_r,
+        lora_alpha=config.lora_alpha,
+        lora_dropout=config.lora_dropout,
+        bias=config.lora_bias,
+        target_modules=config.lora_target_modules,
+        modules_to_save=config.lora_modules_to_save,
+    )
+    model = get_peft_model(model, lora_config)
+    if int(os.environ.get("LOCAL_RANK", "0")) == 0:
+        model.print_trainable_parameters()
+    return model
 
 
 def build_dataloaders(

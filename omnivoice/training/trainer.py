@@ -164,8 +164,11 @@ class OmniTrainer:
 
     def create_optimizer_and_scheduler(self):
         """Default AdamW + configurable LR Scheduler."""
+        # Only trainable parameters (all of them for full fine-tuning; LoRA
+        # adapters + modules_to_save when config.use_lora froze the rest).
+        trainable_params = [p for p in self.model.parameters() if p.requires_grad]
         optimizer = torch.optim.AdamW(
-            self.model.parameters(),
+            trainable_params,
             lr=self.config.learning_rate,
             weight_decay=self.config.weight_decay,
         )

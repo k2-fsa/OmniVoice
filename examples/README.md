@@ -6,6 +6,7 @@ This directory contains scripts and configs for training, fine-tuning, and evalu
 |---|---|---|
 | Training from scratch | [run_emilia.sh](run_emilia.sh) | Full pipeline on the Emilia dataset (data check, tokenization, training) |
 | Fine-tuning | [run_finetune.sh](run_finetune.sh) | Fine-tune from a pretrained checkpoint using your own JSONL data |
+| LoRA fine-tuning | [run_finetune_lora.sh](run_finetune_lora.sh) | Parameter-efficient finetuning via PEFT LoRA adapters — see [../docs/lora_finetuning.md](../docs/lora_finetuning.md) |
 | Evaluation | [run_eval.sh](run_eval.sh) | Evaluate WER, speaker similarity, and UTMOS on standard test sets |
 
 ---

@@ -59,10 +59,15 @@ eval = [
     "unidecode",            # Unicode normalization
 ]
 
+lora = [
+    "peft>=0.20.0",       # LoRA fine-tuning support
+]
+
 [project.scripts]
 omnivoice-infer = "omnivoice.cli.infer:main"
 omnivoice-infer-batch = "omnivoice.cli.infer_batch:main"
 omnivoice-demo = "omnivoice.cli.demo:main"
+omnivoice-merge-lora = "omnivoice.cli.merge_lora:main"
 
 [project.urls]
 Homepage = "https://github.com/k2-fsa/OmniVoice"

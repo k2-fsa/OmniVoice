@@ -1,0 +1,52 @@
+{
+    "llm_name_or_path": "Qwen/Qwen3-0.6B",
+    "audio_vocab_size": 1025,
+    "audio_mask_id": 1024,
+    "num_audio_codebook": 8,
+
+    "audio_codebook_weights": [8, 8, 6, 6, 4, 4, 2, 2],
+    "drop_cond_ratio": 0.1,
+    "prompt_ratio_range": [0.0, 0.3],
+    "mask_ratio_range": [0.0, 1.0],
+    "language_ratio": 0.8,
+    "use_pinyin_ratio": 0.0,
+    "instruct_ratio": 0.0,
+    "only_instruct_ratio": 0.0,
+
+    "resume_from_checkpoint": null,
+    "init_from_checkpoint": "k2-fsa/OmniVoice",
+
+    "use_lora": true,
+    "lora_r": 16,
+    "lora_alpha": 32,
+    "lora_dropout": 0.05,
+    "lora_bias": "none",
+    "lora_target_modules": ["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"],
+    "lora_modules_to_save": ["audio_embeddings", "audio_heads"],
+
+    "learning_rate": 1e-4,
+    "weight_decay": 0.01,
+    "max_grad_norm": 1.0,
+    "steps": 5000,
+    "seed": 42,
+    "warmup_type": "ratio",
+    "warmup_ratio": 0.01,
+    "warmup_steps": 0,
+
+    "attn_implementation": "sdpa",
+    "max_sample_tokens": 2000,
+    "min_sample_tokens": 50,
+    "max_batch_size": 64,
+
+    "batch_tokens": 8192,
+    "gradient_accumulation_steps": 1,
+    "num_workers": 2,
+
+    "mixed_precision": "bf16",
+    "allow_tf32": true,
+
+    "logging_steps": 50,
+    "eval_steps": 500,
+    "save_steps": 500,
+    "keep_last_n_checkpoints": -1
+}
