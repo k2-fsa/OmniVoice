@@ -61,3 +61,9 @@ If you have a project you'd like to add, please open a PR.
 
 - **[LocalText2Voice](https://github.com/estebanstifli/LocalText2Voice)** —
   User-friendly Windows desktop pipeline for long-form audiobook and podcast production with OmniVoice support, voice-library management, chapter-aware generation, Whisper-based segment review and retries, multi-voice markup, music/SFX mixing, and MCP automation.
+
+- **[omnivoice-fastpath](https://github.com/badrabbitt/omnivoice-fastpath)** —
+  Inference speedups for OmniVoice with the benchmarks behind them: step-count and
+  reference-length sweeps, a lossless CFG padding fix, and paired WER evaluations
+  of what each change costs. Includes the negative results (batching, ONNX fp32,
+  CUDA graphs).
