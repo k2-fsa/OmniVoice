@@ -421,12 +421,12 @@ class SpeechDenoisingProcessor:
 
     @torch.inference_mode()
     def process(self, waveform: torch.Tensor, sample_rate: int) -> torch.Tensor:
-        return self.process_batch([waveform], [sample_rate])[0]
+        return self.process_batch(torch.unsqueeze(waveform, dim=0), [sample_rate])[0]
 
     @torch.inference_mode()
     def process_batch(
         self,
-        waveforms: Sequence[torch.Tensor] | torch.Tensor,
+        waveforms: torch.Tensor,
         sample_rates: Optional[Sequence[int]] = None,
         expected_lengths: Optional[Sequence[int]] = None,
     ) -> List[torch.Tensor]:
