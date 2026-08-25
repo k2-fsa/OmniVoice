@@ -112,6 +112,14 @@ def _autocast_flex_attention(module, query, key, value, *args, **kwargs):
     )
 
 
+WHISPER_TRANSCRIBER = "whisper"
+FASTER_WHISPER_TRANSCRIBER = "faster-whisper"
+SUPPORTED_TRANSCRIBERS = {WHISPER_TRANSCRIBER, FASTER_WHISPER_TRANSCRIBER}
+DEFAULT_WHISPER_ASR_MODEL = "openai/whisper-large-v3-turbo"
+DEFAULT_FASTER_WHISPER_ASR_MODEL = "large-v3-turbo"
+FASTER_WHISPER_SAMPLE_RATE = 16000
+
+
 # ---------------------------------------------------------------------------
 # Dataclasses
 # ---------------------------------------------------------------------------
@@ -275,6 +283,32 @@ def _resolve_model_path(name_or_path: str) -> str:
     return snapshot_download(name_or_path)
 
 
+def _resolve_transcriber(transcriber: str) -> str:
+    transcriber = transcriber.lower().replace("_", "-")
+    if transcriber not in SUPPORTED_TRANSCRIBERS:
+        raise ValueError(
+            f"Unsupported transcriber {transcriber!r}. "
+            f"Expected one of {sorted(SUPPORTED_TRANSCRIBERS)}."
+        )
+    return transcriber
+
+
+def _default_asr_model_name(transcriber: str) -> str:
+    if transcriber == FASTER_WHISPER_TRANSCRIBER:
+        return DEFAULT_FASTER_WHISPER_ASR_MODEL
+    return DEFAULT_WHISPER_ASR_MODEL
+
+
+def _validate_asr_beam_size(beam_size: Optional[int]) -> Optional[int]:
+    if beam_size is None:
+        return None
+    if isinstance(beam_size, bool) or not isinstance(beam_size, int):
+        raise TypeError("ASR beam size must be an integer >= 1.")
+    if beam_size < 1:
+        raise ValueError("ASR beam size must be >= 1.")
+    return beam_size
+
+
 class OmniVoice(PreTrainedModel):
     _supports_flex_attn = True
     _supports_flash_attn_2 = True
@@ -326,15 +360,23 @@ class OmniVoice(PreTrainedModel):
         self.duration_estimator = None
         self.sampling_rate = None
         self._asr_pipe = None
-        self._asr_model_name = "openai/whisper-large-v3-turbo"
+        self._asr_transcriber = WHISPER_TRANSCRIBER
+        self._asr_model_name = DEFAULT_WHISPER_ASR_MODEL
         self._asr_device = None
+        self._asr_language = None
+        self._asr_beam_size = None
 
     @classmethod
     def from_pretrained(cls, pretrained_model_name_or_path, *args, **kwargs):
         train_mode = kwargs.pop("train", False)
         load_asr = kwargs.pop("load_asr", False)
+        transcriber = _resolve_transcriber(
+            kwargs.pop("transcriber", WHISPER_TRANSCRIBER)
+        )
         asr_model_name = kwargs.pop("asr_model_name", None)
         asr_device = kwargs.pop("asr_device", None)
+        asr_language = kwargs.pop("asr_language", None)
+        asr_beam_size = _validate_asr_beam_size(kwargs.pop("asr_beam_size", None))
 
         # Suppress noisy INFO logs from transformers/huggingface_hub during loading
         _prev_disable = logging.root.manager.disable
@@ -371,11 +413,16 @@ class OmniVoice(PreTrainedModel):
                 model.sampling_rate = model.feature_extractor.sampling_rate
 
                 model.duration_estimator = RuleDurationEstimator()
+                model._asr_transcriber = transcriber
+                model._asr_model_name = (
+                    asr_model_name
+                    if asr_model_name is not None
+                    else _default_asr_model_name(transcriber)
+                )
+                model._asr_device = asr_device
+                model._asr_language = asr_language
+                model._asr_beam_size = asr_beam_size
 
-                if asr_model_name is not None:
-                    model._asr_model_name = asr_model_name
-                if asr_device is not None:
-                    model._asr_device = asr_device
                 if load_asr:
                     model.load_asr_model()
         finally:
@@ -388,28 +435,59 @@ class OmniVoice(PreTrainedModel):
     # -------------------------------------------------------------------
 
     def load_asr_model(
-        self, model_name: Optional[str] = None, device: Optional[str] = None
+        self,
+        model_name: Optional[str] = None,
+        device: Optional[str] = None,
+        transcriber: Optional[str] = None,
+        language: Optional[str] = None,
+        beam_size: Optional[int] = None,
     ):
-        """Load a Whisper ASR model for reference audio transcription.
+        """Load an ASR model for reference audio transcription.
 
         Args:
-            model_name: HuggingFace model name or local path for the Whisper
-                model. Defaults to the ``asr_model_name`` passed to
-                :meth:`from_pretrained` (``openai/whisper-large-v3-turbo``
-                if unset).
+            model_name: ASR model name or local path. Defaults to
+                ``openai/whisper-large-v3-turbo`` for the ``whisper`` backend and
+                ``large-v3-turbo`` for the ``faster-whisper`` backend.
             device: Device to load the ASR model on (e.g. ``"cuda:1"`` or
                 ``"cpu"``). Defaults to the ``asr_device`` passed to
                 :meth:`from_pretrained`, falling back to the main model's
                 device (its first shard when sharded across GPUs).
+            transcriber: ASR backend: ``"whisper"`` (default) or
+                ``"faster-whisper"``.
+            language: Optional ASR language tag/code.
+            beam_size: Optional ASR beam size. For Faster-Whisper, omitted
+                values use Faster-Whisper's default beam size.
         """
+        if transcriber is not None:
+            old_transcriber = self._asr_transcriber
+            self._asr_transcriber = _resolve_transcriber(transcriber)
+            if model_name is None and self._asr_model_name == _default_asr_model_name(
+                old_transcriber
+            ):
+                self._asr_model_name = _default_asr_model_name(self._asr_transcriber)
+        if model_name is not None:
+            self._asr_model_name = model_name
+        if device is not None:
+            self._asr_device = device
+        if language is not None:
+            self._asr_language = language
+        if beam_size is not None:
+            self._asr_beam_size = _validate_asr_beam_size(beam_size)
+
+        transcriber = self._asr_transcriber
+        model_name = self._asr_model_name or _default_asr_model_name(transcriber)
+        self._asr_model_name = model_name
+        device = self._asr_device if self._asr_device is not None else self.device
+
+        if transcriber == FASTER_WHISPER_TRANSCRIBER:
+            self._load_faster_whisper_asr_model(model_name, device)
+        else:
+            self._load_whisper_asr_model(model_name, device)
+
+    def _load_whisper_asr_model(self, model_name: str, device):
         from transformers import pipeline as hf_pipeline
 
-        if model_name is None:
-            model_name = self._asr_model_name
-        if device is None:
-            device = self._asr_device if self._asr_device is not None else self.device
-
-        logger.info("Loading ASR model %s ...", model_name)
+        logger.info("Loading Whisper ASR model %s ...", model_name)
         asr_dtype = (
             torch.float16 if str(device).startswith(("cuda", "xpu")) else torch.float32
         )
@@ -426,14 +504,51 @@ class OmniVoice(PreTrainedModel):
             dtype=asr_dtype,
             device=device,
         )
-        logger.info("ASR model loaded on %s.", device)
+        logger.info("Whisper ASR model loaded on %s.", device)
+
+    def _load_faster_whisper_asr_model(self, model_name: str, device):
+        try:
+            from faster_whisper import WhisperModel
+        except ImportError as exc:
+            raise ImportError(
+                "Faster-Whisper transcriber selected, but faster-whisper is not "
+                "installed. Install it with `pip install faster-whisper` or "
+                "`pip install omnivoice[asr]`."
+            ) from exc
+
+        device = str(device)
+        device_index = 0
+        if device.startswith("cuda"):
+            device_type = "cuda"
+            if ":" in device:
+                device_index = int(device.split(":", maxsplit=1)[1])
+        else:
+            if device.startswith(("mps", "xpu")):
+                logger.warning(
+                    "Faster-Whisper runs on CUDA or CPU. Using CPU for ASR "
+                    "instead of %s.",
+                    self.device,
+                )
+            device_type = "cpu"
+
+        logger.info(
+            "Loading Faster-Whisper ASR model %s on %s ...",
+            model_name,
+            device_type,
+        )
+        self._asr_pipe = WhisperModel(
+            model_name,
+            device=device_type,
+            device_index=device_index,
+        )
+        logger.info("Faster-Whisper ASR model loaded on %s.", device_type)
 
     @torch.inference_mode()
     def transcribe(
         self,
         audio: Union[str, tuple],
     ) -> str:
-        """Transcribe audio using the loaded Whisper ASR model.
+        """Transcribe audio using the loaded ASR model.
 
         Args:
             audio: File path or ``(waveform, sample_rate)`` tuple.
@@ -448,18 +563,56 @@ class OmniVoice(PreTrainedModel):
                 "ASR model is not loaded. Call model.load_asr_model() first."
             )
 
+        if self._asr_transcriber == FASTER_WHISPER_TRANSCRIBER:
+            audio_input = self._prepare_faster_whisper_audio(audio)
+            transcribe_kwargs = {}
+            if self._asr_language is not None:
+                transcribe_kwargs["language"] = self._asr_language
+            if self._asr_beam_size is not None:
+                transcribe_kwargs["beam_size"] = self._asr_beam_size
+            segments, _ = self._asr_pipe.transcribe(audio_input, **transcribe_kwargs)
+            return "".join(segment.text for segment in segments).strip()
+
+        audio_input = self._prepare_whisper_audio(audio)
+        transcribe_kwargs = {}
+        generate_kwargs = {}
+        if self._asr_language is not None:
+            generate_kwargs["language"] = self._asr_language
+            generate_kwargs["task"] = "transcribe"
+        if self._asr_beam_size is not None:
+            generate_kwargs["num_beams"] = self._asr_beam_size
+        if generate_kwargs:
+            transcribe_kwargs["generate_kwargs"] = generate_kwargs
+        return self._asr_pipe(audio_input, **transcribe_kwargs)["text"].strip()
+
+    def _prepare_whisper_audio(self, audio: Union[str, tuple]):
         if isinstance(audio, str):
-            return self._asr_pipe(audio)["text"].strip()
-        else:
-            waveform, sr = audio
-            if isinstance(waveform, torch.Tensor):
-                waveform = waveform.cpu().numpy()
-            waveform = np.squeeze(waveform)  # (1, T) or (T,) → (T,)
-            audio_input = {
-                "array": waveform,
-                "sampling_rate": sr,
-            }
-            return self._asr_pipe(audio_input)["text"].strip()
+            return audio
+
+        waveform, sr = audio
+        if isinstance(waveform, torch.Tensor):
+            waveform = waveform.cpu().numpy()
+        waveform = np.squeeze(waveform)  # (1, T) or (T,) -> (T,)
+        return {
+            "array": waveform,
+            "sampling_rate": sr,
+        }
+
+    def _prepare_faster_whisper_audio(self, audio: Union[str, tuple]):
+        if isinstance(audio, str):
+            return audio
+
+        waveform, sr = audio
+        if isinstance(waveform, torch.Tensor):
+            waveform = waveform.cpu().numpy()
+        waveform = np.squeeze(waveform)  # (1, T) or (T,) -> (T,)
+        if sr != FASTER_WHISPER_SAMPLE_RATE:
+            waveform = torchaudio.functional.resample(
+                torch.from_numpy(waveform),
+                orig_freq=sr,
+                new_freq=FASTER_WHISPER_SAMPLE_RATE,
+            ).numpy()
+        return waveform
 
     def get_input_embeddings(self):
         return self.llm.get_input_embeddings()
@@ -738,8 +891,8 @@ class OmniVoice(PreTrainedModel):
             ref_audio: File path (str) or ``(waveform, sample_rate)`` tuple.
                 waveform should be a 1-D or 2-D torch.Tensor (channels x samples).
             ref_text: Transcript of the reference audio. If ``None``, the
-                ASR model will be used to auto-transcribe (must call
-                :meth:`load_asr_model` first).
+                configured ASR backend will be used to auto-transcribe,
+                loading on demand if needed.
             preprocess_prompt: If ``True`` (default), apply silence removal and
                 trimming to the reference audio, add punctuation in the end
                 of reference text (if not already)
