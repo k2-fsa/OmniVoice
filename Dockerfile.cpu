@@ -1,0 +1,47 @@
+# syntax=docker/dockerfile:1
+
+FROM python:3.11-slim-bookworm
+
+ARG UV_VERSION=0.10.4
+
+ENV PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    UV_LINK_MODE=copy \
+    UV_TORCH_BACKEND=cpu \
+    UV_HTTP_TIMEOUT=300 \
+    UV_HTTP_RETRIES=5 \
+    HF_HOME=/cache/huggingface \
+    GRADIO_ANALYTICS_ENABLED=false
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ffmpeg \
+    libsndfile1 \
+    libgomp1 \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+RUN pip install --no-cache-dir "uv==${UV_VERSION}"
+
+COPY pyproject.toml README.md LICENSE ./
+COPY uv.cpu.lock ./uv.lock
+
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --frozen --no-dev --no-install-project
+
+COPY omnivoice ./omnivoice
+
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --frozen --no-dev
+
+ENV PATH="/app/.venv/bin:$PATH"
+
+EXPOSE 8001
+
+CMD ["omnivoice-demo", \
+     "--model", "k2-fsa/OmniVoice", \
+     "--ip", "0.0.0.0", \
+     "--port", "8001", \
+     "--device", "cpu", \
+     "--no-asr"]
+
