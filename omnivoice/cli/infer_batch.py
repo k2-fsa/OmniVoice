@@ -175,6 +175,13 @@ def get_parser():
         help="Whether to shorten long internal silences and trim edge silence.",
     )
     parser.add_argument(
+        "--output_mode",
+        choices=("processed", "raw_codec"),
+        default="processed",
+        help="Return normal processed audio or the unmodified codec-decoder "
+        "waveform. raw_codec bypasses all output post-processing.",
+    )
+    parser.add_argument(
         "--output_min_silence_ms",
         type=nonnegative_int,
         default=500,
@@ -428,6 +435,15 @@ def cluster_samples_by_batch_size(
     return batches
 
 
+def _write_output_wav(path, audio, sampling_rate, output_mode):
+    """Write raw codec samples losslessly while preserving processed defaults."""
+
+    if output_mode == "raw_codec":
+        sf.write(path, audio, sampling_rate, subtype="FLOAT")
+    else:
+        sf.write(path, audio, sampling_rate)
+
+
 def run_inference_batch(
     batch_samples: List[Tuple],
     res_dir: str,
@@ -473,7 +489,12 @@ def run_inference_batch(
     results = []
     for save_name, audio in zip(save_names, audios):
         save_path = os.path.join(res_dir, save_name + ".wav")
-        sf.write(save_path, audio, worker_model.sampling_rate)
+        _write_output_wav(
+            save_path,
+            audio,
+            worker_model.sampling_rate,
+            gen_kwargs.get("output_mode", "processed"),
+        )
         audio_duration = audio.shape[-1] / worker_model.sampling_rate
         results.append(
             (

@@ -678,6 +678,7 @@ def test_generation_config_accepts_controls_from_keyword_dictionary():
             "output_peak_limit": 0.95,
             "output_target_lead_silence_ms": 250,
             "output_target_trail_silence_ms": 75,
+            "output_mode": "raw_codec",
             "unknown_key": "ignored",
         }
     )
@@ -689,6 +690,7 @@ def test_generation_config_accepts_controls_from_keyword_dictionary():
     assert config.output_peak_limit == 0.95
     assert config.output_target_lead_silence_ms == 250
     assert config.output_target_trail_silence_ms == 75
+    assert config.output_mode == "raw_codec"
     assert not hasattr(config, "unknown_key")
 
 
@@ -708,6 +710,8 @@ def test_generation_config_accepts_controls_from_keyword_dictionary():
         ("output_target_lead_silence_ms", 1.5, TypeError),
         ("output_target_trail_silence_ms", True, TypeError),
         ("output_target_trail_silence_ms", "100", TypeError),
+        ("output_mode", "raw", ValueError),
+        ("output_mode", None, TypeError),
     ],
 )
 def test_generation_config_rejects_invalid_postprocessing_values(
@@ -766,7 +770,7 @@ def test_generation_config_appends_new_fields_for_positional_compatibility():
 
     names = [field.name for field in fields(OmniVoiceGenerationConfig)]
 
-    assert names[-7:] == [
+    assert names[-8:] == [
         "output_min_silence_ms",
         "output_keep_silence_ms",
         "output_lead_silence_ms",
@@ -774,4 +778,5 @@ def test_generation_config_appends_new_fields_for_positional_compatibility():
         "output_peak_limit",
         "output_target_lead_silence_ms",
         "output_target_trail_silence_ms",
+        "output_mode",
     ]

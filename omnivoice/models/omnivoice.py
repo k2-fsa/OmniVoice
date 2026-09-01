@@ -32,10 +32,11 @@ import logging
 import math
 import os
 import re
+import time
 from dataclasses import dataclass, fields
 from functools import partial
 from numbers import Real
-from typing import Any, List, Optional, Union
+from typing import Any, Callable, List, Literal, Optional, Union
 
 import numpy as np
 import torch
@@ -273,6 +274,7 @@ class OmniVoiceGenerationConfig:
     output_peak_limit: Optional[float] = None
     output_target_lead_silence_ms: Optional[int] = None
     output_target_trail_silence_ms: Optional[int] = None
+    output_mode: Literal["processed", "raw_codec"] = "processed"
 
     def __post_init__(self):
         for name in (
@@ -306,12 +308,186 @@ class OmniVoiceGenerationConfig:
             "output_target_trail_silence_ms",
             self.output_target_trail_silence_ms,
         )
+        if not isinstance(self.output_mode, str):
+            raise TypeError(
+                "output_mode must be 'processed' or 'raw_codec', "
+                f"got {type(self.output_mode).__name__}"
+            )
+        if self.output_mode not in ("processed", "raw_codec"):
+            raise ValueError("output_mode must be 'processed' or 'raw_codec'")
 
     @classmethod
     def from_dict(cls, kwargs_dict):
         valid_keys = {f.name for f in fields(cls)}
         filtered = {k: v for k, v in kwargs_dict.items() if k in valid_keys}
         return cls(**filtered)
+
+
+@dataclass(frozen=True)
+class OmniVoiceCudaTelemetry:
+    """CUDA memory snapshots captured for one instrumented generation call."""
+
+    device: str
+    memory_allocated_start_bytes: int
+    memory_allocated_end_bytes: int
+    memory_reserved_start_bytes: int
+    memory_reserved_end_bytes: int
+
+
+@dataclass(frozen=True)
+class OmniVoiceGenerationTelemetry:
+    """Immutable timing and memory measurements for one generation call."""
+
+    batch_size: int
+    output_count: int
+    output_mode: Literal["processed", "raw_codec"]
+    prompt_preparation_seconds: Optional[float]
+    input_preparation_seconds: float
+    token_generation_seconds: float
+    codec_decode_seconds: float
+    postprocessing_seconds: float
+    wall_seconds: float
+    cuda: Optional[OmniVoiceCudaTelemetry]
+
+
+@dataclass
+class _GenerationTelemetryState:
+    """Mutable per-call accumulator used only when telemetry is requested."""
+
+    wall_started_at: float
+    cuda_device: Optional[torch.device]
+    cuda_allocated_start_bytes: Optional[int]
+    cuda_reserved_start_bytes: Optional[int]
+    stage_synchronize: Optional[Callable[[], None]]
+    prompt_preparation_seconds: Optional[float] = None
+    input_preparation_seconds: float = 0.0
+    token_generation_seconds: float = 0.0
+    codec_decode_seconds: float = 0.0
+    postprocessing_seconds: float = 0.0
+
+    @classmethod
+    def start(cls, model: "OmniVoice") -> "_GenerationTelemetryState":
+        device = cls._resolve_device(model)
+        cuda_device = cls._resolve_cuda_device(device)
+        stage_synchronize = cls._resolve_stage_synchronizer(device, cuda_device)
+        if stage_synchronize is not None:
+            stage_synchronize()
+        wall_started_at = time.perf_counter()
+        allocated = (
+            torch.cuda.memory_allocated(cuda_device)
+            if cuda_device is not None
+            else None
+        )
+        reserved = (
+            torch.cuda.memory_reserved(cuda_device) if cuda_device is not None else None
+        )
+        return cls(
+            wall_started_at=wall_started_at,
+            cuda_device=cuda_device,
+            cuda_allocated_start_bytes=allocated,
+            cuda_reserved_start_bytes=reserved,
+            stage_synchronize=stage_synchronize,
+        )
+
+    @staticmethod
+    def _resolve_device(model: "OmniVoice") -> Optional[torch.device]:
+        try:
+            return torch.device(model.device)
+        except (AttributeError, RuntimeError, TypeError):
+            return None
+
+    @staticmethod
+    def _resolve_cuda_device(
+        device: Optional[torch.device],
+    ) -> Optional[torch.device]:
+        if device is None or device.type != "cuda" or not torch.cuda.is_available():
+            return None
+        return device
+
+    @staticmethod
+    def _resolve_stage_synchronizer(
+        device: Optional[torch.device],
+        cuda_device: Optional[torch.device],
+    ) -> Optional[Callable[[], None]]:
+        if cuda_device is not None:
+            return partial(torch.cuda.synchronize, cuda_device)
+        if device is None:
+            return None
+        if device.type == "mps":
+            mps_backend = getattr(torch.backends, "mps", None)
+            mps_runtime = getattr(torch, "mps", None)
+            if mps_backend is not None and mps_backend.is_available():
+                synchronize = getattr(mps_runtime, "synchronize", None)
+                if not callable(synchronize):
+                    raise RuntimeError("MPS telemetry synchronization is unavailable")
+                return synchronize
+        if device.type == "xpu":
+            xpu_runtime = getattr(torch, "xpu", None)
+            if xpu_runtime is not None and xpu_runtime.is_available():
+                synchronize = getattr(xpu_runtime, "synchronize", None)
+                if not callable(synchronize):
+                    raise RuntimeError("XPU telemetry synchronization is unavailable")
+                return partial(synchronize, device)
+        return None
+
+    def timestamp(self) -> float:
+        if self.stage_synchronize is not None:
+            self.stage_synchronize()
+        return time.perf_counter()
+
+    def elapsed_since(self, started_at: float) -> float:
+        return self.timestamp() - started_at
+
+    def add_prompt_preparation(self, seconds: float) -> None:
+        if self.prompt_preparation_seconds is None:
+            self.prompt_preparation_seconds = 0.0
+        self.prompt_preparation_seconds += seconds
+
+    def finish(
+        self,
+        *,
+        batch_size: int,
+        output_count: int,
+        output_mode: Literal["processed", "raw_codec"],
+    ) -> OmniVoiceGenerationTelemetry:
+        finished_at = self.timestamp()
+        cuda = None
+        if self.cuda_device is not None:
+            if (
+                self.cuda_allocated_start_bytes is None
+                or self.cuda_reserved_start_bytes is None
+            ):
+                raise RuntimeError("CUDA telemetry start snapshots are missing")
+            cuda = OmniVoiceCudaTelemetry(
+                device=str(self.cuda_device),
+                memory_allocated_start_bytes=self.cuda_allocated_start_bytes,
+                memory_allocated_end_bytes=torch.cuda.memory_allocated(
+                    self.cuda_device
+                ),
+                memory_reserved_start_bytes=self.cuda_reserved_start_bytes,
+                memory_reserved_end_bytes=torch.cuda.memory_reserved(self.cuda_device),
+            )
+        return OmniVoiceGenerationTelemetry(
+            batch_size=batch_size,
+            output_count=output_count,
+            output_mode=output_mode,
+            prompt_preparation_seconds=self.prompt_preparation_seconds,
+            input_preparation_seconds=self.input_preparation_seconds,
+            token_generation_seconds=self.token_generation_seconds,
+            codec_decode_seconds=self.codec_decode_seconds,
+            postprocessing_seconds=self.postprocessing_seconds,
+            wall_seconds=finished_at - self.wall_started_at,
+            cuda=cuda,
+        )
+
+
+def _emit_generation_telemetry(
+    callback: Callable[[OmniVoiceGenerationTelemetry], None],
+    telemetry: OmniVoiceGenerationTelemetry,
+) -> None:
+    """Invoke a per-call callback without holding library-global locks."""
+
+    callback(telemetry)
 
 
 @dataclass
@@ -720,6 +896,9 @@ class OmniVoice(PreTrainedModel):
         speed: Union[float, list[Optional[float]], None] = None,
         generation_config: Optional[OmniVoiceGenerationConfig] = None,
         normalize_text: bool = False,
+        telemetry_callback: Optional[
+            Callable[[OmniVoiceGenerationTelemetry], None]
+        ] = None,
         **kwargs,
     ) -> list[np.ndarray]:
         """Generate speech audio given text in various modes.
@@ -765,6 +944,14 @@ class OmniVoice(PreTrainedModel):
                 tone markers) is preserved. See :func:`omnivoice.utils.text.normalize_text`.
             generation_config: Explicit config object. If provided, takes
                 precedence over ``**kwargs``.
+            telemetry_callback: Optional callback invoked once after a
+                successful generation with an immutable
+                :class:`OmniVoiceGenerationTelemetry` record. Enabling it
+                adds stage timing and, on CUDA, MPS, or XPU, synchronization
+                overhead. CUDA also adds memory snapshots. Callbacks from
+                concurrent generation calls may run concurrently and must be
+                thread-safe. If the callback raises, its exception is
+                propagated after audio generation finishes.
             **kwargs: Generation config or its fields:
                 denoise: Whether to prepend the ``<|denoise|>`` token.
                 num_step: Number of iterative decoding steps.
@@ -803,6 +990,11 @@ class OmniVoice(PreTrainedModel):
                     (0 to disable).
                 fade_duration: Fade-in/out curve duration in seconds
                     (0 to disable).
+                output_mode: ``"processed"`` (default) preserves the normal
+                    post-processing pipeline. ``"raw_codec"`` returns the
+                    waveform decoded by the audio codec without silence
+                    removal, normalization, limiting, fades, padding, edge
+                    alignment, or long-form chunk cross-fades.
         Returns:
             ``audios`` a list of 1-D ``np.ndarray`` with shape ``(T,)`` and
             sampling rate consistent with the model's audio tokenizer
@@ -820,21 +1012,39 @@ class OmniVoice(PreTrainedModel):
             if generation_config is not None
             else OmniVoiceGenerationConfig.from_dict(kwargs)
         )
+        if telemetry_callback is not None and not callable(telemetry_callback):
+            raise TypeError("telemetry_callback must be callable or None")
+        telemetry_state = (
+            _GenerationTelemetryState.start(self)
+            if telemetry_callback is not None
+            else None
+        )
 
         self.eval()
 
-        full_task = self._preprocess_all(
-            text=text,
-            language=language,
-            ref_text=ref_text,
-            ref_audio=ref_audio,
-            voice_clone_prompt=voice_clone_prompt,
-            instruct=instruct,
-            preprocess_prompt=gen_config.preprocess_prompt,
-            speed=speed,
-            duration=duration,
-            normalize_text=normalize_text,
+        input_preparation_started_at = (
+            telemetry_state.timestamp() if telemetry_state is not None else None
         )
+        preprocess_kwargs = {
+            "text": text,
+            "language": language,
+            "ref_text": ref_text,
+            "ref_audio": ref_audio,
+            "voice_clone_prompt": voice_clone_prompt,
+            "instruct": instruct,
+            "preprocess_prompt": gen_config.preprocess_prompt,
+            "speed": speed,
+            "duration": duration,
+            "normalize_text": normalize_text,
+        }
+        if telemetry_state is not None:
+            preprocess_kwargs["_telemetry_state"] = telemetry_state
+        full_task = self._preprocess_all(**preprocess_kwargs)
+        if telemetry_state is not None:
+            assert input_preparation_started_at is not None
+            telemetry_state.input_preparation_seconds += telemetry_state.elapsed_since(
+                input_preparation_started_at
+            )
 
         short_idx, long_idx = full_task.get_indices(
             gen_config, self.audio_tokenizer.config.frame_rate
@@ -842,6 +1052,9 @@ class OmniVoice(PreTrainedModel):
 
         results = [None] * full_task.batch_size
 
+        token_generation_started_at = (
+            telemetry_state.timestamp() if telemetry_state is not None else None
+        )
         if short_idx:
             short_task = full_task.slice_task(short_idx)
             short_results = self._generate_iterative(short_task, gen_config)
@@ -853,17 +1066,37 @@ class OmniVoice(PreTrainedModel):
             long_results = self._generate_chunked(long_task, gen_config)
             for idx, res in zip(long_idx, long_results):
                 results[idx] = res
+        if telemetry_state is not None:
+            assert token_generation_started_at is not None
+            telemetry_state.token_generation_seconds += telemetry_state.elapsed_since(
+                token_generation_started_at
+            )
 
         generated_audios = []
         for i in range(full_task.batch_size):
             assert results[i] is not None, f"Result {i} was not generated"
+            decode_telemetry_kwargs = (
+                {"_telemetry_state": telemetry_state}
+                if telemetry_state is not None
+                else {}
+            )
             generated_audios.append(
                 self._decode_and_post_process(
                     results[i],
                     full_task.ref_rms[i],
                     gen_config,  # type: ignore[arg-type]
+                    **decode_telemetry_kwargs,
                 )
             )
+
+        if telemetry_callback is not None:
+            assert telemetry_state is not None
+            telemetry = telemetry_state.finish(
+                batch_size=full_task.batch_size,
+                output_count=len(generated_audios),
+                output_mode=gen_config.output_mode,
+            )
+            _emit_generation_telemetry(telemetry_callback, telemetry)
 
         return generated_audios
 
@@ -981,6 +1214,7 @@ class OmniVoice(PreTrainedModel):
         tokens: Union[torch.Tensor, List[torch.Tensor]],
         rms: Union[float, None],
         gen_config: OmniVoiceGenerationConfig,
+        _telemetry_state: Optional[_GenerationTelemetryState] = None,
     ) -> np.ndarray:
         """
         Args:
@@ -989,8 +1223,53 @@ class OmniVoice(PreTrainedModel):
             rms: RMS of the reference audio for volume adjustment.
             gen_config: Generation config for post-processing options.
         Returns:
-            Decoded and post-processed audio array of shape (T,).
+            Decoded audio array of shape (T,). The configured output pipeline
+            is applied unless ``output_mode`` is ``"raw_codec"``.
         """
+        codec_decode_started_at = (
+            _telemetry_state.timestamp() if _telemetry_state is not None else None
+        )
+        decoded_audio = self._decode_audio_tokens(
+            tokens,
+            concatenate_chunks=gen_config.output_mode == "raw_codec",
+        )
+        if _telemetry_state is not None:
+            assert codec_decode_started_at is not None
+            _telemetry_state.codec_decode_seconds += _telemetry_state.elapsed_since(
+                codec_decode_started_at
+            )
+
+        if gen_config.output_mode == "raw_codec":
+            assert isinstance(decoded_audio, np.ndarray)
+            return decoded_audio.squeeze(0)
+
+        postprocessing_started_at = (
+            _telemetry_state.timestamp() if _telemetry_state is not None else None
+        )
+        if isinstance(decoded_audio, list):
+            audio_waveform = cross_fade_chunks(decoded_audio, self.sampling_rate)
+        else:
+            audio_waveform = decoded_audio
+        audio_waveform = self._post_process_audio(
+            audio_waveform,
+            ref_rms=rms,
+            gen_config=gen_config,
+        )
+        if _telemetry_state is not None:
+            assert postprocessing_started_at is not None
+            _telemetry_state.postprocessing_seconds += _telemetry_state.elapsed_since(
+                postprocessing_started_at
+            )
+        return audio_waveform.squeeze(0)
+
+    def _decode_audio_tokens(
+        self,
+        tokens: Union[torch.Tensor, List[torch.Tensor]],
+        *,
+        concatenate_chunks: bool,
+    ) -> Union[np.ndarray, List[np.ndarray]]:
+        """Decode audio tokens without modifying decoder waveforms."""
+
         tokenizer_device = self.audio_tokenizer.device
         if isinstance(tokens, list):
             chunk_audios = [
@@ -1000,21 +1279,15 @@ class OmniVoice(PreTrainedModel):
                 .numpy()
                 for t in tokens
             ]
-            audio_waveform = cross_fade_chunks(chunk_audios, self.sampling_rate)
-        else:
-            audio_waveform = (
-                self.audio_tokenizer.decode(tokens.to(tokenizer_device).unsqueeze(0))
-                .audio_values[0]
-                .cpu()
-                .numpy()
-            )
-
-        audio_waveform = self._post_process_audio(
-            audio_waveform,
-            ref_rms=rms,
-            gen_config=gen_config,
+            if concatenate_chunks:
+                return np.concatenate(chunk_audios, axis=-1)
+            return chunk_audios
+        return (
+            self.audio_tokenizer.decode(tokens.to(tokenizer_device).unsqueeze(0))
+            .audio_values[0]
+            .cpu()
+            .numpy()
         )
-        return audio_waveform.squeeze(0)
 
     def _post_process_audio(
         self,
@@ -1198,6 +1471,7 @@ class OmniVoice(PreTrainedModel):
         speed: Union[float, list[Optional[float]], None] = None,
         duration: Union[float, list[Optional[float]], None] = None,
         normalize_text: bool = False,
+        _telemetry_state: Optional[_GenerationTelemetryState] = None,
     ) -> GenerationTask:
         if isinstance(text, str):
             text_list = [text]
@@ -1238,6 +1512,9 @@ class OmniVoice(PreTrainedModel):
             ref_text_list = self._ensure_list(ref_text, batch_size, auto_repeat=False)
             ref_audio_list = self._ensure_list(ref_audio, batch_size, auto_repeat=False)
 
+            prompt_preparation_started_at = (
+                _telemetry_state.timestamp() if _telemetry_state is not None else None
+            )
             voice_clone_prompt = []
             for i in range(len(ref_text_list)):
                 voice_clone_prompt.append(
@@ -1246,6 +1523,11 @@ class OmniVoice(PreTrainedModel):
                         ref_text=ref_text_list[i],
                         preprocess_prompt=preprocess_prompt,
                     )
+                )
+            if _telemetry_state is not None:
+                assert prompt_preparation_started_at is not None
+                _telemetry_state.add_prompt_preparation(
+                    _telemetry_state.elapsed_since(prompt_preparation_started_at)
                 )
 
         voice_clone_prompt_list = self._ensure_list(voice_clone_prompt, batch_size)

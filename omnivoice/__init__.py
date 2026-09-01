@@ -22,13 +22,17 @@ except PackageNotFoundError:
 from omnivoice.models.omnivoice import (
     OmniVoice,
     OmniVoiceConfig,
+    OmniVoiceCudaTelemetry,
     OmniVoiceGenerationConfig,
+    OmniVoiceGenerationTelemetry,
     VoiceClonePrompt,
 )
 
 __all__ = [
     "OmniVoice",
     "OmniVoiceConfig",
+    "OmniVoiceCudaTelemetry",
     "OmniVoiceGenerationConfig",
+    "OmniVoiceGenerationTelemetry",
     "VoiceClonePrompt",
 ]

@@ -114,6 +114,13 @@ def get_parser() -> argparse.ArgumentParser:
         help="Whether to shorten long internal silences and trim edge silence.",
     )
     parser.add_argument(
+        "--output_mode",
+        choices=("processed", "raw_codec"),
+        default="processed",
+        help="Return normal processed audio or the unmodified codec-decoder "
+        "waveform. raw_codec bypasses all output post-processing.",
+    )
+    parser.add_argument(
         "--output_min_silence_ms",
         type=nonnegative_int,
         default=500,
@@ -172,6 +179,15 @@ def get_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def _write_output_wav(path, audio, sampling_rate, output_mode):
+    """Write raw codec samples losslessly while preserving processed defaults."""
+
+    if output_mode == "raw_codec":
+        sf.write(path, audio, sampling_rate, subtype="FLOAT")
+    else:
+        sf.write(path, audio, sampling_rate)
+
+
 def main():
     formatter = "%(asctime)s %(levelname)s [%(filename)s:%(lineno)d] %(message)s"
     logging.basicConfig(format=formatter, level=logging.INFO, force=True)
@@ -204,6 +220,7 @@ def main():
         t_shift=args.t_shift,
         denoise=args.denoise,
         postprocess_output=args.postprocess_output,
+        output_mode=args.output_mode,
         output_min_silence_ms=args.output_min_silence_ms,
         output_keep_silence_ms=args.output_keep_silence_ms,
         output_lead_silence_ms=args.output_lead_silence_ms,
@@ -218,7 +235,12 @@ def main():
         class_temperature=args.class_temperature,
     )
 
-    sf.write(args.output, audios[0], model.sampling_rate)
+    _write_output_wav(
+        args.output,
+        audios[0],
+        model.sampling_rate,
+        args.output_mode,
+    )
     logging.info(f"Saved to {args.output}")
 
 

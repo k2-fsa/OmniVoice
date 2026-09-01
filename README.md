@@ -244,6 +244,33 @@ audio = model.generate(
     # ... more options
 )
 ```
+
+Request the codec decoder waveform without any output post-processing with the
+explicit `raw_codec` mode. The default remains `processed` for backward
+compatibility:
+
+```python
+raw_audio = model.generate(text="...", output_mode="raw_codec")
+```
+
+Raw codec samples may exceed `[-1, 1]`. When saving them as WAV, use an IEEE
+float subtype such as `soundfile.write(..., subtype="FLOAT")`; integer PCM can
+clip or quantize the decoder waveform. Both bundled inference CLIs select
+`FLOAT` automatically in `raw_codec` mode.
+
+Generation telemetry is opt-in and delivered as one immutable record per
+successful call:
+
+```python
+audio = model.generate(
+    text="...",
+    telemetry_callback=lambda metrics: print(metrics.wall_seconds),
+)
+```
+
+Callbacks from concurrent generation calls may run concurrently and must be
+thread-safe.
+
 See more detailed control in [docs/generation-parameters.md](docs/generation-parameters.md).
 
 ### Non-Verbal & Pronunciation Control

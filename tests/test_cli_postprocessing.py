@@ -19,13 +19,16 @@
 
 import numpy as np
 import pytest
+import soundfile as sf
 
+import omnivoice.cli.infer as infer_module
 import omnivoice.cli.infer_batch as infer_batch_module
 from omnivoice.cli.infer import get_parser as get_infer_parser
 from omnivoice.cli.infer_batch import get_parser as get_batch_parser
 
 
 EXPECTED_DEFAULTS = {
+    "output_mode": "processed",
     "output_min_silence_ms": 500,
     "output_keep_silence_ms": None,
     "output_lead_silence_ms": 100,
@@ -38,6 +41,8 @@ EXPECTED_DEFAULTS = {
 }
 
 OVERRIDE_ARGUMENTS = [
+    "--output_mode",
+    "raw_codec",
     "--output_min_silence_ms",
     "420",
     "--output_keep_silence_ms",
@@ -59,6 +64,7 @@ OVERRIDE_ARGUMENTS = [
 ]
 
 INVALID_ARGUMENTS = [
+    ["--output_mode", "raw"],
     ["--output_min_silence_ms", "-1"],
     ["--output_keep_silence_ms", "1.5"],
     ["--output_lead_silence_ms", "-1"],
@@ -75,6 +81,11 @@ INVALID_ARGUMENTS = [
     ["--output_target_trail_silence_ms", "1.5"],
 ]
 
+CLI_WAV_WRITERS = [
+    pytest.param(infer_module._write_output_wav, id="single"),
+    pytest.param(infer_batch_module._write_output_wav, id="batch"),
+]
+
 
 def _assert_defaults(namespace):
     for name, expected in EXPECTED_DEFAULTS.items():
@@ -82,6 +93,7 @@ def _assert_defaults(namespace):
 
 
 def _assert_overrides(namespace):
+    assert namespace.output_mode == "raw_codec"
     assert namespace.output_min_silence_ms == 420
     assert namespace.output_keep_silence_ms == 80
     assert namespace.output_lead_silence_ms == 30
@@ -158,6 +170,31 @@ def test_batch_runtime_forwards_postprocessing_controls(monkeypatch, tmp_path):
 
     for name in EXPECTED_DEFAULTS:
         assert received[name] == getattr(args, name)
+
+
+@pytest.mark.parametrize("writer", CLI_WAV_WRITERS)
+def test_raw_codec_cli_wav_round_trip_preserves_float32_over_range(writer, tmp_path):
+    waveform = np.array([0.0, 1.25, -1.5, 0.125], dtype=np.float32)
+    path = tmp_path / "raw.wav"
+
+    writer(path, waveform, 24_000, "raw_codec")
+
+    info = sf.info(path)
+    decoded, sample_rate = sf.read(path, dtype="float32")
+    assert info.format == "WAV"
+    assert info.subtype == "FLOAT"
+    assert sample_rate == 24_000
+    np.testing.assert_array_equal(decoded, waveform)
+    assert np.max(np.abs(decoded)) > 1.0
+
+
+@pytest.mark.parametrize("writer", CLI_WAV_WRITERS)
+def test_processed_cli_wav_keeps_backward_compatible_default_subtype(writer, tmp_path):
+    path = tmp_path / "processed.wav"
+
+    writer(path, np.array([0.0, 0.25], dtype=np.float32), 24_000, "processed")
+
+    assert sf.info(path).subtype == "PCM_16"
 
 
 @pytest.mark.parametrize("invalid_arguments", INVALID_ARGUMENTS)

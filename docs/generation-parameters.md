@@ -49,7 +49,7 @@ audio = model.generate(text="Hello, this is a test of duration control", speed=1
 
 Priority: `duration` > `speed`.
 
-> **Note:** `duration` controls the number of audio tokens generated; it is not a hard guarantee for the final waveform length. Silence removal can shorten the decoded waveform, while `pad_duration` adds silence to both edges. For an untrimmed, unpadded waveform, use `postprocess_output=False`, `pad_duration=0`, and optionally `fade_duration=0`, then measure the physical result.
+> **Note:** `duration` controls the number of audio tokens generated; it is not a hard guarantee for the final waveform length. Silence removal can shorten the decoded waveform, while `pad_duration` adds silence to both edges. For the waveform emitted directly by the codec decoder, use `output_mode="raw_codec"`, then measure the physical result.
 
 The duration budget is converted at the audio tokenizer's frame rate. The
 conversion retains floor semantics for fractional token counts, but a binary64
@@ -63,6 +63,7 @@ control instead of exposing a separate token-count parameter.
 
 | Parameter | Type | Default | Description |
 |---|---|---|---|
+| `output_mode` | `"processed"` or `"raw_codec"` | `"processed"` | Select the backward-compatible output pipeline or return the codec decoder waveform without output transformations. |
 | `preprocess_prompt` | bool | True | Whether to apply preprocessing to the voice-clone prompt audio (remove long silences in reference audio, add punctuation in the end of reference text). |
 | `postprocess_output` | bool | True | Shorten long internal silences and trim leading/trailing silence. Padding and fades are controlled independently below. |
 | `output_min_silence_ms` | int | 500 | Minimum internal silence duration to shorten, in milliseconds. Set to 0 to skip internal-silence shortening; edge trimming remains controlled by `postprocess_output`. |
@@ -102,6 +103,81 @@ durations require finite non-negative numbers. The `output_*` controls affect
 generated audio only. Prompt preprocessing keeps its historical silence
 retention so existing voice-clone prompts do not change identity as a side
 effect of output post-processing configuration.
+
+### Raw Codec Output
+
+`output_mode="raw_codec"` is an explicit, fail-closed bypass for consumers
+that need the waveform emitted by the codec decoder. It bypasses all of the
+following operations:
+
+- internal and edge silence removal;
+- reference-RMS and peak normalization;
+- peak limiting;
+- fades and padding;
+- exact edge-silence alignment;
+- long-form chunk cross-fades.
+
+For long-form generation, decoded chunks are concatenated in order without a
+cross-fade because `generate()` still returns one waveform per input item.
+Prompt preprocessing is an input operation and remains independently
+controlled by `preprocess_prompt`.
+
+Raw codec samples are floating-point decoder values and may exceed `[-1, 1]`.
+Persisting them without clipping or quantization requires a floating-point
+container representation, for example
+`soundfile.write(path, audio, sample_rate, subtype="FLOAT")`. Both inference
+CLIs use IEEE float WAV automatically when `output_mode="raw_codec"`; processed
+mode keeps the historical WAV writer behavior.
+
+`postprocess_output=False` only disables silence removal. It does not bypass
+normalization, limiting, fades, padding, or edge alignment, so it is not a
+substitute for `raw_codec`. The default `processed` mode retains the historical
+pipeline and output behavior.
+
+The same mode is available from both inference CLIs:
+
+```bash
+omnivoice-infer --model k2-fsa/OmniVoice --text "Hello" --output out.wav --output_mode raw_codec
+omnivoice-infer-batch --model k2-fsa/OmniVoice --test_list test.jsonl --res_dir results --output_mode raw_codec
+```
+
+### Opt-in Generation Telemetry
+
+Pass `telemetry_callback` to receive one immutable
+`OmniVoiceGenerationTelemetry` record after each successful `generate()` call:
+
+```python
+from omnivoice import OmniVoiceGenerationTelemetry
+
+
+def report(metrics: OmniVoiceGenerationTelemetry) -> None:
+    print(f"token generation: {metrics.token_generation_seconds:.3f}s")
+    print(f"codec decode: {metrics.codec_decode_seconds:.3f}s")
+    print(f"post-processing: {metrics.postprocessing_seconds:.3f}s")
+    print(f"wall: {metrics.wall_seconds:.3f}s")
+
+
+audio = model.generate(text="Hello", telemetry_callback=report)
+```
+
+The record separates input preparation, prompt/reference preparation when a
+prompt is built inside the call, token generation, codec decode,
+post-processing, and total wall time. Prompt preparation is reported as a
+measured subset of input preparation. `prompt_preparation_seconds` is `None`
+when a reusable prompt is supplied or no reference prompt is built. CUDA
+allocated/reserved memory snapshots are included only when the model device is
+CUDA and CUDA is available. The snapshots describe the process-wide allocator
+state on that device, so concurrent CUDA work may also be reflected.
+
+Telemetry is completely disabled by default: its instrumentation performs no
+timer reads, accelerator availability or memory queries, or synchronization.
+Enabling it synchronizes CUDA, MPS, or XPU at stage boundaries and therefore
+adds measurement overhead. Accelerator synchronization is device-wide: stage
+timings are not isolated or reliably attributable to one generation when
+concurrent work uses the same CUDA, MPS, or XPU device. Callback invocations
+from concurrent generation calls may run concurrently and must be thread-safe;
+the library invokes them without holding a global callback lock. If a callback
+raises an exception, it is propagated after generation completes.
 
 ## Long-Form Generation
 
