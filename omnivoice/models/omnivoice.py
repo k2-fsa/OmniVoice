@@ -34,6 +34,7 @@ import os
 import re
 from dataclasses import dataclass, fields
 from functools import partial
+from numbers import Real
 from typing import Any, List, Optional, Union
 
 import numpy as np
@@ -93,6 +94,78 @@ from omnivoice.utils.voice_design import (
 logger = logging.getLogger(__name__)
 
 _AUTOCAST_FLEX_ATTENTION = "omnivoice_flex_attention"
+
+
+def _validate_positive_finite_real(name: str, value: Any) -> float:
+    """Return ``value`` as a positive finite binary64 number."""
+    if isinstance(value, bool) or not isinstance(value, Real):
+        raise TypeError(f"{name} must be a real number, got {type(value).__name__}")
+    try:
+        value = float(value)
+    except (OverflowError, ValueError) as exc:
+        raise ValueError(f"{name} must be finite and greater than zero") from exc
+    if not math.isfinite(value) or value <= 0:
+        raise ValueError(f"{name} must be finite and greater than zero")
+    return value
+
+
+def _duration_to_target_tokens(duration: Any, frame_rate: Any) -> int:
+    """Convert seconds to an audio-token budget without binary64 underflow.
+
+    The historical conversion floors genuinely fractional token counts. A
+    product exactly one ULP below an integer is the sole exception: it is
+    treated as that integer because decimal durations such as ``29 / 25`` can
+    otherwise become ``28.999999999999996`` during binary64 multiplication.
+    """
+    duration = _validate_positive_finite_real("duration", duration)
+    frame_rate = _validate_positive_finite_real("frame_rate", frame_rate)
+    scaled_tokens = duration * frame_rate
+    if not math.isfinite(scaled_tokens):
+        raise ValueError("duration * frame_rate must be finite")
+
+    nearest_integer = round(scaled_tokens)
+    if scaled_tokens < nearest_integer and nearest_integer - scaled_tokens <= math.ulp(
+        scaled_tokens
+    ):
+        scaled_tokens = float(nearest_integer)
+
+    return max(1, math.floor(scaled_tokens))
+
+
+def _normalize_duration_values(
+    duration: Union[float, list[Optional[float]], None], batch_size: int
+) -> Optional[List[Optional[float]]]:
+    """Normalize and validate scalar or per-item duration values."""
+    if duration is None:
+        return None
+    if isinstance(duration, bool):
+        raise TypeError("duration must be a real number or a per-item iterable")
+    if isinstance(duration, Real):
+        values = [duration] * batch_size
+    else:
+        if isinstance(duration, (str, bytes)):
+            raise TypeError("duration must be a real number or a per-item iterable")
+        try:
+            values = list(duration)
+        except TypeError as exc:
+            raise TypeError(
+                "duration must be a real number or a per-item iterable"
+            ) from exc
+        if len(values) != batch_size:
+            raise ValueError(
+                "duration must contain exactly one value per text item, "
+                f"got {len(values)} values for a batch of {batch_size}"
+            )
+
+    normalized = []
+    for index, value in enumerate(values):
+        if value is None:
+            normalized.append(None)
+        else:
+            normalized.append(
+                _validate_positive_finite_real(f"duration[{index}]", value)
+            )
+    return normalized
 
 
 def _autocast_flex_attention(module, query, key, value, *args, **kwargs):
@@ -675,6 +748,7 @@ class OmniVoice(PreTrainedModel):
             duration: Pre-synthesis audio-token budget in seconds. If a single
                 float, applies to all items; if a list, one value per item.
                 ``None`` (default) lets the model estimate duration from text.
+                Values must be finite and greater than zero.
                 Overrides ``speed`` when both are provided. Post-processing
                 can change the physical WAV duration.
             speed: Speaking speed factor. ``> 1.0`` for faster, ``< 1.0`` for
@@ -1195,13 +1269,7 @@ class OmniVoice(PreTrainedModel):
         else:
             user_speed = None
 
-        if duration is not None:
-            if isinstance(duration, (int, float)):
-                durations = [float(duration)] * batch_size
-            else:
-                durations = list(duration)
-        else:
-            durations = None
+        durations = _normalize_duration_values(duration, batch_size)
 
         num_target_tokens_list = []
         for i in range(batch_size):
@@ -1227,7 +1295,7 @@ class OmniVoice(PreTrainedModel):
             speed_list = []
             for i in range(batch_size):
                 if durations[i] is not None:
-                    target_tokens = max(1, int(durations[i] * frame_rate))
+                    target_tokens = _duration_to_target_tokens(durations[i], frame_rate)
                     est = num_target_tokens_list[i]
                     speed_list.append(est / target_tokens if target_tokens > 0 else 1.0)
                     num_target_tokens_list[i] = target_tokens

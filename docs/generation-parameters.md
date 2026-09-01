@@ -44,12 +44,20 @@ audio = model.generate(text="Hello, this is a test of duration control", speed=1
 
 | Parameter | Type | Default | Description |
 |---|---|---|---|
-| `duration` | float or list[float \| None] | None | Pre-synthesis audio-token budget in seconds. Overrides `speed` when set. Post-processing can change the physical WAV duration. |
+| `duration` | float or list[float \| None] | None | Positive, finite pre-synthesis audio-token budget in seconds. Overrides `speed` when set. Post-processing can change the physical WAV duration. |
 | `speed` | float or list[float \| None] | None | Speed factor. Values > 1.0 produce shorter audio (faster); values < 1.0 produce longer audio (slower). Ignored when `duration` is set. Defaults to 1.0 when both are None. |
 
 Priority: `duration` > `speed`.
 
 > **Note:** `duration` controls the number of audio tokens generated; it is not a hard guarantee for the final waveform length. Silence removal can shorten the decoded waveform, while `pad_duration` adds silence to both edges. For an untrimmed, unpadded waveform, use `postprocess_output=False`, `pad_duration=0`, and optionally `fade_duration=0`, then measure the physical result.
+
+The duration budget is converted at the audio tokenizer's frame rate. The
+conversion retains floor semantics for fractional token counts, but a binary64
+product exactly one ULP below an integer is treated as that integer. This avoids
+losing a token for values such as `duration=29 / 25` at a 25 Hz tokenizer while
+leaving genuinely fractional budgets unchanged. Audio-token counts are
+tokenizer-specific implementation details, so `duration` remains the public
+control instead of exposing a separate token-count parameter.
 
 ## Pre/Post Processing
 
