@@ -55,6 +55,17 @@ def nonnegative_int(value: str) -> int:
     return parsed
 
 
+def positive_int(value: str) -> int:
+    """Parse a strictly positive integer for an argparse option."""
+    try:
+        parsed = int(value)
+    except (TypeError, ValueError) as exc:
+        raise argparse.ArgumentTypeError("Expected a positive integer.") from exc
+    if parsed <= 0:
+        raise argparse.ArgumentTypeError("Expected a positive integer.")
+    return parsed
+
+
 def nonnegative_float(value: str) -> float:
     """Parse a finite non-negative float for an argparse option."""
     try:
@@ -65,6 +76,19 @@ def nonnegative_float(value: str) -> float:
         ) from exc
     if not math.isfinite(parsed) or parsed < 0:
         raise argparse.ArgumentTypeError("Expected a finite non-negative number.")
+    return parsed
+
+
+def positive_float(value: str) -> float:
+    """Parse a finite strictly positive float for an argparse option."""
+    try:
+        parsed = float(value)
+    except (TypeError, ValueError) as exc:
+        raise argparse.ArgumentTypeError(
+            "Expected a finite number greater than zero."
+        ) from exc
+    if not math.isfinite(parsed) or parsed <= 0:
+        raise argparse.ArgumentTypeError("Expected a finite number greater than zero.")
     return parsed
 
 

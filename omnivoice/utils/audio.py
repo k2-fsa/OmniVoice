@@ -27,7 +27,13 @@ with shape ``(C, T)`` (channels-first).
 import io
 import logging
 import math
+import os
+import secrets
+import shutil
+import time
 from numbers import Integral, Real
+from pathlib import Path
+from typing import Callable
 
 import numpy as np
 import soundfile as sf
@@ -38,6 +44,127 @@ from pydub.silence import detect_leading_silence, detect_nonsilent
 
 logger = logging.getLogger(__name__)
 
+_PCM16_EDGE_SCAN_CHUNK_SAMPLES = 1_048_576
+
+
+def _create_atomic_wav_temp(parent: Path) -> Path:
+    """Create a same-directory temporary file with normal umask semantics."""
+    flags = os.O_CREAT | os.O_EXCL | os.O_RDWR
+    for _ in range(128):
+        temporary = parent / f".omnivoice-{secrets.token_hex(8)}.tmp.wav"
+        try:
+            descriptor = os.open(temporary, flags, 0o666)
+        except FileExistsError:
+            continue
+        os.close(descriptor)
+        return temporary
+    raise FileExistsError("could not allocate a unique atomic WAV staging file")
+
+
+def _replace_wav_staging_file(temporary: Path, destination: Path) -> None:
+    """Commit a same-directory staged file atomically."""
+    if os.name == "nt":
+        import ctypes
+        from ctypes import wintypes
+
+        def extended_path(path: Path) -> str:
+            value = os.path.abspath(path)
+            if value.startswith("\\\\?\\"):
+                return value
+            if value.startswith("\\\\"):
+                return "\\\\?\\UNC\\" + value[2:]
+            return "\\\\?\\" + value
+
+        temporary_path = extended_path(temporary)
+        destination_path = extended_path(destination)
+        kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+        move_file = kernel32.MoveFileExW
+        move_file.argtypes = (wintypes.LPCWSTR, wintypes.LPCWSTR, wintypes.DWORD)
+        move_file.restype = wintypes.BOOL
+        if not move_file(
+            temporary_path,
+            destination_path,
+            0x00000001 | 0x00000008,  # REPLACE_EXISTING | WRITE_THROUGH
+        ):
+            move_error = ctypes.get_last_error()
+            raise ctypes.WinError(move_error)
+        return
+
+    if destination.exists():
+        destination_stat = destination.stat()
+        shutil.copystat(destination, temporary)
+        if hasattr(os, "chown"):
+            try:
+                os.chown(temporary, destination_stat.st_uid, destination_stat.st_gid)
+            except PermissionError:
+                pass
+        os.utime(
+            temporary,
+            ns=(destination_stat.st_atime_ns, time.time_ns()),
+        )
+    directory_descriptor = None
+    try:
+        try:
+            directory_descriptor = os.open(destination.parent, os.O_RDONLY)
+        except OSError as exc:
+            logger.warning(
+                "Directory fsync is unavailable for %s: %s",
+                destination.parent,
+                exc,
+            )
+        os.replace(temporary, destination)
+        if directory_descriptor is not None:
+            try:
+                os.fsync(directory_descriptor)
+            except OSError as exc:
+                logger.warning(
+                    "WAV commit succeeded, but directory fsync is unsupported for %s: %s",
+                    destination.parent,
+                    exc,
+                )
+    finally:
+        if directory_descriptor is not None:
+            os.close(directory_descriptor)
+
+
+def _write_wav_atomic(
+    path: str | os.PathLike[str],
+    audio: np.ndarray,
+    sampling_rate: int,
+    *,
+    subtype: str | None = None,
+    writer: Callable[..., object] = sf.write,
+) -> None:
+    """Stage a WAV beside its destination and atomically replace it."""
+    destination = Path(path)
+    temporary = _create_atomic_wav_temp(destination.parent)
+    try:
+        if subtype is None:
+            writer(str(temporary), audio, sampling_rate)
+        else:
+            writer(str(temporary), audio, sampling_rate, subtype=subtype)
+        with temporary.open("rb+") as handle:
+            handle.flush()
+            os.fsync(handle.fileno())
+        _replace_wav_staging_file(temporary, destination)
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
+def _validate_output_waveform(audio, *, label: str) -> np.ndarray:
+    """Validate one generated waveform without a long-form-sized allocation."""
+    if not isinstance(audio, np.ndarray) or audio.ndim != 1:
+        raise RuntimeError(f"{label} must be a one-dimensional numpy array")
+    if audio.size == 0:
+        raise RuntimeError(f"{label} must contain at least one sample")
+    if not np.issubdtype(audio.dtype, np.floating):
+        raise RuntimeError(f"{label} must use a real floating-point dtype")
+    chunk_size = 1_048_576
+    for start in range(0, audio.size, chunk_size):
+        if not np.isfinite(audio[start : start + chunk_size]).all():
+            raise RuntimeError(f"{label} contains a non-finite sample")
+    return audio
+
 
 def _validate_nonnegative_integer(name: str, value: int) -> int:
     """Return *value* as an int or raise a clear validation error."""
@@ -46,6 +173,18 @@ def _validate_nonnegative_integer(name: str, value: int) -> int:
     if value < 0:
         raise ValueError(f"{name} must be greater than or equal to zero")
     return int(value)
+
+
+def _validate_positive_integer(name: str, value: int) -> int:
+    """Return *value* as a positive platform-sized integer."""
+    if isinstance(value, bool) or not isinstance(value, Integral):
+        raise TypeError(f"{name} must be a positive integer")
+    value = int(value)
+    if value <= 0:
+        raise ValueError(f"{name} must be greater than zero")
+    if value > np.iinfo(np.intp).max:
+        raise ValueError(f"{name} exceeds the platform sample-count limit")
+    return value
 
 
 def _validate_optional_nonnegative_integer(
@@ -296,6 +435,85 @@ def limit_audio_peak(
     return audio * (peak_limit / peak)
 
 
+def _find_pcm16_active_edge(
+    audio: np.ndarray,
+    *,
+    from_end: bool,
+) -> int | None:
+    """Find one active PCM16-proxy edge with bounded temporary memory.
+
+    Edge alignment only needs the first or last active frame. Scanning bounded
+    chunks avoids materializing a full PCM16 proxy, a full boolean mask, and
+    one platform-sized integer for every active frame in long-form audio.
+    """
+    sample_count = audio.shape[-1]
+    if from_end:
+        chunk_end = sample_count
+        while chunk_end > 0:
+            chunk_start = max(
+                0,
+                chunk_end - _PCM16_EDGE_SCAN_CHUNK_SAMPLES,
+            )
+            chunk = audio[..., chunk_start:chunk_end]
+            detection_proxy = (chunk * 32768.0).clip(-32768, 32767).astype(np.int16)
+            active_samples = np.any(detection_proxy != 0, axis=0)
+            if bool(np.any(active_samples)):
+                return chunk_end - 1 - int(np.argmax(active_samples[::-1]))
+            chunk_end = chunk_start
+        return None
+
+    chunk_start = 0
+    while chunk_start < sample_count:
+        chunk_end = min(
+            sample_count,
+            chunk_start + _PCM16_EDGE_SCAN_CHUNK_SAMPLES,
+        )
+        chunk = audio[..., chunk_start:chunk_end]
+        detection_proxy = (chunk * 32768.0).clip(-32768, 32767).astype(np.int16)
+        active_samples = np.any(detection_proxy != 0, axis=0)
+        if bool(np.any(active_samples)):
+            return chunk_start + int(np.argmax(active_samples))
+        chunk_start = chunk_end
+    return None
+
+
+def _find_exact_active_edge(
+    audio: np.ndarray,
+    *,
+    from_end: bool,
+) -> int | None:
+    """Find an exactly non-zero edge frame with bounded temporary memory."""
+
+    sample_count = audio.shape[-1]
+    if from_end:
+        chunk_end = sample_count
+        while chunk_end > 0:
+            chunk_start = max(0, chunk_end - _PCM16_EDGE_SCAN_CHUNK_SAMPLES)
+            active_samples = np.any(
+                audio[..., chunk_start:chunk_end] != 0,
+                axis=0,
+            )
+            if bool(np.any(active_samples)):
+                return chunk_end - 1 - int(np.argmax(active_samples[::-1]))
+            chunk_end = chunk_start
+        return None
+
+    chunk_start = 0
+    while chunk_start < sample_count:
+        chunk_end = min(
+            sample_count,
+            chunk_start + _PCM16_EDGE_SCAN_CHUNK_SAMPLES,
+        )
+        active_samples = np.any(
+            audio[..., chunk_start:chunk_end] != 0,
+            axis=0,
+        )
+        if bool(np.any(active_samples)):
+            return chunk_start + int(np.argmax(active_samples))
+        chunk_start = chunk_end
+    return None
+
+
 def match_edge_silence(
     audio: np.ndarray,
     sampling_rate: int,
@@ -320,10 +538,12 @@ def match_edge_silence(
     Parameters:
         audio: numpy array with shape (C, T).
         sampling_rate: sampling rate of the audio.
-        target_lead_silence_ms: exact final leading silence in milliseconds, or
-            ``None`` to keep the existing leading edge.
-        target_trail_silence_ms: exact final trailing silence in milliseconds,
-            or ``None`` to keep the existing trailing edge.
+        target_lead_silence_ms: exact leading-silence anchor in milliseconds
+            before final container fitting, or ``None`` to keep the existing
+            leading edge.
+        target_trail_silence_ms: exact trailing-silence anchor in milliseconds
+            before final container fitting, or ``None`` to keep the existing
+            trailing edge.
 
     Returns:
         Numpy array with shape (C, T').
@@ -342,24 +562,19 @@ def match_edge_silence(
     if target_lead_silence_ms is None and target_trail_silence_ms is None:
         return audio
 
-    # Inspect a PCM16 proxy sample by sample. The returned core still comes
-    # from the original float array, so quantization is used only to decide
-    # which edge samples are digital silence. This deliberately preserves any
-    # PCM-representable low-level phoneme instead of applying a dBFS threshold.
-    detection_proxy = (audio * 32768.0).clip(-32768, 32767).astype(np.int16)
-    active_samples = np.any(detection_proxy != 0, axis=0)
-    active_indices = np.flatnonzero(active_samples)
-
-    # A silent model output is not turned into an apparently valid timing pad.
-    if active_indices.size == 0:
-        return audio[..., :0]
-
     start_sample = 0
     if target_lead_silence_ms is not None:
-        start_sample = int(active_indices[0])
+        first_active_sample = _find_pcm16_active_edge(audio, from_end=False)
+        # A silent model output is not turned into an apparently valid timing pad.
+        if first_active_sample is None:
+            return audio[..., :0]
+        start_sample = first_active_sample
     end_sample = audio.shape[-1]
     if target_trail_silence_ms is not None:
-        end_sample = max(start_sample, int(active_indices[-1]) + 1)
+        last_active_sample = _find_pcm16_active_edge(audio, from_end=True)
+        if last_active_sample is None:
+            return audio[..., :0]
+        end_sample = max(start_sample, last_active_sample + 1)
 
     parts: list[np.ndarray] = []
     if target_lead_silence_ms is not None:
@@ -375,6 +590,96 @@ def match_edge_silence(
             parts.append(np.zeros((audio.shape[0], trail_samples), dtype=audio.dtype))
 
     return np.concatenate(parts, axis=-1)
+
+
+def fit_audio_to_target_samples(
+    audio: np.ndarray,
+    target_samples: int,
+    *,
+    protect_leading_edge: bool = False,
+    protect_trailing_edge: bool = False,
+    target_name: str = "target_samples",
+) -> tuple[np.ndarray, int, int, int, int]:
+    """Fit a waveform to an exact sample-frame count without cutting activity.
+
+    Underflow is always filled by appending exact floating-point zeros after
+    the complete source waveform. This preserves the onset and every existing
+    edge sample byte-for-byte, including a protected trailing anchor.
+    Protected edges are never shortened.
+    Overflow removes only contiguous frames that are exactly zero in every
+    channel, preferring the trailing edge. Protected edges represent explicit
+    pre-framing edge-silence anchors: their authenticated samples are never
+    shortened or rewritten, although separately reported outer-container zeros
+    may be appended after a protected trailing anchor to satisfy underflow.
+
+    Returns:
+        ``(audio, padded_lead, padded_trail, trimmed_lead, trimmed_trail)``.
+    """
+    target_samples = _validate_positive_integer(target_name, target_samples)
+    if not isinstance(protect_leading_edge, bool):
+        raise TypeError("protect_leading_edge must be a bool")
+    if not isinstance(protect_trailing_edge, bool):
+        raise TypeError("protect_trailing_edge must be a bool")
+    if not isinstance(audio, np.ndarray) or audio.ndim != 2:
+        raise ValueError("audio must be a numpy array with shape (channels, samples)")
+
+    source_samples = audio.shape[-1]
+    protect_any_edge = protect_leading_edge or protect_trailing_edge
+    if source_samples == target_samples:
+        if protect_any_edge and not bool(np.any(audio)):
+            raise ValueError(
+                f"{target_name} cannot preserve an exact edge target on a waveform "
+                "without an active sample"
+            )
+        return audio, 0, 0, 0, 0
+
+    if source_samples < target_samples:
+        missing = target_samples - source_samples
+        if protect_any_edge and not bool(np.any(audio)):
+            raise ValueError(
+                f"{target_name} cannot preserve an exact edge target on a waveform "
+                "without an active sample"
+            )
+        fitted = np.zeros((audio.shape[0], target_samples), dtype=audio.dtype)
+        fitted[..., :source_samples] = audio
+        return fitted, 0, missing, 0, 0
+
+    excess = source_samples - target_samples
+    if not bool(np.any(audio)):
+        if protect_any_edge:
+            raise ValueError(
+                f"{target_name} cannot preserve an exact edge target on a waveform "
+                "without an active sample"
+            )
+        return audio[..., :target_samples], 0, 0, 0, excess
+
+    # Scan bounded chunks rather than materializing one boolean per frame for
+    # the complete long-form waveform.
+    first_active = _find_exact_active_edge(audio, from_end=False)
+    last_active = _find_exact_active_edge(audio, from_end=True)
+    if first_active is None or last_active is None:
+        raise RuntimeError("non-silent waveform lost its active edge during framing")
+    leading_zeros = first_active
+    trailing_zeros = source_samples - 1 - last_active
+    removable_trailing = 0 if protect_trailing_edge else trailing_zeros
+    removable_leading = 0 if protect_leading_edge else leading_zeros
+    removable = removable_trailing + removable_leading
+    if excess > removable:
+        active_cut = excess - removable
+        raise ValueError(
+            f"{target_name} targets {target_samples} samples, but the post-pipeline "
+            f"waveform has {source_samples} samples and only {removable} removable "
+            f"digital-silence edge samples; trimming {active_cut} active samples "
+            "is forbidden"
+        )
+
+    trimmed_trailing = min(excess, removable_trailing)
+    trimmed_leading = excess - trimmed_trailing
+    end = source_samples - trimmed_trailing if trimmed_trailing else source_samples
+    fitted = audio[..., trimmed_leading:end]
+    if fitted.shape[-1] != target_samples:
+        raise RuntimeError("exact-duration framing produced an unexpected sample count")
+    return fitted, 0, 0, trimmed_leading, trimmed_trailing
 
 
 def remove_silence_edges(

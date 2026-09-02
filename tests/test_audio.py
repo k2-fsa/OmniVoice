@@ -23,6 +23,7 @@ from types import SimpleNamespace
 import numpy as np
 import pytest
 
+import omnivoice.utils.audio as audio_utils
 from omnivoice.utils.audio import (
     fade_and_pad_audio,
     limit_audio_peak,
@@ -396,6 +397,31 @@ def test_match_edge_silence_zero_targets_remove_both_edges():
     np.testing.assert_array_equal(result, _tone(200))
 
 
+def test_match_edge_silence_scans_chunks_without_materializing_active_indices(
+    monkeypatch,
+):
+    audio = np.asarray(
+        [[0.0, 0.0, 0.25, 0.5, 0.0, 0.0, -0.25, 0.0, 0.0]],
+        dtype=np.float32,
+    )
+
+    def reject_flatnonzero(*_args, **_kwargs):
+        raise AssertionError("edge scanning must not materialize all active indices")
+
+    monkeypatch.setattr(audio_utils, "_PCM16_EDGE_SCAN_CHUNK_SAMPLES", 3)
+    monkeypatch.setattr(audio_utils.np, "flatnonzero", reject_flatnonzero)
+
+    result = match_edge_silence(
+        audio,
+        sampling_rate=1000,
+        target_lead_silence_ms=0,
+        target_trail_silence_ms=0,
+    )
+
+    assert result.shape == (1, 5)
+    assert result[0].tolist() == [0.25, 0.5, 0.0, 0.0, -0.25]
+
+
 def test_match_edge_silence_none_targets_return_original_array():
     audio = np.concatenate([_silence(100), _tone(200)], axis=-1)
 
@@ -624,7 +650,7 @@ def test_generation_config_edge_targets_override_generic_padding():
     assert trailing_ms == pytest.approx(75, abs=1 / SAMPLE_RATE)
 
 
-def test_generation_config_defaults_cap_internal_gap_at_500_ms():
+def test_generation_config_default_preserves_historical_per_side_keep_silence():
     from omnivoice.models.omnivoice import (
         OmniVoice,
         OmniVoiceGenerationConfig,
@@ -632,7 +658,33 @@ def test_generation_config_defaults_cap_internal_gap_at_500_ms():
 
     config = OmniVoiceGenerationConfig(pad_duration=0, fade_duration=0)
     model_stub = SimpleNamespace(sampling_rate=SAMPLE_RATE)
-    audio = _audio_with_internal_silence(1200)
+    tone = _tone(1000)
+    audio = np.concatenate((tone, _silence(2000), tone), axis=-1)
+
+    result = OmniVoice._post_process_audio(
+        model_stub,
+        audio,
+        ref_rms=0.1,
+        gen_config=config,
+    )
+
+    assert result.shape == (1, 72_000)
+    assert result.dtype == np.float32
+    np.testing.assert_array_equal(result[..., :24_000], tone)
+    np.testing.assert_array_equal(result[..., -24_000:], tone)
+
+
+def test_generation_config_explicit_keep_silence_remains_a_total_gap_limit():
+    from omnivoice.models.omnivoice import OmniVoice, OmniVoiceGenerationConfig
+
+    config = OmniVoiceGenerationConfig(
+        output_min_silence_ms=500,
+        output_keep_silence_ms=500,
+        pad_duration=0,
+        fade_duration=0,
+    )
+    model_stub = SimpleNamespace(sampling_rate=SAMPLE_RATE)
+    audio = np.concatenate((_tone(1000), _silence(2000), _tone(1000)), axis=-1)
 
     result = OmniVoice._post_process_audio(
         model_stub,

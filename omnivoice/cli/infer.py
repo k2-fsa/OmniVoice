@@ -21,16 +21,26 @@ Usage:
 
 import argparse
 import logging
+import os
+from pathlib import Path
 
+import numpy as np
 import torch
 
 import soundfile as sf
 
-from omnivoice.models.omnivoice import OmniVoice
+from omnivoice.models.omnivoice import (
+    OmniVoice,
+    _normalize_final_duration_targets,
+    _validate_final_duration_inputs,
+)
+from omnivoice.utils.audio import _validate_output_waveform, _write_wav_atomic
 from omnivoice.utils.common import (
     get_best_device,
     nonnegative_float,
     nonnegative_int,
+    positive_float,
+    positive_int,
     positive_unit_float,
     str2bool,
 )
@@ -96,14 +106,29 @@ def get_parser() -> argparse.ArgumentParser:
     # Generation parameters
     parser.add_argument("--num_step", type=int, default=32)
     parser.add_argument("--guidance_scale", type=float, default=2.0)
-    parser.add_argument("--speed", type=float, default=1.0)
+    parser.add_argument("--speed", type=positive_float, default=1.0)
     parser.add_argument(
         "--duration",
-        type=float,
+        type=positive_float,
         default=None,
         help="Pre-synthesis audio-token budget in seconds. If set, overrides "
         "the model's duration estimation. Output post-processing can change "
         "the physical WAV duration.",
+    )
+    final_duration_group = parser.add_mutually_exclusive_group()
+    final_duration_group.add_argument(
+        "--final_duration",
+        type=positive_float,
+        default=None,
+        help="Exact physical output duration in seconds, converted to sample "
+        "frames with decimal HALF_UP rounding. Independent of --duration.",
+    )
+    final_duration_group.add_argument(
+        "--final_duration_samples",
+        type=positive_int,
+        default=None,
+        help="Authoritative exact physical output length in integer sample "
+        "frames per channel. Must be greater than zero.",
     )
     parser.add_argument("--t_shift", type=float, default=0.1)
     parser.add_argument("--denoise", type=str2bool, default=True)
@@ -118,7 +143,8 @@ def get_parser() -> argparse.ArgumentParser:
         choices=("processed", "raw_codec"),
         default="processed",
         help="Return normal processed audio or the unmodified codec-decoder "
-        "waveform. raw_codec bypasses all output post-processing.",
+        "waveform. raw_codec bypasses all signal post-processing; an explicit "
+        "physical duration still applies zero-only output framing.",
     )
     parser.add_argument(
         "--output_min_silence_ms",
@@ -131,7 +157,8 @@ def get_parser() -> argparse.ArgumentParser:
         type=nonnegative_int,
         default=None,
         help="Maximum total silence retained from each shortened gap. "
-        "Defaults to --output_min_silence_ms.",
+        "By default, preserves historical per-side behavior and retains up to "
+        "twice --output_min_silence_ms in total.",
     )
     parser.add_argument(
         "--output_lead_silence_ms",
@@ -155,15 +182,17 @@ def get_parser() -> argparse.ArgumentParser:
         "--output_target_lead_silence_ms",
         type=nonnegative_int,
         default=None,
-        help="Optional exact final leading silence in milliseconds. This "
-        "overrides generic edge padding on the leading side.",
+        help="Optional exact pre-framing leading-silence anchor in milliseconds. "
+        "This overrides generic edge padding on the leading side; final-duration "
+        "fitting may add separately reported outer-container zero fill.",
     )
     parser.add_argument(
         "--output_target_trail_silence_ms",
         type=nonnegative_int,
         default=None,
-        help="Optional exact final trailing silence in milliseconds. This "
-        "overrides generic edge padding on the trailing side.",
+        help="Optional exact pre-framing trailing-silence anchor in milliseconds. "
+        "This overrides generic edge padding on the trailing side; final-duration "
+        "fitting may add separately reported outer-container zero fill.",
     )
     parser.add_argument("--pad_duration", type=nonnegative_float, default=0.1)
     parser.add_argument("--fade_duration", type=nonnegative_float, default=0.1)
@@ -182,17 +211,58 @@ def get_parser() -> argparse.ArgumentParser:
 def _write_output_wav(path, audio, sampling_rate, output_mode):
     """Write raw codec samples losslessly while preserving processed defaults."""
 
-    if output_mode == "raw_codec":
-        sf.write(path, audio, sampling_rate, subtype="FLOAT")
-    else:
-        sf.write(path, audio, sampling_rate)
+    _write_wav_atomic(
+        path,
+        audio,
+        sampling_rate,
+        subtype="FLOAT" if output_mode == "raw_codec" else None,
+        writer=sf.write,
+    )
+
+
+def _validate_generated_output(audios, final_duration_target) -> np.ndarray:
+    """Validate model cardinality, shape, and physical length before writing."""
+    if not isinstance(audios, (list, tuple)) or len(audios) != 1:
+        actual_count = len(audios) if isinstance(audios, (list, tuple)) else "non-list"
+        raise RuntimeError(
+            f"OmniVoice returned an unexpected number of outputs: expected 1, got {actual_count}"
+        )
+    audio = audios[0]
+    audio = _validate_output_waveform(audio, label="OmniVoice output 0")
+    if (
+        final_duration_target is not None
+        and audio.shape[0] != final_duration_target.samples
+    ):
+        raise RuntimeError(
+            "OmniVoice output 0 violates the requested physical duration: "
+            f"expected {final_duration_target.samples} samples, got {audio.shape[0]}"
+        )
+    return audio
+
+
+def _validate_output_path(path: str) -> None:
+    """Reject structurally invalid output paths before loading the model."""
+
+    destination = Path(path)
+    parent = destination.parent
+    if not parent.exists() or not parent.is_dir():
+        raise ValueError(
+            f"output parent directory does not exist or is not a directory: {parent}"
+        )
+    if os.path.lexists(destination) and not destination.is_file():
+        raise ValueError(f"output path exists and is not a regular file: {destination}")
 
 
 def main():
+    args = get_parser().parse_args()
+    _validate_final_duration_inputs(
+        args.final_duration,
+        args.final_duration_samples,
+        batch_size=1,
+    )
+    _validate_output_path(args.output)
     formatter = "%(asctime)s %(levelname)s [%(filename)s:%(lineno)d] %(message)s"
     logging.basicConfig(format=formatter, level=logging.INFO, force=True)
-
-    args = get_parser().parse_args()
 
     device = args.device or get_best_device()
     logging.info(f"Loading model from {args.model} on {device} ...")
@@ -206,7 +276,22 @@ def main():
         logging.info(f"Applying LoRA adapter from {args.lora_adapter} ...")
         model = load_lora_adapter(model, args.lora_adapter)
 
+    final_duration_targets = _normalize_final_duration_targets(
+        args.final_duration,
+        args.final_duration_samples,
+        batch_size=1,
+        sampling_rate=model.sampling_rate,
+    )
+    final_duration_target = (
+        final_duration_targets[0] if final_duration_targets is not None else None
+    )
+
     logging.info(f"Generating audio for: {args.text[:80]}...")
+    physical_duration_kwargs = {}
+    if args.final_duration is not None:
+        physical_duration_kwargs["final_duration"] = args.final_duration
+    if args.final_duration_samples is not None:
+        physical_duration_kwargs["final_duration_samples"] = args.final_duration_samples
     audios = model.generate(
         text=args.text,
         language=args.language,
@@ -214,6 +299,7 @@ def main():
         ref_text=args.ref_text,
         instruct=args.instruct,
         duration=args.duration,
+        **physical_duration_kwargs,
         num_step=args.num_step,
         guidance_scale=args.guidance_scale,
         speed=args.speed,
@@ -234,10 +320,11 @@ def main():
         position_temperature=args.position_temperature,
         class_temperature=args.class_temperature,
     )
+    audio = _validate_generated_output(audios, final_duration_target)
 
     _write_output_wav(
         args.output,
-        audios[0],
+        audio,
         model.sampling_rate,
         args.output_mode,
     )

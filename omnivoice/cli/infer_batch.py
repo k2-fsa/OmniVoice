@@ -28,30 +28,43 @@ Test list format (JSONL, one JSON object per line):
     Required fields: "id", "text"
     Voice cloning:   "ref_audio", "ref_text"
     Voice design:    "instruct"
-    Optional:        "language_id", "duration", "speed"
+    Optional:        "language_id", "duration", "speed", "final_duration",
+                     "final_duration_samples"
 """
 
 import argparse
 import logging
 import multiprocessing as mp
 import os
-import signal
+import stat
 import time
 import traceback
+import unicodedata
 from concurrent.futures import ProcessPoolExecutor, as_completed
+from pathlib import Path, PureWindowsPath
 from typing import List, Optional, Tuple
 
+import numpy as np
+import soundfile as sf
 import torch
 from tqdm import tqdm
 
-from omnivoice.models.omnivoice import OmniVoice
-import soundfile as sf
-
-from omnivoice.utils.audio import load_audio
+from omnivoice.models.omnivoice import (
+    OmniVoice,
+    _normalize_final_duration_targets,
+    _validate_final_duration_inputs,
+)
+from omnivoice.utils.audio import (
+    _validate_output_waveform,
+    _write_wav_atomic,
+    load_audio,
+)
 from omnivoice.utils.common import (
     get_best_device_with_count,
     nonnegative_float,
     nonnegative_int,
+    positive_float,
+    positive_int,
     positive_unit_float,
     str2bool,
 )
@@ -85,6 +98,8 @@ def get_parser():
         '"instruct" (str): instruction for voice design (used when ref_audio is absent); '
         '"language_id" (str): language code, e.g. "en"; '
         '"duration" (float): pre-synthesis audio-token budget in seconds; '
+        '"final_duration" (float): exact physical output duration in seconds; '
+        '"final_duration_samples" (int): authoritative physical output sample frames; '
         '"speed" (float): speaking speed multiplier. '
         "Only id and text are required; all other fields are optional.",
     )
@@ -147,6 +162,21 @@ def get_parser():
         help="Fixed batch size (number of samples per batch). "
         "If > 0, use fixed-size batching instead of duration-based batching.",
     )
+    final_duration_group = parser.add_mutually_exclusive_group()
+    final_duration_group.add_argument(
+        "--final_duration",
+        type=positive_float,
+        default=None,
+        help="Fallback physical output duration for JSONL items that do not "
+        "define one, converted with decimal HALF_UP rounding.",
+    )
+    final_duration_group.add_argument(
+        "--final_duration_samples",
+        type=positive_int,
+        default=None,
+        help="Fallback authoritative output length in sample frames per channel "
+        "for JSONL items that do not define one.",
+    )
     parser.add_argument(
         "--enable_flashinfer",
         type=str2bool,
@@ -179,7 +209,8 @@ def get_parser():
         choices=("processed", "raw_codec"),
         default="processed",
         help="Return normal processed audio or the unmodified codec-decoder "
-        "waveform. raw_codec bypasses all output post-processing.",
+        "waveform. raw_codec bypasses all signal post-processing; an explicit "
+        "physical duration still applies zero-only output framing.",
     )
     parser.add_argument(
         "--output_min_silence_ms",
@@ -192,7 +223,8 @@ def get_parser():
         type=nonnegative_int,
         default=None,
         help="Maximum total silence retained from each shortened gap. "
-        "Defaults to --output_min_silence_ms.",
+        "By default, preserves historical per-side behavior and retains up to "
+        "twice --output_min_silence_ms in total.",
     )
     parser.add_argument(
         "--output_lead_silence_ms",
@@ -216,15 +248,17 @@ def get_parser():
         "--output_target_lead_silence_ms",
         type=nonnegative_int,
         default=None,
-        help="Optional exact final leading silence in milliseconds. This "
-        "overrides generic edge padding on the leading side.",
+        help="Optional exact pre-framing leading-silence anchor in milliseconds. "
+        "This overrides generic edge padding on the leading side; final-duration "
+        "fitting may add separately reported outer-container zero fill.",
     )
     parser.add_argument(
         "--output_target_trail_silence_ms",
         type=nonnegative_int,
         default=None,
-        help="Optional exact final trailing silence in milliseconds. This "
-        "overrides generic edge padding on the trailing side.",
+        help="Optional exact pre-framing trailing-silence anchor in milliseconds. "
+        "This overrides generic edge padding on the trailing side; final-duration "
+        "fitting may add separately reported outer-container zero fill.",
     )
     parser.add_argument("--pad_duration", type=nonnegative_float, default=0.1)
     parser.add_argument("--fade_duration", type=nonnegative_float, default=0.1)
@@ -376,7 +410,10 @@ def _sort_samples_by_duration(
     """Return (sample, total_duration) pairs sorted by duration descending."""
     sample_with_duration = []
     for sample in samples:
-        _, ref_text, ref_audio_path, text, _, dur, _, _ = sample
+        ref_text = sample[1]
+        ref_audio_path = sample[2]
+        text = sample[3]
+        dur = sample[5]
         total_duration = estimate_sample_total_duration(
             duration_estimator, text, ref_text, ref_audio_path, gen_duration=dur
         )
@@ -438,10 +475,187 @@ def cluster_samples_by_batch_size(
 def _write_output_wav(path, audio, sampling_rate, output_mode):
     """Write raw codec samples losslessly while preserving processed defaults."""
 
-    if output_mode == "raw_codec":
-        sf.write(path, audio, sampling_rate, subtype="FLOAT")
-    else:
-        sf.write(path, audio, sampling_rate)
+    _write_wav_atomic(
+        path,
+        audio,
+        sampling_rate,
+        subtype="FLOAT" if output_mode == "raw_codec" else None,
+        writer=sf.write,
+    )
+
+
+def _raise_if_batch_failures(failures: List[BaseException]) -> None:
+    """Prevent a partially failed batch run from reporting successful completion."""
+    if failures:
+        raise RuntimeError(
+            f"{len(failures)} inference batch(es) failed; no successful "
+            "completion status will be reported"
+        ) from failures[0]
+
+
+def _validate_generated_outputs(audios, save_names, final_duration_targets) -> None:
+    """Validate every worker result before writing any item from the batch."""
+    if not isinstance(audios, (list, tuple)) or len(audios) != len(save_names):
+        actual_count = len(audios) if isinstance(audios, (list, tuple)) else "non-list"
+        raise RuntimeError(
+            "OmniVoice returned an unexpected number of outputs: "
+            f"expected {len(save_names)}, got {actual_count}"
+        )
+    for index, audio in enumerate(audios):
+        audio = _validate_output_waveform(
+            audio,
+            label=f"OmniVoice output {index}",
+        )
+        target = (
+            final_duration_targets[index]
+            if final_duration_targets is not None
+            else None
+        )
+        if target is not None and audio.shape[0] != target.samples:
+            raise RuntimeError(
+                f"OmniVoice output {index} violates the requested physical duration: "
+                f"expected {target.samples} samples, got {audio.shape[0]}"
+            )
+
+
+_WINDOWS_RESERVED_FILE_STEMS = {
+    "CON",
+    "PRN",
+    "AUX",
+    "NUL",
+    "CONIN$",
+    "CONOUT$",
+    *(f"COM{index}" for index in range(1, 10)),
+    *(f"LPT{index}" for index in range(1, 10)),
+    *(f"COM{index}" for index in ("¹", "²", "³")),
+    *(f"LPT{index}" for index in ("¹", "²", "³")),
+}
+_WINDOWS_INVALID_FILENAME_CHARACTERS = set('<>:"/\\|?*')
+
+
+def _validate_output_id(value: str) -> str:
+    """Validate a JSONL ID as one portable, traversal-free file stem."""
+    if not isinstance(value, str) or not value:
+        raise ValueError("output id must be a non-empty string")
+    if value != value.strip():
+        raise ValueError(f"unsafe output id {value!r}: edge whitespace is forbidden")
+    if value in {".", ".."}:
+        raise ValueError(f"unsafe output id {value!r}: traversal is forbidden")
+    if value.endswith((".", " ")):
+        raise ValueError(
+            f"unsafe output id {value!r}: trailing dots or spaces are forbidden"
+        )
+    if any(ord(character) < 32 for character in value):
+        raise ValueError(
+            f"unsafe output id {value!r}: control characters are forbidden"
+        )
+    if any(character in _WINDOWS_INVALID_FILENAME_CHARACTERS for character in value):
+        raise ValueError(
+            f"unsafe output id {value!r}: path separators and reserved filename "
+            "characters are forbidden"
+        )
+    if "~" in value:
+        raise ValueError(
+            f"unsafe output id {value!r}: tildes are forbidden because DOS 8.3 "
+            "short-name aliases can overwrite another output on Windows"
+        )
+    if PureWindowsPath(value).is_absolute() or Path(value).is_absolute():
+        raise ValueError(f"unsafe output id {value!r}: absolute paths are forbidden")
+    output_filename = f"{value}.wav"
+    utf8_bytes = len(output_filename.encode("utf-8"))
+    utf16_code_units = len(output_filename.encode("utf-16-le")) // 2
+    if utf8_bytes > 255 or utf16_code_units > 255:
+        raise ValueError(
+            f"unsafe output id {value!r}: output filename exceeds the portable "
+            "255-unit component limit"
+        )
+    file_stem = value.split(".", 1)[0].rstrip(" ").upper()
+    if file_stem in _WINDOWS_RESERVED_FILE_STEMS:
+        raise ValueError(f"unsafe output id {value!r}: reserved Windows device name")
+    return value
+
+
+def _resolve_output_paths(save_names: List[str], res_dir: str) -> List[str]:
+    """Resolve all output paths and prove confinement and uniqueness up front."""
+    requested_root = Path(res_dir)
+    if os.path.lexists(requested_root) and not requested_root.is_dir():
+        raise ValueError(
+            f"result directory exists and is not a directory: {requested_root}"
+        )
+    root = requested_root.resolve(strict=False)
+    destinations = []
+    portable_name_keys = set()
+    resolved_destination_keys = set()
+    for save_name in save_names:
+        safe_name = _validate_output_id(save_name)
+        candidate = root / f"{safe_name}.wav"
+        if os.path.lexists(candidate):
+            candidate_lstat = os.lstat(candidate)
+            if stat.S_ISLNK(candidate_lstat.st_mode):
+                raise ValueError(
+                    f"unsafe output id {save_name!r}: existing destination is a "
+                    "symbolic link"
+                )
+            if not stat.S_ISREG(candidate_lstat.st_mode):
+                raise ValueError(
+                    f"unsafe output id {save_name!r}: existing destination is not "
+                    "a regular file"
+                )
+            if os.stat(candidate).st_nlink > 1:
+                raise ValueError(
+                    f"unsafe output id {save_name!r}: existing destination is "
+                    "hard-linked"
+                )
+        destination = candidate.resolve(strict=False)
+        try:
+            destination.relative_to(root)
+        except ValueError as exc:
+            raise ValueError(
+                f"output id {save_name!r} resolves outside result directory {root}"
+            ) from exc
+        # Results are frequently moved between operating systems. Reject names
+        # that would alias on Windows even when validation runs on a case-
+        # sensitive host.
+        portable_name_key = unicodedata.normalize("NFC", safe_name).casefold()
+        resolved_destination_key = unicodedata.normalize(
+            "NFC", str(destination)
+        ).casefold()
+        if (
+            portable_name_key in portable_name_keys
+            or resolved_destination_key in resolved_destination_keys
+        ):
+            raise ValueError(
+                f"output id {save_name!r} resolves to a duplicate WAV destination"
+            )
+        portable_name_keys.add(portable_name_key)
+        resolved_destination_keys.add(resolved_destination_key)
+        destinations.append(str(destination))
+    return destinations
+
+
+def _resolve_physical_duration_values(
+    samples: list[dict],
+    fallback_final_duration,
+    fallback_final_duration_samples,
+) -> tuple[list, list]:
+    """Resolve and validate every physical target before runtime startup."""
+    final_durations = []
+    final_duration_samples = []
+    for sample in samples:
+        item_final_duration = sample.get("final_duration")
+        item_final_duration_samples = sample.get("final_duration_samples")
+        if item_final_duration is None and item_final_duration_samples is None:
+            item_final_duration = fallback_final_duration
+            item_final_duration_samples = fallback_final_duration_samples
+        final_durations.append(item_final_duration)
+        final_duration_samples.append(item_final_duration_samples)
+
+    _validate_final_duration_inputs(
+        final_durations,
+        final_duration_samples,
+        batch_size=len(samples),
+    )
+    return final_durations, final_duration_samples
 
 
 def run_inference_batch(
@@ -451,6 +665,9 @@ def run_inference_batch(
 ) -> List[Tuple]:
     global worker_model
 
+    fallback_final_duration = gen_kwargs.pop("final_duration", None)
+    fallback_final_duration_samples = gen_kwargs.pop("final_duration_samples", None)
+
     save_names = []
     ref_texts = []
     ref_audio_paths = []
@@ -459,9 +676,39 @@ def run_inference_batch(
     durations = []
     speeds = []
     instructs = []
+    final_durations = []
+    final_duration_samples = []
 
     for sample in batch_samples:
-        save_name, ref_text, ref_audio_path, text, lang_id, dur, spd, instruct = sample
+        if len(sample) == 8:
+            (
+                save_name,
+                ref_text,
+                ref_audio_path,
+                text,
+                lang_id,
+                dur,
+                spd,
+                instruct,
+            ) = sample
+            final_dur = fallback_final_duration
+            final_samples = fallback_final_duration_samples
+        else:
+            (
+                save_name,
+                ref_text,
+                ref_audio_path,
+                text,
+                lang_id,
+                dur,
+                spd,
+                instruct,
+                final_dur,
+                final_samples,
+            ) = sample
+            if final_dur is None and final_samples is None:
+                final_dur = fallback_final_duration
+                final_samples = fallback_final_duration_samples
         save_names.append(save_name)
         ref_texts.append(ref_text)
         ref_audio_paths.append(ref_audio_path)
@@ -470,6 +717,21 @@ def run_inference_batch(
         durations.append(dur)
         speeds.append(spd)
         instructs.append(instruct)
+        final_durations.append(final_dur)
+        final_duration_samples.append(final_samples)
+
+    save_paths = _resolve_output_paths(save_names, res_dir)
+    normalized_final_duration_targets = _normalize_final_duration_targets(
+        final_durations,
+        final_duration_samples,
+        batch_size=len(save_names),
+        sampling_rate=worker_model.sampling_rate,
+    )
+    physical_duration_kwargs = {}
+    if any(value is not None for value in final_durations):
+        physical_duration_kwargs["final_duration"] = final_durations
+    if any(value is not None for value in final_duration_samples):
+        physical_duration_kwargs["final_duration_samples"] = final_duration_samples
 
     start_time = time.time()
     audios = worker_model.generate(
@@ -482,13 +744,19 @@ def run_inference_batch(
         duration=durations if any(d is not None for d in durations) else None,
         speed=speeds if any(s is not None for s in speeds) else None,
         instruct=instructs if any(i is not None for i in instructs) else None,
+        **physical_duration_kwargs,
         **gen_kwargs,
     )
     batch_synth_time = time.time() - start_time
 
+    _validate_generated_outputs(
+        audios,
+        save_names,
+        normalized_final_duration_targets,
+    )
+
     results = []
-    for save_name, audio in zip(save_names, audios):
-        save_path = os.path.join(res_dir, save_name + ".wav")
+    for save_name, save_path, audio in zip(save_names, save_paths, audios):
         _write_output_wav(
             save_path,
             audio,
@@ -509,11 +777,40 @@ def run_inference_batch(
 
 
 def main():
+    args = get_parser().parse_args()
+    samples_raw = read_test_list(args.test_list, reject_unknown_fields=True)
+    if not samples_raw:
+        raise ValueError("test list contains no samples")
+    _resolve_output_paths([sample["id"] for sample in samples_raw], args.res_dir)
+    final_durations, final_duration_samples = _resolve_physical_duration_values(
+        samples_raw,
+        args.final_duration,
+        args.final_duration_samples,
+    )
+
+    samples = []
+    for index, sample in enumerate(samples_raw):
+        lang_id = (
+            args.lang_id if args.lang_id is not None else sample.get("language_id")
+        )
+        samples.append(
+            (
+                sample["id"],
+                sample.get("ref_text"),
+                sample.get("ref_audio"),
+                sample["text"],
+                lang_id,
+                sample.get("duration"),
+                sample.get("speed"),
+                sample.get("instruct"),
+                final_durations[index],
+                final_duration_samples[index],
+            )
+        )
+
     formatter = "%(asctime)s %(levelname)s [%(filename)s:%(lineno)d] %(message)s"
     logging.basicConfig(format=formatter, level=logging.INFO, force=True)
     mp.set_start_method("spawn", force=True)
-
-    args = get_parser().parse_args()
     os.makedirs(args.res_dir, exist_ok=True)
 
     device_type, num_devices = get_best_device_with_count()
@@ -533,25 +830,9 @@ def main():
     for rank in list(range(num_devices)) * args.nj_per_gpu:
         rank_queue.put((device_type, rank))
 
-    samples_raw = read_test_list(args.test_list)
-    samples = []
-    for s in samples_raw:
-        lang_id = args.lang_id if args.lang_id is not None else s.get("language_id")
-        samples.append(
-            (
-                s["id"],
-                s.get("ref_text"),
-                s.get("ref_audio"),
-                s["text"],
-                lang_id,
-                s.get("duration"),
-                s.get("speed"),
-                s.get("instruct"),
-            )
-        )
-
     total_synthesis_time = []
     total_audio_duration = []
+    failures = []
 
     try:
         with ProcessPoolExecutor(
@@ -588,7 +869,11 @@ def main():
                         )
                     )
 
-            args_dict = vars(args)
+            args_dict = vars(args).copy()
+            # Per-item values have already been resolved above. Avoid passing
+            # duplicate scalar fallback arguments into model.generate().
+            args_dict.pop("final_duration")
+            args_dict.pop("final_duration_samples")
 
             for batch in batches:
                 futures.append(
@@ -614,14 +899,15 @@ def main():
                     logging.error(f"Failed to process sample: {e}")
                     detailed_error = traceback.format_exc()
                     logging.error(f"Detailed error: {detailed_error}")
+                    failures.append(e)
+
+            _raise_if_batch_failures(failures)
 
     except (Exception, KeyboardInterrupt) as e:
-        logging.critical(
-            f"An unrecoverable error occurred: {e}. Terminating all processes."
-        )
+        logging.critical(f"An unrecoverable error occurred: {e}.")
         detailed_error_info = traceback.format_exc()
         logging.error(f"--- DETAILED TRACEBACK ---\n{detailed_error_info}")
-        os.killpg(os.getpgid(os.getpid()), signal.SIGKILL)
+        raise
 
     total_synthesis_time = sum(total_synthesis_time)
     total_audio_duration = sum(total_audio_duration)
