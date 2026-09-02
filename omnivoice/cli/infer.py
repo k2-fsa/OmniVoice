@@ -27,14 +27,12 @@ from pathlib import Path
 import numpy as np
 import torch
 
-import soundfile as sf
-
 from omnivoice.models.omnivoice import (
     OmniVoice,
     _normalize_final_duration_targets,
     _validate_final_duration_inputs,
 )
-from omnivoice.utils.audio import _validate_output_waveform, _write_wav_atomic
+from omnivoice.utils.audio import _validate_output_waveform, write_output_wav
 from omnivoice.utils.common import (
     get_best_device,
     nonnegative_float,
@@ -208,18 +206,6 @@ def get_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def _write_output_wav(path, audio, sampling_rate, output_mode):
-    """Write raw codec samples losslessly while preserving processed defaults."""
-
-    _write_wav_atomic(
-        path,
-        audio,
-        sampling_rate,
-        subtype="FLOAT" if output_mode == "raw_codec" else None,
-        writer=sf.write,
-    )
-
-
 def _validate_generated_output(audios, final_duration_target) -> np.ndarray:
     """Validate model cardinality, shape, and physical length before writing."""
     if not isinstance(audios, (list, tuple)) or len(audios) != 1:
@@ -322,7 +308,7 @@ def main():
     )
     audio = _validate_generated_output(audios, final_duration_target)
 
-    _write_output_wav(
+    write_output_wav(
         args.output,
         audio,
         model.sampling_rate,

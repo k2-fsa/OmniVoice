@@ -151,6 +151,23 @@ def _write_wav_atomic(
         temporary.unlink(missing_ok=True)
 
 
+def write_output_wav(
+    path: str | os.PathLike[str],
+    audio: np.ndarray,
+    sampling_rate: int,
+    output_mode: str,
+) -> None:
+    """Write one CLI waveform atomically with the mode-specific WAV subtype."""
+
+    _write_wav_atomic(
+        path,
+        audio,
+        sampling_rate,
+        subtype="FLOAT" if output_mode == "raw_codec" else None,
+        writer=sf.write,
+    )
+
+
 def _validate_output_waveform(audio, *, label: str) -> np.ndarray:
     """Validate one generated waveform without a long-form-sized allocation."""
     if not isinstance(audio, np.ndarray) or audio.ndim != 1:

@@ -93,10 +93,12 @@ INVALID_ARGUMENTS = [
     ["--final_duration_samples", "1.5"],
 ]
 
-CLI_WAV_WRITERS = [
-    pytest.param(infer_module._write_output_wav, id="single"),
-    pytest.param(infer_batch_module._write_output_wav, id="batch"),
-]
+CLI_WAV_WRITERS = [pytest.param(audio_utils.write_output_wav, id="shared")]
+
+
+def test_clis_use_the_shared_output_wav_writer():
+    assert infer_module.write_output_wav is audio_utils.write_output_wav
+    assert infer_batch_module.write_output_wav is audio_utils.write_output_wav
 
 
 def _assert_defaults(namespace):
@@ -318,7 +320,7 @@ def test_single_cli_rejects_physical_length_mismatch_before_writing(
     )
     monkeypatch.setattr(
         infer_module,
-        "_write_output_wav",
+        "write_output_wav",
         lambda *args, **kwargs: writes.append((args, kwargs)),
     )
 
@@ -366,7 +368,7 @@ def test_single_cli_rejects_invalid_waveform_before_writing(
     )
     monkeypatch.setattr(
         infer_module,
-        "_write_output_wav",
+        "write_output_wav",
         lambda *args, **kwargs: writes.append((args, kwargs)),
     )
 

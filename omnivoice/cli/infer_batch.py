@@ -56,8 +56,8 @@ from omnivoice.models.omnivoice import (
 )
 from omnivoice.utils.audio import (
     _validate_output_waveform,
-    _write_wav_atomic,
     load_audio,
+    write_output_wav,
 )
 from omnivoice.utils.common import (
     get_best_device_with_count,
@@ -472,18 +472,6 @@ def cluster_samples_by_batch_size(
     return batches
 
 
-def _write_output_wav(path, audio, sampling_rate, output_mode):
-    """Write raw codec samples losslessly while preserving processed defaults."""
-
-    _write_wav_atomic(
-        path,
-        audio,
-        sampling_rate,
-        subtype="FLOAT" if output_mode == "raw_codec" else None,
-        writer=sf.write,
-    )
-
-
 def _raise_if_batch_failures(failures: List[BaseException]) -> None:
     """Prevent a partially failed batch run from reporting successful completion."""
     if failures:
@@ -757,7 +745,7 @@ def run_inference_batch(
 
     results = []
     for save_name, save_path, audio in zip(save_names, save_paths, audios):
-        _write_output_wav(
+        write_output_wav(
             save_path,
             audio,
             worker_model.sampling_rate,
