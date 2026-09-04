@@ -108,6 +108,8 @@ def _fi_fused_model_forward(
         raise ValueError("You must specify exactly one of input_ids or inputs_embeds")
     if inputs_embeds is None:
         inputs_embeds = self.embed_tokens(input_ids)
+    if use_cache is None:
+        use_cache = self.config.use_cache
     if use_cache and past_key_values is None:
         from transformers.cache_utils import DynamicCache
 
@@ -154,11 +156,6 @@ def _fi_fused_model_forward(
     hidden2d = hidden_states.view(seq, hidden)
     residual = hidden2d.clone()
 
-    if isinstance(causal_mask_mapping, dict):
-        attn_mask = causal_mask_mapping["full_attention"]
-    else:
-        attn_mask = causal_mask_mapping
-
     num_layers = len(layers)
 
     # Layer 0: plain rmsnorm (no preceding add to fuse with)
@@ -172,6 +169,10 @@ def _fi_fused_model_forward(
         # normed is ready for this layer's attention (either from layer 0's
         # standalone rmsnorm above, or from the previous iteration's
         # fused_add_rmsnorm of mlp_out + this layer's input_layernorm)
+        if isinstance(causal_mask_mapping, dict):
+            attn_mask = causal_mask_mapping[self.config.layer_types[i]]
+        else:
+            attn_mask = causal_mask_mapping
         attn_out, _ = layer.self_attn(
             hidden_states=normed.unsqueeze(0),
             position_embeddings=position_embeddings,
@@ -768,10 +769,11 @@ def apply_flashinfer(
     model,
     enable_cuda_graph: bool = False,
     fuse_rmsnorm: bool = True,
-    fuse_residual_rmsnorm: bool = False,
     fuse_attention: bool = True,
     cuda_graph_buckets=None,
     overhead_budget: int = 512,
+    *,
+    fuse_residual_rmsnorm: bool = True,
 ):
     """Patch an OmniVoice instance to use flashinfer packed attention.
 
@@ -780,18 +782,18 @@ def apply_flashinfer(
         by the single-kernel flashinfer rmsnorm; residual adds stay stock.
       - ``fuse_residual_rmsnorm=True``: additionally rewrites the
         model forward so per-layer residual adds and the following RMSNorms
-        are fused via ``flashinfer.norm.fused_add_rmsnorm``. When both flags
-        are true, the new flow overrides the original (an info message is
-        logged).
+        are fused via ``flashinfer.norm.fused_add_rmsnorm``.
     """
     model.llm.set_attn_implementation("omnivoice_fi")
-    if fuse_rmsnorm and fuse_residual_rmsnorm:
-        # New flow: fused residual+norm model forward. Implies the per-module
-        # rmsnorm patch (q/k norms) and overrides the plain arrangement.
+    if fuse_residual_rmsnorm and not fuse_rmsnorm:
         logger.info(
-            "fuse_rmsnorm + fuse_residual_rmsnorm both enabled: using the "
-            "fused residual+RMSNorm model forward (overrides plain rmsnorm "
-            "patching)"
+            "fuse_residual_rmsnorm enabled: enabling fuse_rmsnorm automatically"
+        )
+        fuse_rmsnorm = True
+
+    if fuse_residual_rmsnorm:
+        logger.info(
+            "fuse_residual_rmsnorm enabled: using fused residual+RMSNorm model forward"
         )
         _patch_residual_rmsnorm(model.llm)
     elif fuse_rmsnorm:
