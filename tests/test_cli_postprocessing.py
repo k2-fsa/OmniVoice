@@ -36,6 +36,7 @@ EXPECTED_DEFAULTS = {
     "output_mode": "processed",
     "output_min_silence_ms": 500,
     "output_keep_silence_ms": None,
+    "output_preserve_active_edges": False,
     "output_lead_silence_ms": 100,
     "output_trail_silence_ms": 100,
     "output_peak_limit": None,
@@ -46,6 +47,7 @@ EXPECTED_DEFAULTS = {
 }
 
 OVERRIDE_ARGUMENTS = [
+    "--output_preserve_active_edges",
     "--final_duration_samples",
     "64301",
     "--output_mode",
@@ -107,6 +109,7 @@ def _assert_defaults(namespace):
 
 
 def _assert_overrides(namespace):
+    assert namespace.output_preserve_active_edges is True
     assert namespace.final_duration is None
     assert namespace.final_duration_samples == 64301
     assert namespace.output_mode == "raw_codec"

@@ -100,6 +100,19 @@ timing.
 
 ## Pre/Post Processing
 
+For quiet attacks and releases, opt in to `output_preserve_active_edges=True`
+(CLI: `--output_preserve_active_edges`). During silence removal this preserves
+every nonzero outer-edge sample, including samples below the -50 dBFS detector
+threshold, while allowing internal silence shortening. It defaults to `False`
+for compatibility. It also preserves quiet noise; it is not a speech detector.
+An entirely quiet but nonzero waveform is retained instead of becoming empty.
+The independent fade and PCM16-proxy alignment stages still apply afterwards.
+This setting neither regenerates a missing phoneme nor guarantees correct text.
+
+Ranges that reach the end of the silence-detection proxy now retain the exact
+physical endpoint. A fractional-millisecond active tail is never discarded
+merely because the proxy rounded the total duration to milliseconds.
+
 | Parameter | Type | Default | Description |
 |---|---|---|---|
 | `output_mode` | `"processed"` or `"raw_codec"` | `"processed"` | Select the backward-compatible output pipeline or return the codec decoder waveform without output transformations. |

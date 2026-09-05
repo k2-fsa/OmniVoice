@@ -614,6 +614,7 @@ def test_generation_config_forwards_output_silence_controls(monkeypatch):
         "lead_sil": 40,
         "trail_sil": 60,
         "keep_mid_sil": 90,
+        "preserve_active_edges": False,
     }
     assert received_targets == {
         "sampling_rate": SAMPLE_RATE,
@@ -822,7 +823,7 @@ def test_generation_config_appends_new_fields_for_positional_compatibility():
 
     names = [field.name for field in fields(OmniVoiceGenerationConfig)]
 
-    assert names[-8:] == [
+    assert names[-9:] == [
         "output_min_silence_ms",
         "output_keep_silence_ms",
         "output_lead_silence_ms",
@@ -831,4 +832,5 @@ def test_generation_config_appends_new_fields_for_positional_compatibility():
         "output_target_lead_silence_ms",
         "output_target_trail_silence_ms",
         "output_mode",
+        "output_preserve_active_edges",
     ]

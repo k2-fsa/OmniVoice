@@ -351,6 +351,8 @@ def remove_silence(
     lead_sil: int = 100,
     trail_sil: int = 300,
     keep_mid_sil: int | None = None,
+    *,
+    preserve_active_edges: bool = False,
 ) -> np.ndarray:
     """Shorten long middle silences and trim edge silences.
 
@@ -362,10 +364,15 @@ def remove_silence(
         trail_sil: kept trailing silence in ms.
         keep_mid_sil: maximum total duration kept from each detected middle
             silence, in ms. ``None`` keeps at most ``mid_sil`` ms.
+        preserve_active_edges: preserve every nonzero outer-edge sample,
+            even below the detector threshold. This also preserves quiet
+            noise; it does not classify speech or protect internal pauses.
 
     Returns:
         Numpy array with shape (C, T').
     """
+    if not isinstance(preserve_active_edges, bool):
+        raise TypeError("preserve_active_edges must be a bool")
     mid_sil = _validate_nonnegative_integer("mid_sil", mid_sil)
     lead_sil = _validate_nonnegative_integer("lead_sil", lead_sil)
     trail_sil = _validate_nonnegative_integer("trail_sil", trail_sil)
@@ -406,10 +413,32 @@ def remove_silence(
         sample_ranges = [
             (
                 max(0, int(start * sampling_rate / 1000.0)),
-                min(processed.shape[-1], int(end * sampling_rate / 1000.0)),
+                # Pydub rounds the physical duration to milliseconds. An
+                # interval reaching its logical end must retain the actual
+                # final frame, including a fractional-millisecond tail.
+                processed.shape[-1]
+                if end >= len(detection_proxy)
+                else min(processed.shape[-1], int(end * sampling_rate / 1000.0)),
             )
             for start, end in output_ranges
         ]
+        if preserve_active_edges:
+            first_active = _find_exact_active_edge(processed, from_end=False)
+            last_active = _find_exact_active_edge(processed, from_end=True)
+            if first_active is not None and last_active is not None:
+                if sample_ranges:
+                    sample_ranges[0] = (
+                        min(sample_ranges[0][0], first_active),
+                        sample_ranges[0][1],
+                    )
+                    sample_ranges[-1] = (
+                        sample_ranges[-1][0],
+                        max(sample_ranges[-1][1], last_active + 1),
+                    )
+                else:
+                    # A quiet utterance may fall entirely below -50 dBFS.
+                    # The opt-in must not turn it into empty audio.
+                    sample_ranges = [(0, processed.shape[-1])]
         chunks = [
             processed[..., start:end] for start, end in sample_ranges if end > start
         ]
@@ -428,9 +457,19 @@ def remove_silence(
         silence_threshold=-50,
     )
     start_ms = max(0, leading_silence - lead_sil)
-    end_ms = min(len(edge_proxy), len(edge_proxy) - trailing_silence + trail_sil)
     start_sample = max(0, int(start_ms * sampling_rate / 1000.0))
-    end_sample = min(processed.shape[-1], int(end_ms * sampling_rate / 1000.0))
+    # Subtract an intentional trim from the real frame count, rather than
+    # reconstructing that count from the proxy's rounded duration.
+    trim_trailing_ms = max(0, trailing_silence - trail_sil)
+    end_sample = max(
+        0, processed.shape[-1] - int(trim_trailing_ms * sampling_rate / 1000.0)
+    )
+    if preserve_active_edges:
+        first_active = _find_exact_active_edge(processed, from_end=False)
+        last_active = _find_exact_active_edge(processed, from_end=True)
+        if first_active is not None and last_active is not None:
+            start_sample = min(start_sample, first_active)
+            end_sample = max(end_sample, last_active + 1)
     return processed[..., start_sample:end_sample]
 
 

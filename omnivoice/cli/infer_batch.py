@@ -219,6 +219,12 @@ def get_parser():
         help="Minimum internal silence duration to shorten, in milliseconds.",
     )
     parser.add_argument(
+        "--output_preserve_active_edges",
+        action="store_true",
+        help="Keep all nonzero outer-edge samples during silence removal, "
+        "including quiet noise. Fades and final alignment remain independent.",
+    )
+    parser.add_argument(
         "--output_keep_silence_ms",
         type=nonnegative_int,
         default=None,

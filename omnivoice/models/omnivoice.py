@@ -529,8 +529,11 @@ class OmniVoiceGenerationConfig:
     output_target_lead_silence_ms: Optional[int] = None
     output_target_trail_silence_ms: Optional[int] = None
     output_mode: Literal["processed", "raw_codec"] = "processed"
+    output_preserve_active_edges: bool = False
 
     def __post_init__(self):
+        if not isinstance(self.output_preserve_active_edges, bool):
+            raise TypeError("output_preserve_active_edges must be a bool")
         for name in (
             "output_min_silence_ms",
             "output_lead_silence_ms",
@@ -2547,6 +2550,7 @@ class OmniVoice(PreTrainedModel):
                 lead_sil=gen_config.output_lead_silence_ms,
                 trail_sil=gen_config.output_trail_silence_ms,
                 keep_mid_sil=keep_mid_silence,
+                preserve_active_edges=gen_config.output_preserve_active_edges,
             )
 
         if ref_rms is not None and ref_rms < 0.1:
