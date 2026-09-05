@@ -240,10 +240,77 @@ audio = model.generate(
     text="...",
     num_step=32,  # diffusion steps (or 16 for faster inference)
     speed=1.0,     # speed factor (>1.0 faster, <1.0 slower)
-    duration=10.0, # fixed output duration in seconds (overrides speed)
+    duration=10.0, # pre-synthesis audio-token budget (overrides speed)
+    final_duration_samples=240000, # authoritative physical output frames
     # ... more options
 )
 ```
+
+`duration` controls the audio-token budget before synthesis. It does not set
+the final waveform length. Use `final_duration` for a physical duration in
+seconds (decimal HALF_UP at the model sample rate), or
+`final_duration_samples` for an authoritative integer number of sample frames
+per channel. The two physical controls are mutually exclusive per item and may
+be scalars or per-item lists. Exact framing only adds digital zeros or removes
+exact-zero edge frames; it raises instead of cutting an active sample.
+Explicit `output_target_*_silence_ms` values authenticate edge regions before
+that final framing. Whenever the container target is longer, the complete
+source is preserved bit-for-bit and the deficit is appended as separately
+reported trailing outer-container zero fill. A trailing anchor never causes
+leading fill or moves the waveform onset.
+
+Request the codec decoder waveform without any output post-processing with the
+explicit `raw_codec` mode. The default remains `processed` for backward
+compatibility:
+
+```python
+raw_audio = model.generate(text="...", output_mode="raw_codec")
+```
+
+With neither physical-duration control, `raw_codec` remains the decoder output
+byte for byte after validating its mono channels-first shape, real floating
+dtype, non-empty length, and finite samples. If one is supplied, the only
+additional operation is exact zero-only output framing after raw chunks have
+been concatenated.
+
+Raw codec samples may exceed `[-1, 1]`. When saving them as WAV, use an IEEE
+float subtype such as `soundfile.write(..., subtype="FLOAT")`; integer PCM can
+clip or quantize the decoder waveform. Both bundled inference CLIs select
+`FLOAT` automatically in `raw_codec` mode.
+
+Generation telemetry is opt-in and delivered as one immutable record per
+successful call:
+
+```python
+audio = model.generate(
+    text="...",
+    telemetry_callback=lambda metrics: print(
+        metrics.wall_seconds,
+        metrics.final_duration_items,
+    ),
+)
+```
+
+Callbacks from concurrent generation calls may run concurrently and must be
+thread-safe. CUDA telemetry additionally reports synchronized allocated/reserved
+boundary snapshots and peaks for an exclusive in-process, per-device measured
+interval. OmniVoice serializes instrumented calls on the same CUDA device,
+releases the lease before public callbacks, and allows different devices to run
+independently. Concurrent uninstrumented CUDA work can still contribute to this
+process/device high-water mark. Generation without `telemetry_callback` does not
+acquire the lease or query/reset peak counters. External code must not reset
+PyTorch peak counters on the same device during the measured interval.
+
+For sample-accurate production auditing, pass `framing_observer` together with
+a physical-duration target. The synchronous callback receives immutable mono
+snapshots immediately before and after zero-only framing, retained-slice
+indices, and authoritative operation metadata. OmniVoice validates finite
+floating samples, protected edges, digital-zero padding/trimming, bit-exact
+retained content, and equality with the waveform returned by `generate()`
+before reporting success. The snapshots share one immutable backing copy;
+avoid retaining them for long-form work. See the generation-parameter guide
+for the complete observer contract and telemetry fields.
+
 See more detailed control in [docs/generation-parameters.md](docs/generation-parameters.md).
 
 ### Non-Verbal & Pronunciation Control
@@ -274,7 +341,7 @@ audio = model.generate(text="He plays the [B EY1 S] guitar while catching a [B A
 
 ## Command-Line Tools
 
-Three CLI entry points are provided. The CLI tools support all features available in the Python API (voice cloning, voice design, auto voice, generation parameters, etc.) — all controlled via command-line arguments.
+Three CLI entry points are provided. The single-item and batch tools expose voice cloning, voice design, auto voice, and generation parameters as command-line arguments. The interactive demo exposes the most commonly used controls in a web UI.
 
 | Command | Description | Source |
 |---|---|---|
@@ -328,11 +395,29 @@ omnivoice-infer-batch \
 
 The test list is a JSONL file where each line is a JSON object:
 ```json
-{"id": "sample_001", "text": "Hello world", "ref_audio": "/path/to/ref.wav", "ref_text": "Reference transcript", "instruct": "female, british accent", "language_id": "en", "duration": 10.0, "speed": 1.0}
+{"id": "sample_001", "text": "Hello world", "ref_audio": "/path/to/ref.wav", "ref_text": "Reference transcript", "instruct": "female, british accent", "language_id": "en", "duration": 10.0, "final_duration_samples": 240000, "speed": 1.0}
 ```
 Only `id` and `text` are mandatory fields. `ref_audio` and `ref_text` are used in voice cloning mode. `instruct` is used in voice design mode. If no reference audio or instruct are provided, the model will generate text in a random voice.
 
-`language_id`, `duration`, and `speed` are optional. `duration` (in seconds) fixes the output length; `speed` controls the speaking rate. If `duration` and `speed` are both provided, `speed` will be ignored.
+`language_id`, `duration`, `final_duration`, `final_duration_samples`, and
+`speed` are optional. `duration` sets the pre-synthesis audio-token budget;
+`final_duration` and `final_duration_samples` independently constrain the
+physical WAV length and are mutually exclusive per item. Prefer the integer
+sample-frame field for sample-accurate external timing. `speed` controls the
+speaking rate and is ignored when `duration` is set.
+
+Batch input receives sampling-rate-independent structural validation before
+result-directory creation or worker startup. Malformed JSON, duplicate JSON
+keys or sample IDs, unknown fields, invalid scalar types or ranges, and
+non-portable output IDs abort the run at that stage. Seconds-based physical
+durations are authoritatively converted and range-checked only after the worker
+model exposes its actual sampling rate, before synthesis or output writes.
+Each `id` must be a single portable file stem: absolute paths, traversal,
+separators, reserved Windows names, DOS 8.3-style tilde aliases, and names that
+alias after portable case-folding are rejected. The lower-level evaluation
+helper retains its compatibility mode with
+`read_test_list(..., reject_unknown_fields=False)`, but the production batch
+CLI always enables strict field validation.
 
 ### FlashInfer Acceleration
 
@@ -402,6 +487,8 @@ You can also scan the QR code to join our wechat group or follow our wechat offi
 
 OmniVoice is supported by a growing ecosystem of community projects.
 Explore them in [Community Projects](docs/community-projects.md).
+
+Silence-postprocessing fixes and production validation by [Thomas Vanini](https://linktr.ee/ThomasVanini) for the GTA V Enhanced PT-BR Dubbing Project, developed with [OpenAI Codex](https://developers.openai.com/).
 
 ---
 

@@ -32,9 +32,13 @@ import logging
 import math
 import os
 import re
-from dataclasses import dataclass, fields
-from functools import partial
-from typing import Any, List, Optional, Union
+import threading
+import time
+from dataclasses import dataclass, field, fields
+from decimal import Decimal
+from functools import partial, wraps
+from numbers import Integral, Real
+from typing import Any, Callable, List, Literal, Optional, Union
 
 import numpy as np
 import torch
@@ -61,9 +65,17 @@ from transformers.modeling_utils import ALL_ATTENTION_FUNCTIONS, AttentionInterf
 from transformers.models.auto import CONFIG_MAPPING, AutoConfig
 
 from omnivoice.utils.audio import (
+    _validate_nonnegative_integer,
+    _validate_nonnegative_real,
+    _validate_optional_nonnegative_integer,
+    _validate_optional_peak_limit,
+    _validate_output_waveform,
     cross_fade_chunks,
     fade_and_pad_audio,
+    fit_audio_to_target_samples,
+    limit_audio_peak,
     load_audio,
+    match_edge_silence,
     remove_silence,
     trim_long_audio,
 )
@@ -87,6 +99,328 @@ from omnivoice.utils.voice_design import (
 logger = logging.getLogger(__name__)
 
 _AUTOCAST_FLEX_ATTENTION = "omnivoice_flex_attention"
+
+
+def _validate_positive_finite_real(name: str, value: Any) -> float:
+    """Return ``value`` as a positive finite binary64 number."""
+    if isinstance(value, bool) or not isinstance(value, Real):
+        raise TypeError(f"{name} must be a real number, got {type(value).__name__}")
+    try:
+        value = float(value)
+    except (OverflowError, ValueError) as exc:
+        raise ValueError(f"{name} must be finite and greater than zero") from exc
+    if not math.isfinite(value) or value <= 0:
+        raise ValueError(f"{name} must be finite and greater than zero")
+    return value
+
+
+def _duration_to_target_tokens(duration: Any, frame_rate: Any) -> int:
+    """Convert seconds to an audio-token budget without binary64 underflow.
+
+    The historical conversion floors genuinely fractional token counts. A
+    product exactly one ULP below an integer is the sole exception: it is
+    treated as that integer because decimal durations such as ``29 / 25`` can
+    otherwise become ``28.999999999999996`` during binary64 multiplication.
+    """
+    duration = _validate_positive_finite_real("duration", duration)
+    frame_rate = _validate_positive_finite_real("frame_rate", frame_rate)
+    scaled_tokens = duration * frame_rate
+    if not math.isfinite(scaled_tokens):
+        raise ValueError("duration * frame_rate must be finite")
+
+    nearest_integer = round(scaled_tokens)
+    if scaled_tokens < nearest_integer and nearest_integer - scaled_tokens <= math.ulp(
+        scaled_tokens
+    ):
+        scaled_tokens = float(nearest_integer)
+
+    return max(1, math.floor(scaled_tokens))
+
+
+def _normalize_duration_values(
+    duration: Union[float, list[Optional[float]], None], batch_size: int
+) -> Optional[List[Optional[float]]]:
+    """Normalize and validate scalar or per-item duration values."""
+    if duration is None:
+        return None
+    if isinstance(duration, bool):
+        raise TypeError("duration must be a real number or a per-item iterable")
+    if isinstance(duration, Real):
+        values = [duration] * batch_size
+    else:
+        if isinstance(duration, (str, bytes)):
+            raise TypeError("duration must be a real number or a per-item iterable")
+        try:
+            values = list(duration)
+        except TypeError as exc:
+            raise TypeError(
+                "duration must be a real number or a per-item iterable"
+            ) from exc
+        if len(values) != batch_size:
+            raise ValueError(
+                "duration must contain exactly one value per text item, "
+                f"got {len(values)} values for a batch of {batch_size}"
+            )
+
+    normalized = []
+    for index, value in enumerate(values):
+        if value is None:
+            normalized.append(None)
+        else:
+            normalized.append(
+                _validate_positive_finite_real(f"duration[{index}]", value)
+            )
+    return normalized
+
+
+@dataclass(frozen=True)
+class _FinalDurationTarget:
+    """Validated physical output target for one generation item."""
+
+    samples: int
+    source: Literal["integer_samples", "decimal_seconds"]
+    requested_seconds: Optional[float]
+
+
+def _normalize_optional_values(
+    name: str,
+    value: Any,
+    batch_size: int,
+) -> Optional[list[Any]]:
+    """Normalize a scalar or exact-length per-item iterable."""
+    if value is None:
+        return None
+    if isinstance(value, bool):
+        raise TypeError(f"{name} must be a scalar or a per-item iterable")
+    if isinstance(value, (Real, Integral)):
+        return [value] * batch_size
+    if isinstance(value, (str, bytes)):
+        raise TypeError(f"{name} must be a scalar or a per-item iterable")
+    try:
+        values = list(value)
+    except TypeError as exc:
+        raise TypeError(f"{name} must be a scalar or a per-item iterable") from exc
+    if len(values) != batch_size:
+        raise ValueError(
+            f"{name} must contain exactly one value per text item, "
+            f"got {len(values)} values for a batch of {batch_size}"
+        )
+    return values
+
+
+def _final_duration_seconds_to_samples(
+    value: Any,
+    sampling_rate: Any,
+    *,
+    name: str = "final_duration",
+) -> tuple[float, int]:
+    """Convert decimal seconds to sample frames using decimal HALF_UP."""
+    seconds = _validate_positive_finite_real(name, value)
+    if isinstance(sampling_rate, bool) or not isinstance(sampling_rate, Integral):
+        raise TypeError("sampling_rate must be a positive integer")
+    sampling_rate = int(sampling_rate)
+    if sampling_rate <= 0:
+        raise ValueError("sampling_rate must be greater than zero")
+
+    # Convert the user-facing decimal text to an exact rational before scaling.
+    # Decimal arithmetic otherwise inherits the process-global context, so an
+    # unrelated library lowering ``getcontext().prec`` could change a physical
+    # sample target before HALF_UP rounding is applied.
+    numerator, denominator = Decimal(str(seconds)).as_integer_ratio()
+    scaled_numerator = numerator * sampling_rate
+    target, remainder = divmod(scaled_numerator, denominator)
+    if remainder * 2 >= denominator:
+        target += 1
+    if target <= 0:
+        raise ValueError(f"{name} rounds to fewer than one sample")
+    if target > np.iinfo(np.intp).max:
+        raise ValueError(f"{name} exceeds the platform sample-count limit")
+    return seconds, target
+
+
+def _validate_final_duration_samples(value: Any, *, name: str) -> int:
+    """Validate an authoritative integer sample-frame target."""
+    if isinstance(value, bool) or not isinstance(value, Integral):
+        raise TypeError(f"{name} must be a positive integer")
+    value = int(value)
+    if value <= 0:
+        raise ValueError(f"{name} must be greater than zero")
+    if value > np.iinfo(np.intp).max:
+        raise ValueError(f"{name} exceeds the platform sample-count limit")
+    return value
+
+
+_MAX_SAFE_FLOAT_WAVEFORM_SAMPLES = (
+    np.iinfo(np.intp).max // np.dtype(np.float64).itemsize
+)
+
+
+def _validate_sampling_rate(value: Any) -> int:
+    """Return a positive integer sample rate for allocation preflight."""
+
+    if isinstance(value, bool) or not isinstance(value, Integral):
+        raise TypeError("sampling_rate must be a positive integer")
+    value = int(value)
+    if value <= 0:
+        raise ValueError("sampling_rate must be greater than zero")
+    return value
+
+
+def _milliseconds_to_bounded_samples(name: str, value: int, sampling_rate: int) -> int:
+    """Bound a millisecond-derived edge allocation before model generation."""
+
+    # Use ceiling for the allocation preflight. Runtime edge alignment uses
+    # round(), so this conservative count can exceed the eventual allocation by
+    # at most one sample and can never underestimate it.
+    samples = (value * sampling_rate + 999) // 1000
+    if samples > _MAX_SAFE_FLOAT_WAVEFORM_SAMPLES:
+        raise ValueError(f"{name} exceeds the platform waveform-allocation limit")
+    return samples
+
+
+def _seconds_to_bounded_samples(name: str, value: float, sampling_rate: int) -> int:
+    """Bound a seconds-derived allocation without overflowing binary64."""
+
+    numerator, denominator = Decimal(str(value)).as_integer_ratio()
+    samples = (numerator * sampling_rate) // denominator
+    if samples > _MAX_SAFE_FLOAT_WAVEFORM_SAMPLES:
+        raise ValueError(f"{name} exceeds the platform waveform-allocation limit")
+    return samples
+
+
+def _validate_output_allocation_preflight(
+    gen_config: "OmniVoiceGenerationConfig",
+    sampling_rate: Any,
+) -> None:
+    """Reject impossible post-processing allocations before synthesis starts."""
+
+    sampling_rate = _validate_sampling_rate(sampling_rate)
+    if gen_config.output_mode != "processed":
+        return
+
+    pad_samples = _seconds_to_bounded_samples(
+        "pad_duration",
+        gen_config.pad_duration,
+        sampling_rate,
+    )
+    if pad_samples * 2 > _MAX_SAFE_FLOAT_WAVEFORM_SAMPLES - 1:
+        raise ValueError(
+            "pad_duration exceeds the platform waveform-allocation limit for "
+            "two output edges"
+        )
+
+    target_edges = []
+    for name, value in (
+        ("output_target_lead_silence_ms", gen_config.output_target_lead_silence_ms),
+        (
+            "output_target_trail_silence_ms",
+            gen_config.output_target_trail_silence_ms,
+        ),
+    ):
+        target_edges.append(
+            pad_samples
+            if value is None
+            else _milliseconds_to_bounded_samples(name, value, sampling_rate)
+        )
+    # Edge matching happens after generic two-sided padding. Bound both the
+    # intermediate padded waveform above and the final target-edge allocation
+    # here, reserving one frame for non-empty decoder output in either case.
+    if sum(target_edges) > _MAX_SAFE_FLOAT_WAVEFORM_SAMPLES - 1:
+        raise ValueError(
+            "output_target_*_silence_ms and pad_duration exceed the combined "
+            "platform waveform-allocation limit"
+        )
+
+
+def _validate_final_duration_inputs(
+    final_duration: Any,
+    final_duration_samples: Any,
+    batch_size: int,
+) -> tuple[Optional[list[Any]], Optional[list[Any]]]:
+    """Validate physical-target values that do not depend on a sample rate."""
+    seconds_values = _normalize_optional_values(
+        "final_duration", final_duration, batch_size
+    )
+    sample_values = _normalize_optional_values(
+        "final_duration_samples", final_duration_samples, batch_size
+    )
+    if seconds_values is None and sample_values is None:
+        return None, None
+
+    seconds_values = seconds_values or [None] * batch_size
+    sample_values = sample_values or [None] * batch_size
+    validated_seconds = []
+    validated_samples = []
+    for index, (seconds_value, sample_value) in enumerate(
+        zip(seconds_values, sample_values)
+    ):
+        if seconds_value is not None and sample_value is not None:
+            raise ValueError(
+                f"final_duration[{index}] and final_duration_samples[{index}] "
+                "are mutually exclusive"
+            )
+        validated_seconds.append(
+            _validate_positive_finite_real(f"final_duration[{index}]", seconds_value)
+            if seconds_value is not None
+            else None
+        )
+        validated_samples.append(
+            _validate_final_duration_samples(
+                sample_value,
+                name=f"final_duration_samples[{index}]",
+            )
+            if sample_value is not None
+            else None
+        )
+    return validated_seconds, validated_samples
+
+
+def _normalize_final_duration_targets(
+    final_duration: Any,
+    final_duration_samples: Any,
+    batch_size: int,
+    sampling_rate: Any,
+) -> Optional[list[Optional[_FinalDurationTarget]]]:
+    """Resolve mutually exclusive seconds/sample targets for a batch."""
+    seconds_values, sample_values = _validate_final_duration_inputs(
+        final_duration,
+        final_duration_samples,
+        batch_size,
+    )
+    if seconds_values is None and sample_values is None:
+        return None
+
+    seconds_values = seconds_values or [None] * batch_size
+    sample_values = sample_values or [None] * batch_size
+    targets: list[Optional[_FinalDurationTarget]] = []
+    for index, (seconds_value, sample_value) in enumerate(
+        zip(seconds_values, sample_values)
+    ):
+        if sample_value is not None:
+            targets.append(
+                _FinalDurationTarget(
+                    samples=sample_value,
+                    source="integer_samples",
+                    requested_seconds=None,
+                )
+            )
+            continue
+        if seconds_value is not None:
+            seconds, samples = _final_duration_seconds_to_samples(
+                seconds_value,
+                sampling_rate,
+                name=f"final_duration[{index}]",
+            )
+            targets.append(
+                _FinalDurationTarget(
+                    samples=samples,
+                    source="decimal_seconds",
+                    requested_seconds=seconds,
+                )
+            )
+            continue
+        targets.append(None)
+    return targets
 
 
 def _autocast_flex_attention(module, query, key, value, *args, **kwargs):
@@ -187,12 +521,649 @@ class OmniVoiceGenerationConfig:
     audio_chunk_threshold: float = 30.0
     pad_duration: float = 0.1
     fade_duration: float = 0.1
+    output_min_silence_ms: int = 500
+    output_keep_silence_ms: Optional[int] = None
+    output_lead_silence_ms: int = 100
+    output_trail_silence_ms: int = 100
+    output_peak_limit: Optional[float] = None
+    output_target_lead_silence_ms: Optional[int] = None
+    output_target_trail_silence_ms: Optional[int] = None
+    output_mode: Literal["processed", "raw_codec"] = "processed"
+    output_preserve_active_edges: bool = False
+
+    def __post_init__(self):
+        if not isinstance(self.output_preserve_active_edges, bool):
+            raise TypeError("output_preserve_active_edges must be a bool")
+        for name in (
+            "output_min_silence_ms",
+            "output_lead_silence_ms",
+            "output_trail_silence_ms",
+        ):
+            setattr(
+                self,
+                name,
+                _validate_nonnegative_integer(name, getattr(self, name)),
+            )
+        if self.output_keep_silence_ms is not None:
+            self.output_keep_silence_ms = _validate_nonnegative_integer(
+                "output_keep_silence_ms", self.output_keep_silence_ms
+            )
+        self.pad_duration = _validate_nonnegative_real(
+            "pad_duration", self.pad_duration
+        )
+        self.fade_duration = _validate_nonnegative_real(
+            "fade_duration", self.fade_duration
+        )
+        self.output_peak_limit = _validate_optional_peak_limit(
+            "output_peak_limit", self.output_peak_limit
+        )
+        self.output_target_lead_silence_ms = _validate_optional_nonnegative_integer(
+            "output_target_lead_silence_ms",
+            self.output_target_lead_silence_ms,
+        )
+        self.output_target_trail_silence_ms = _validate_optional_nonnegative_integer(
+            "output_target_trail_silence_ms",
+            self.output_target_trail_silence_ms,
+        )
+        if not isinstance(self.output_mode, str):
+            raise TypeError(
+                "output_mode must be 'processed' or 'raw_codec', "
+                f"got {type(self.output_mode).__name__}"
+            )
+        if self.output_mode not in ("processed", "raw_codec"):
+            raise ValueError("output_mode must be 'processed' or 'raw_codec'")
 
     @classmethod
     def from_dict(cls, kwargs_dict):
         valid_keys = {f.name for f in fields(cls)}
         filtered = {k: v for k, v in kwargs_dict.items() if k in valid_keys}
         return cls(**filtered)
+
+
+@dataclass(frozen=True)
+class OmniVoiceCudaTelemetry:
+    """CUDA memory snapshots captured for one instrumented generation call."""
+
+    device: str
+    memory_allocated_start_bytes: int
+    memory_allocated_end_bytes: int
+    memory_reserved_start_bytes: int
+    memory_reserved_end_bytes: int
+    memory_allocated_peak_bytes: int
+    memory_reserved_peak_bytes: int
+    peak_stats_reset_at_call_start: bool
+
+    def __post_init__(self) -> None:
+        fields_by_name = {
+            "memory_allocated_start_bytes": self.memory_allocated_start_bytes,
+            "memory_allocated_end_bytes": self.memory_allocated_end_bytes,
+            "memory_reserved_start_bytes": self.memory_reserved_start_bytes,
+            "memory_reserved_end_bytes": self.memory_reserved_end_bytes,
+            "memory_allocated_peak_bytes": self.memory_allocated_peak_bytes,
+            "memory_reserved_peak_bytes": self.memory_reserved_peak_bytes,
+        }
+        if not isinstance(self.device, str) or not self.device:
+            raise TypeError("CUDA telemetry device must be a non-empty string")
+        for name, value in fields_by_name.items():
+            if isinstance(value, bool) or not isinstance(value, int):
+                raise TypeError(f"{name} must be an integer")
+            if value < 0:
+                raise ValueError(f"{name} must be non-negative")
+        if self.peak_stats_reset_at_call_start is not True:
+            raise ValueError(
+                "CUDA peak telemetry must be scoped by a reset at call start"
+            )
+        if self.memory_allocated_peak_bytes < max(
+            self.memory_allocated_start_bytes,
+            self.memory_allocated_end_bytes,
+        ):
+            raise ValueError("allocated peak is below a boundary snapshot")
+        if self.memory_reserved_peak_bytes < max(
+            self.memory_reserved_start_bytes,
+            self.memory_reserved_end_bytes,
+        ):
+            raise ValueError("reserved peak is below a boundary snapshot")
+
+
+@dataclass(frozen=True)
+class OmniVoiceFinalDurationTelemetry:
+    """Immutable physical output-framing evidence for one generated item."""
+
+    item_index: int
+    target_source: Literal["integer_samples", "decimal_seconds"]
+    requested_seconds: Optional[float]
+    operation: Literal["unchanged", "padded", "trimmed"]
+    protected_leading_edge: bool
+    protected_trailing_edge: bool
+    sample_rate: int
+    target_samples: int
+    source_samples: int
+    final_samples: int
+    padded_leading_samples: int
+    padded_trailing_samples: int
+    trimmed_leading_samples: int
+    trimmed_trailing_samples: int
+
+
+_FRAMING_EVIDENCE_CHUNK_SAMPLES = 1_048_576
+
+
+def _immutable_waveform_snapshot(waveform: np.ndarray) -> np.ndarray:
+    """Copy one waveform into an ndarray backed by immutable ``bytes``."""
+
+    raw = waveform.tobytes(order="C")
+    snapshot = np.frombuffer(raw, dtype=waveform.dtype).reshape(waveform.shape)
+    if snapshot.flags.writeable:
+        raise RuntimeError("immutable waveform snapshot unexpectedly became writeable")
+    return snapshot
+
+
+def _immutable_bytes_owner(waveform: np.ndarray) -> Optional[bytes]:
+    """Return the terminal immutable owner, or ``None`` for an unsafe chain."""
+
+    current: Any = waveform
+    seen: set[int] = set()
+    while isinstance(current, np.ndarray):
+        identity = id(current)
+        if identity in seen or current.flags.writeable or current.base is None:
+            return None
+        seen.add(identity)
+        current = current.base
+    return current if isinstance(current, bytes) else None
+
+
+def _waveform_is_finite(waveform: np.ndarray) -> bool:
+    """Check finiteness with bounded temporary memory."""
+
+    for start in range(0, waveform.shape[-1], _FRAMING_EVIDENCE_CHUNK_SAMPLES):
+        end = min(
+            waveform.shape[-1],
+            start + _FRAMING_EVIDENCE_CHUNK_SAMPLES,
+        )
+        if not np.isfinite(waveform[..., start:end]).all():
+            return False
+    return True
+
+
+def _waveform_regions_match_bits(
+    left: np.ndarray,
+    left_start: int,
+    left_end: int,
+    right: np.ndarray,
+    right_start: int,
+    right_end: int,
+) -> bool:
+    """Compare two channels-first regions bit-for-bit in bounded chunks."""
+
+    if (
+        left.dtype.str != right.dtype.str
+        or left.shape[:-1] != right.shape[:-1]
+        or left_end - left_start != right_end - right_start
+    ):
+        return False
+    length = left_end - left_start
+    for offset in range(0, length, _FRAMING_EVIDENCE_CHUNK_SAMPLES):
+        chunk_length = min(_FRAMING_EVIDENCE_CHUNK_SAMPLES, length - offset)
+        left_chunk = np.ascontiguousarray(
+            left[..., left_start + offset : left_start + offset + chunk_length]
+        )
+        right_chunk = np.ascontiguousarray(
+            right[..., right_start + offset : right_start + offset + chunk_length]
+        )
+        if not np.array_equal(left_chunk.view(np.uint8), right_chunk.view(np.uint8)):
+            return False
+    return True
+
+
+def _waveform_region_is_digital_zero(
+    waveform: np.ndarray,
+    start: int,
+    end: int,
+) -> bool:
+    """Require numeric digital zero, accepting both IEEE zero signs."""
+
+    for offset in range(start, end, _FRAMING_EVIDENCE_CHUNK_SAMPLES):
+        chunk = waveform[
+            ...,
+            offset : min(end, offset + _FRAMING_EVIDENCE_CHUNK_SAMPLES),
+        ]
+        if np.any(chunk):
+            return False
+    return True
+
+
+@dataclass(frozen=True)
+class OmniVoiceFramingObservation:
+    """Synchronous immutable waveform snapshots and framing evidence."""
+
+    framing: OmniVoiceFinalDurationTelemetry
+    source_waveform: np.ndarray = field(repr=False, compare=False)
+    final_waveform: np.ndarray = field(repr=False, compare=False)
+    retained_source_start_sample: int
+    retained_source_end_sample: int
+    retained_final_start_sample: int
+    retained_final_end_sample: int
+
+
+_CUDA_TELEMETRY_LEASES_GUARD = threading.Lock()
+_CUDA_TELEMETRY_LEASES: dict[str, threading.Lock] = {}
+_CUDA_TELEMETRY_THREAD_STATE = threading.local()
+
+
+@dataclass
+class _CudaTelemetryLease:
+    """Exclusive process/device lease for one instrumented CUDA call."""
+
+    device: torch.device
+    key: str
+    lock: threading.Lock
+    released: bool = False
+
+    def release(self) -> None:
+        """Release exactly once and clear same-thread reentrancy state."""
+
+        if self.released:
+            return
+        active = getattr(_CUDA_TELEMETRY_THREAD_STATE, "active", None)
+        if not isinstance(active, dict) or active.get(self.key) is not self:
+            raise RuntimeError("CUDA telemetry lease ownership was corrupted")
+        del active[self.key]
+        self.released = True
+        self.lock.release()
+
+
+def _canonical_cuda_telemetry_device(model: Any) -> Optional[torch.device]:
+    """Resolve one concrete CUDA device without touching uninstrumented calls."""
+
+    try:
+        device = torch.device(model.device)
+    except (AttributeError, RuntimeError, TypeError):
+        return None
+    if device.type != "cuda" or not torch.cuda.is_available():
+        return None
+    index = device.index
+    if index is None:
+        index = int(torch.cuda.current_device())
+    return torch.device("cuda", index)
+
+
+def _acquire_cuda_telemetry_lease(device: torch.device) -> _CudaTelemetryLease:
+    """Serialize peak-counter ownership for one process and CUDA device."""
+
+    key = str(device)
+    active = getattr(_CUDA_TELEMETRY_THREAD_STATE, "active", None)
+    if active is None:
+        active = {}
+        _CUDA_TELEMETRY_THREAD_STATE.active = active
+    if key in active:
+        raise RuntimeError(
+            "reentrant telemetry-enabled generation on the same CUDA device is "
+            "not supported; invoke nested generation after the public callback returns"
+        )
+    with _CUDA_TELEMETRY_LEASES_GUARD:
+        lock = _CUDA_TELEMETRY_LEASES.setdefault(key, threading.Lock())
+    lock.acquire()
+    lease = _CudaTelemetryLease(device=device, key=key, lock=lock)
+    active[key] = lease
+    return lease
+
+
+def _current_cuda_telemetry_lease(
+    device: torch.device,
+) -> Optional[_CudaTelemetryLease]:
+    """Return the current thread's live lease for *device*."""
+
+    active = getattr(_CUDA_TELEMETRY_THREAD_STATE, "active", None)
+    if not isinstance(active, dict):
+        return None
+    lease = active.get(str(device))
+    if not isinstance(lease, _CudaTelemetryLease) or lease.released:
+        return None
+    return lease
+
+
+def _cuda_telemetry_lease_held_by_current_thread(device: torch.device) -> bool:
+    """Expose lease state for adversarial tests and actionable diagnostics."""
+
+    return _current_cuda_telemetry_lease(device) is not None
+
+
+def _with_cuda_telemetry_lease(function):
+    """Acquire a CUDA peak-counter lease only for instrumented calls."""
+
+    @wraps(function)
+    def wrapped(self, *args, **kwargs):
+        callback = kwargs.get("telemetry_callback")
+        # ``args`` excludes ``self``; telemetry_callback is the eleventh public
+        # positional parameter after ``text``. Preserve positional API behavior.
+        if "telemetry_callback" not in kwargs and len(args) > 10:
+            callback = args[10]
+        if callback is None or not callable(callback):
+            return function(self, *args, **kwargs)
+        device = _canonical_cuda_telemetry_device(self)
+        if device is None:
+            return function(self, *args, **kwargs)
+        lease = _acquire_cuda_telemetry_lease(device)
+        try:
+            return function(self, *args, **kwargs)
+        finally:
+            lease.release()
+
+    return wrapped
+
+
+@dataclass(frozen=True)
+class OmniVoiceGenerationTelemetry:
+    """Immutable timing and memory measurements for one generation call."""
+
+    batch_size: int
+    output_count: int
+    output_mode: Literal["processed", "raw_codec"]
+    prompt_preparation_seconds: Optional[float]
+    input_preparation_seconds: float
+    token_generation_seconds: float
+    codec_decode_seconds: float
+    postprocessing_seconds: float
+    wall_seconds: float
+    cuda: Optional[OmniVoiceCudaTelemetry]
+    output_framing_seconds: float = 0.0
+    final_duration_items: tuple[OmniVoiceFinalDurationTelemetry, ...] = ()
+    framing_observer_seconds: float = 0.0
+
+
+def _copy_final_duration_telemetry(
+    evidence: OmniVoiceFinalDurationTelemetry,
+) -> OmniVoiceFinalDurationTelemetry:
+    """Detach immutable metadata from objects held by external callbacks."""
+
+    return OmniVoiceFinalDurationTelemetry(
+        item_index=evidence.item_index,
+        target_source=evidence.target_source,
+        requested_seconds=evidence.requested_seconds,
+        operation=evidence.operation,
+        protected_leading_edge=evidence.protected_leading_edge,
+        protected_trailing_edge=evidence.protected_trailing_edge,
+        sample_rate=evidence.sample_rate,
+        target_samples=evidence.target_samples,
+        source_samples=evidence.source_samples,
+        final_samples=evidence.final_samples,
+        padded_leading_samples=evidence.padded_leading_samples,
+        padded_trailing_samples=evidence.padded_trailing_samples,
+        trimmed_leading_samples=evidence.trimmed_leading_samples,
+        trimmed_trailing_samples=evidence.trimmed_trailing_samples,
+    )
+
+
+def _copy_framing_observation(
+    observation: OmniVoiceFramingObservation,
+) -> OmniVoiceFramingObservation:
+    """Detach observer metadata while sharing only immutable waveform storage."""
+
+    return OmniVoiceFramingObservation(
+        framing=_copy_final_duration_telemetry(observation.framing),
+        source_waveform=observation.source_waveform,
+        final_waveform=observation.final_waveform,
+        retained_source_start_sample=observation.retained_source_start_sample,
+        retained_source_end_sample=observation.retained_source_end_sample,
+        retained_final_start_sample=observation.retained_final_start_sample,
+        retained_final_end_sample=observation.retained_final_end_sample,
+    )
+
+
+def _validate_final_duration_evidence(
+    evidence: Any,
+    *,
+    expected_index: int,
+    expected_target: _FinalDurationTarget,
+    sample_rate: int,
+    expected_protected_leading_edge: bool,
+    expected_protected_trailing_edge: bool,
+    label: str,
+) -> None:
+    """Validate complete framing metadata against one authoritative target."""
+
+    if not isinstance(evidence, OmniVoiceFinalDurationTelemetry):
+        raise RuntimeError(f"{label} received invalid framing metadata")
+    if (
+        evidence.item_index != expected_index
+        or evidence.target_source != expected_target.source
+        or evidence.requested_seconds != expected_target.requested_seconds
+        or evidence.sample_rate != sample_rate
+        or evidence.target_samples != expected_target.samples
+        or evidence.final_samples != expected_target.samples
+        or evidence.protected_leading_edge != expected_protected_leading_edge
+        or evidence.protected_trailing_edge != expected_protected_trailing_edge
+    ):
+        raise RuntimeError(
+            f"{label} evidence does not match the authority for output {expected_index}"
+        )
+    count_fields = (
+        evidence.item_index,
+        evidence.sample_rate,
+        evidence.target_samples,
+        evidence.source_samples,
+        evidence.final_samples,
+        evidence.padded_leading_samples,
+        evidence.padded_trailing_samples,
+        evidence.trimmed_leading_samples,
+        evidence.trimmed_trailing_samples,
+    )
+    if any(
+        isinstance(value, bool) or not isinstance(value, Integral) or value < 0
+        for value in count_fields
+    ):
+        raise RuntimeError(f"{label} metadata contains an invalid sample count")
+    if (
+        type(evidence.protected_leading_edge) is not bool
+        or type(evidence.protected_trailing_edge) is not bool
+        or evidence.source_samples == 0
+        or evidence.final_samples == 0
+    ):
+        raise RuntimeError(f"{label} metadata contains an invalid edge contract")
+    padded_samples = evidence.padded_leading_samples + evidence.padded_trailing_samples
+    trimmed_samples = (
+        evidence.trimmed_leading_samples + evidence.trimmed_trailing_samples
+    )
+    expected_operation = (
+        "padded" if padded_samples else "trimmed" if trimmed_samples else "unchanged"
+    )
+    expected_padded_leading = 0
+    expected_padded_trailing = padded_samples
+    if (
+        (padded_samples and trimmed_samples)
+        or evidence.operation != expected_operation
+        or evidence.source_samples - trimmed_samples
+        != evidence.final_samples - padded_samples
+        or evidence.target_samples != evidence.final_samples
+        or evidence.padded_leading_samples != expected_padded_leading
+        or evidence.padded_trailing_samples != expected_padded_trailing
+        or (evidence.protected_leading_edge and evidence.trimmed_leading_samples)
+        or (evidence.protected_trailing_edge and evidence.trimmed_trailing_samples)
+    ):
+        raise RuntimeError(f"{label} operation metadata is inconsistent")
+
+
+@dataclass
+class _GenerationTelemetryState:
+    """Mutable per-call accumulator used only when telemetry is requested."""
+
+    wall_started_at: float
+    cuda_device: Optional[torch.device]
+    cuda_allocated_start_bytes: Optional[int]
+    cuda_reserved_start_bytes: Optional[int]
+    stage_synchronize: Optional[Callable[[], None]]
+    cuda_lease: Optional[_CudaTelemetryLease]
+    prompt_preparation_seconds: Optional[float] = None
+    input_preparation_seconds: float = 0.0
+    token_generation_seconds: float = 0.0
+    codec_decode_seconds: float = 0.0
+    postprocessing_seconds: float = 0.0
+    output_framing_seconds: float = 0.0
+    framing_observer_seconds: float = 0.0
+    final_duration_items: list[OmniVoiceFinalDurationTelemetry] = field(
+        default_factory=list
+    )
+
+    @classmethod
+    def start(cls, model: "OmniVoice") -> "_GenerationTelemetryState":
+        device = cls._resolve_device(model)
+        cuda_device = cls._resolve_cuda_device(device)
+        cuda_lease = (
+            _current_cuda_telemetry_lease(cuda_device)
+            if cuda_device is not None
+            else None
+        )
+        if cuda_device is not None and cuda_lease is None:
+            raise RuntimeError(
+                "CUDA telemetry peak counters require an exclusive process/device lease"
+            )
+        stage_synchronize = cls._resolve_stage_synchronizer(device, cuda_device)
+        if stage_synchronize is not None:
+            stage_synchronize()
+        wall_started_at = time.perf_counter()
+        allocated = (
+            torch.cuda.memory_allocated(cuda_device)
+            if cuda_device is not None
+            else None
+        )
+        reserved = (
+            torch.cuda.memory_reserved(cuda_device) if cuda_device is not None else None
+        )
+        if cuda_device is not None:
+            # PyTorch peak counters are process/device global. The public generate
+            # wrapper owns an exclusive per-device lease for this complete measured
+            # interval. Uninstrumented calls never acquire a lock or reset counters.
+            torch.cuda.reset_peak_memory_stats(cuda_device)
+        return cls(
+            wall_started_at=wall_started_at,
+            cuda_device=cuda_device,
+            cuda_allocated_start_bytes=allocated,
+            cuda_reserved_start_bytes=reserved,
+            stage_synchronize=stage_synchronize,
+            cuda_lease=cuda_lease,
+        )
+
+    @staticmethod
+    def _resolve_device(model: "OmniVoice") -> Optional[torch.device]:
+        try:
+            return torch.device(model.device)
+        except (AttributeError, RuntimeError, TypeError):
+            return None
+
+    @staticmethod
+    def _resolve_cuda_device(
+        device: Optional[torch.device],
+    ) -> Optional[torch.device]:
+        if device is None or device.type != "cuda" or not torch.cuda.is_available():
+            return None
+        if device.index is None:
+            return torch.device("cuda", int(torch.cuda.current_device()))
+        return device
+
+    @staticmethod
+    def _resolve_stage_synchronizer(
+        device: Optional[torch.device],
+        cuda_device: Optional[torch.device],
+    ) -> Optional[Callable[[], None]]:
+        if cuda_device is not None:
+            return partial(torch.cuda.synchronize, cuda_device)
+        if device is None:
+            return None
+        if device.type == "mps":
+            mps_backend = getattr(torch.backends, "mps", None)
+            mps_runtime = getattr(torch, "mps", None)
+            if mps_backend is not None and mps_backend.is_available():
+                synchronize = getattr(mps_runtime, "synchronize", None)
+                if not callable(synchronize):
+                    raise RuntimeError("MPS telemetry synchronization is unavailable")
+                return synchronize
+        if device.type == "xpu":
+            xpu_runtime = getattr(torch, "xpu", None)
+            if xpu_runtime is not None and xpu_runtime.is_available():
+                synchronize = getattr(xpu_runtime, "synchronize", None)
+                if not callable(synchronize):
+                    raise RuntimeError("XPU telemetry synchronization is unavailable")
+                return partial(synchronize, device)
+        return None
+
+    def timestamp(self) -> float:
+        if self.stage_synchronize is not None:
+            self.stage_synchronize()
+        return time.perf_counter()
+
+    def elapsed_since(self, started_at: float) -> float:
+        return self.timestamp() - started_at
+
+    def add_prompt_preparation(self, seconds: float) -> None:
+        if self.prompt_preparation_seconds is None:
+            self.prompt_preparation_seconds = 0.0
+        self.prompt_preparation_seconds += seconds
+
+    def finish(
+        self,
+        *,
+        batch_size: int,
+        output_count: int,
+        output_mode: Literal["processed", "raw_codec"],
+        final_duration_items: tuple[OmniVoiceFinalDurationTelemetry, ...] = (),
+    ) -> OmniVoiceGenerationTelemetry:
+        try:
+            finished_at = self.timestamp()
+            cuda = None
+            if self.cuda_device is not None:
+                if (
+                    self.cuda_allocated_start_bytes is None
+                    or self.cuda_reserved_start_bytes is None
+                ):
+                    raise RuntimeError("CUDA telemetry start snapshots are missing")
+                cuda = OmniVoiceCudaTelemetry(
+                    device=str(self.cuda_device),
+                    memory_allocated_start_bytes=self.cuda_allocated_start_bytes,
+                    memory_allocated_end_bytes=torch.cuda.memory_allocated(
+                        self.cuda_device
+                    ),
+                    memory_reserved_start_bytes=self.cuda_reserved_start_bytes,
+                    memory_reserved_end_bytes=torch.cuda.memory_reserved(
+                        self.cuda_device
+                    ),
+                    memory_allocated_peak_bytes=torch.cuda.max_memory_allocated(
+                        self.cuda_device
+                    ),
+                    memory_reserved_peak_bytes=torch.cuda.max_memory_reserved(
+                        self.cuda_device
+                    ),
+                    peak_stats_reset_at_call_start=True,
+                )
+            return OmniVoiceGenerationTelemetry(
+                batch_size=batch_size,
+                output_count=output_count,
+                output_mode=output_mode,
+                prompt_preparation_seconds=self.prompt_preparation_seconds,
+                input_preparation_seconds=self.input_preparation_seconds,
+                token_generation_seconds=self.token_generation_seconds,
+                codec_decode_seconds=self.codec_decode_seconds,
+                postprocessing_seconds=self.postprocessing_seconds,
+                wall_seconds=finished_at - self.wall_started_at,
+                cuda=cuda,
+                output_framing_seconds=self.output_framing_seconds,
+                framing_observer_seconds=self.framing_observer_seconds,
+                final_duration_items=tuple(
+                    _copy_final_duration_telemetry(evidence)
+                    for evidence in final_duration_items
+                ),
+            )
+        finally:
+            if self.cuda_lease is not None:
+                self.cuda_lease.release()
+
+
+def _emit_generation_telemetry(
+    callback: Callable[[OmniVoiceGenerationTelemetry], None],
+    telemetry: OmniVoiceGenerationTelemetry,
+) -> None:
+    """Invoke a per-call callback without holding library-global locks."""
+
+    callback(telemetry)
 
 
 @dataclass
@@ -581,6 +1552,7 @@ class OmniVoice(PreTrainedModel):
     # -------------------------------------------------------------------
 
     @torch.inference_mode()
+    @_with_cuda_telemetry_lease
     def generate(
         self,
         text: Union[str, list[str]],
@@ -601,6 +1573,14 @@ class OmniVoice(PreTrainedModel):
         speed: Union[float, list[Optional[float]], None] = None,
         generation_config: Optional[OmniVoiceGenerationConfig] = None,
         normalize_text: bool = False,
+        telemetry_callback: Optional[
+            Callable[[OmniVoiceGenerationTelemetry], None]
+        ] = None,
+        final_duration: Union[float, list[Optional[float]], None] = None,
+        final_duration_samples: Union[int, list[Optional[int]], None] = None,
+        framing_observer: Optional[
+            Callable[[OmniVoiceFramingObservation], None]
+        ] = None,
         **kwargs,
     ) -> list[np.ndarray]:
         """Generate speech audio given text in various modes.
@@ -626,10 +1606,12 @@ class OmniVoice(PreTrainedModel):
                 or :meth:`VoiceClonePrompt.load`.
                 If provided, it overrides ``ref_text`` and ``ref_audio``.
             instruct: Style instruction for voice design mode.
-            duration: Fixed output duration in seconds. If a single float,
-                applies to all items; if a list, one value per item.
+            duration: Pre-synthesis audio-token budget in seconds. If a single
+                float, applies to all items; if a list, one value per item.
                 ``None`` (default) lets the model estimate duration from text.
-                Overrides ``speed`` when both are provided.
+                Values must be finite and greater than zero.
+                Overrides ``speed`` when both are provided. Post-processing
+                can change the physical WAV duration.
             speed: Speaking speed factor. ``> 1.0`` for faster, ``< 1.0`` for
                 slower. If a list, one value per item. ``None`` (default) uses
                 the model's default estimation.
@@ -644,12 +1626,68 @@ class OmniVoice(PreTrainedModel):
                 tone markers) is preserved. See :func:`omnivoice.utils.text.normalize_text`.
             generation_config: Explicit config object. If provided, takes
                 precedence over ``**kwargs``.
+            telemetry_callback: Optional callback invoked once after a
+                successful generation with an immutable
+                :class:`OmniVoiceGenerationTelemetry` record. Enabling it
+                adds stage timing and, on CUDA, MPS, or XPU, synchronization
+                overhead. CUDA also adds process/device peak snapshots and
+                serializes telemetry-enabled calls on the same CUDA device.
+                The measured interval ends and its lease is released before
+                either public callback runs. Concurrent callbacks may therefore
+                run concurrently and must be thread-safe. Reentrant generation
+                from a public callback is safe because the lease is already
+                released; internal same-device reentrancy fails fast. If the
+                callback raises, its exception is propagated after audio
+                generation finishes.
+            final_duration: Optional physical output duration in seconds. A
+                scalar applies to every item; a list supplies one value per
+                item and may contain ``None``. Values are converted to sample
+                frames with decimal ``ROUND_HALF_UP``. This control is
+                independent of the pre-synthesis ``duration`` token budget.
+            final_duration_samples: Optional authoritative physical output
+                length in integer sample frames per channel. A scalar applies
+                to every item; a list supplies one value per item and may
+                contain ``None``. It is mutually exclusive with
+                ``final_duration`` for each item.
+            framing_observer: Optional synchronous callback invoked once for
+                each item with a real physical-duration target. It receives an
+                immutable :class:`OmniVoiceFramingObservation` containing
+                read-only channels-first NumPy snapshots immediately before and
+                after zero-only framing, retained-slice indices, and framing
+                metadata. The callback should inspect or hash the snapshots during
+                the call and must be thread-safe. Exceptions propagate before
+                generation returns.
             **kwargs: Generation config or its fields:
                 denoise: Whether to prepend the ``<|denoise|>`` token.
                 num_step: Number of iterative decoding steps.
                 guidance_scale: Classifier-free guidance scale.
                 t_shift: Time-step shift (smaller → emphasise low-SNR).
-                postprocess_output: Post-process output (remove silence, fade-in/out, pad edges).
+                postprocess_output: Shorten long output silences. Fade and edge
+                    padding remain independently controlled by
+                    ``fade_duration`` and ``pad_duration``.
+                output_min_silence_ms: Minimum internal silence duration to
+                    shorten, in milliseconds.
+                output_keep_silence_ms: Maximum total silence retained for
+                    each shortened internal gap, in milliseconds. ``None``
+                    preserves the historical per-side pydub behavior and keeps
+                    up to ``2 * output_min_silence_ms`` in total.
+                output_lead_silence_ms: Leading silence retained, in
+                    milliseconds.
+                output_trail_silence_ms: Trailing silence retained, in
+                    milliseconds.
+                output_peak_limit: Optional final absolute peak ceiling in the
+                    interval ``(0, 1]``. The complete waveform is scaled only
+                    when its peak exceeds this value.
+                output_target_lead_silence_ms: Optional exact pre-framing
+                    leading-silence anchor in milliseconds. ``None`` preserves
+                    the processed edge. The target overrides generic edge
+                    padding; final-duration fitting may add separately reported
+                    outer-container zero fill.
+                output_target_trail_silence_ms: Optional exact pre-framing
+                    trailing-silence anchor in milliseconds. ``None`` preserves
+                    the processed edge. The target overrides generic edge
+                    padding; final-duration fitting may add separately reported
+                    outer-container zero fill.
                 layer_penalty_factor: Penalty encouraging earlier codebook
                     layers to unmask first.
                 position_temperature: Temperature for position selection.
@@ -662,11 +1700,19 @@ class OmniVoice(PreTrainedModel):
                     (0 to disable).
                 fade_duration: Fade-in/out curve duration in seconds
                     (0 to disable).
+                output_mode: ``"processed"`` (default) preserves the normal
+                    post-processing pipeline. ``"raw_codec"`` returns the
+                    waveform decoded by the audio codec without silence
+                    removal, normalization, limiting, fades, padding, edge
+                    alignment, or long-form chunk cross-fades. An explicit
+                    physical duration still applies zero-only framing last.
         Returns:
             ``audios`` a list of 1-D ``np.ndarray`` with shape ``(T,)`` and
             sampling rate consistent with the model's audio tokenizer
             (usually 24 000 Hz).  Can be saved directly with
             ``soundfile.write("out.wav", audios[0], model.sampling_rate)``.
+            When a physical target is requested successfully, ``T`` equals its
+            authoritative sample-frame count exactly.
         """
 
         if self.audio_tokenizer is None or self.text_tokenizer is None:
@@ -679,21 +1725,253 @@ class OmniVoice(PreTrainedModel):
             if generation_config is not None
             else OmniVoiceGenerationConfig.from_dict(kwargs)
         )
+        if telemetry_callback is not None and not callable(telemetry_callback):
+            raise TypeError("telemetry_callback must be callable or None")
+        if framing_observer is not None and not callable(framing_observer):
+            raise TypeError("framing_observer must be callable or None")
+        _validate_output_allocation_preflight(gen_config, self.sampling_rate)
+        physical_duration_requested = (
+            final_duration is not None or final_duration_samples is not None
+        )
+        expected_final_duration_targets = None
+        canonical_final_duration_items: tuple[OmniVoiceFinalDurationTelemetry, ...] = ()
+        if physical_duration_requested:
+            if isinstance(text, str):
+                physical_duration_batch_size = 1
+            else:
+                assert isinstance(text, list), (
+                    "text should be a string or a list of strings"
+                )
+                physical_duration_batch_size = len(text)
+            expected_final_duration_targets = _normalize_final_duration_targets(
+                final_duration,
+                final_duration_samples,
+                batch_size=physical_duration_batch_size,
+                sampling_rate=self.sampling_rate,
+            )
+            physical_duration_requested = bool(
+                expected_final_duration_targets
+                and any(
+                    target is not None for target in expected_final_duration_targets
+                )
+            )
+            if not physical_duration_requested:
+                expected_final_duration_targets = None
+        observer_requested = (
+            framing_observer is not None and physical_duration_requested
+        )
+        expected_observer_items = None
+        observed_framing_items = None
+        validated_framing_observer = None
+        if observer_requested:
+            expected_observer_items = [
+                (index, target)
+                for index, target in enumerate(expected_final_duration_targets or [])
+                if target is not None
+            ]
+            observed_framing_items = []
+
+            def validate_observation(
+                observation: OmniVoiceFramingObservation,
+            ) -> None:
+                assert observed_framing_items is not None
+                assert expected_observer_items is not None
+                position = len(observed_framing_items)
+                if position >= len(expected_observer_items):
+                    raise RuntimeError("framing_observer received an unexpected item")
+                expected_index, expected_target = expected_observer_items[position]
+                if not isinstance(observation, OmniVoiceFramingObservation):
+                    raise RuntimeError(
+                        "framing_observer received an invalid observation object"
+                    )
+                evidence = observation.framing
+                _validate_final_duration_evidence(
+                    evidence,
+                    expected_index=expected_index,
+                    expected_target=expected_target,
+                    sample_rate=self.sampling_rate,
+                    expected_protected_leading_edge=(
+                        gen_config.output_mode == "processed"
+                        and gen_config.output_target_lead_silence_ms is not None
+                    ),
+                    expected_protected_trailing_edge=(
+                        gen_config.output_mode == "processed"
+                        and gen_config.output_target_trail_silence_ms is not None
+                    ),
+                    label="framing_observer",
+                )
+                source_waveform = observation.source_waveform
+                final_waveform = observation.final_waveform
+                if (
+                    not isinstance(source_waveform, np.ndarray)
+                    or source_waveform.ndim != 2
+                    or source_waveform.shape[0] != 1
+                    or source_waveform.shape[-1] != evidence.source_samples
+                    or not isinstance(final_waveform, np.ndarray)
+                    or final_waveform.ndim != 2
+                    or final_waveform.shape[0] != 1
+                    or final_waveform.shape[-1] != evidence.final_samples
+                    or source_waveform.dtype.str != final_waveform.dtype.str
+                    or not np.issubdtype(source_waveform.dtype, np.floating)
+                ):
+                    raise RuntimeError(
+                        "framing_observer waveforms violate the mono real-floating "
+                        "channels-first contract"
+                    )
+                source_owner = _immutable_bytes_owner(source_waveform)
+                final_owner = _immutable_bytes_owner(final_waveform)
+                if source_owner is None or final_owner is None:
+                    raise RuntimeError(
+                        "framing_observer waveforms must be backed by immutable bytes"
+                    )
+                if source_owner is not final_owner:
+                    raise RuntimeError(
+                        "framing_observer waveforms must share the same immutable "
+                        "backing snapshot"
+                    )
+                try:
+                    shares_snapshot = np.shares_memory(
+                        source_waveform,
+                        final_waveform,
+                        max_work=1_024,
+                    )
+                except (ValueError, np.TooHardError):
+                    shares_snapshot = False
+                if not shares_snapshot or len(source_owner) != max(
+                    source_waveform.nbytes, final_waveform.nbytes
+                ):
+                    raise RuntimeError(
+                        "framing_observer waveforms must be overlapping views of "
+                        "one canonical immutable snapshot"
+                    )
+                if not _waveform_is_finite(source_waveform) or not _waveform_is_finite(
+                    final_waveform
+                ):
+                    raise RuntimeError(
+                        "framing_observer waveforms contain a non-finite sample"
+                    )
+                retained_indices = (
+                    observation.retained_source_start_sample,
+                    observation.retained_source_end_sample,
+                    observation.retained_final_start_sample,
+                    observation.retained_final_end_sample,
+                )
+                if any(
+                    isinstance(value, bool)
+                    or not isinstance(value, Integral)
+                    or value < 0
+                    for value in retained_indices
+                ):
+                    raise RuntimeError(
+                        "framing_observer metadata contains an invalid retained index"
+                    )
+                if (
+                    observation.retained_source_start_sample
+                    != evidence.trimmed_leading_samples
+                    or observation.retained_source_end_sample
+                    != evidence.source_samples - evidence.trimmed_trailing_samples
+                    or observation.retained_final_start_sample
+                    != evidence.padded_leading_samples
+                    or observation.retained_final_end_sample
+                    != evidence.final_samples - evidence.padded_trailing_samples
+                    or observation.retained_source_end_sample
+                    - observation.retained_source_start_sample
+                    != observation.retained_final_end_sample
+                    - observation.retained_final_start_sample
+                ):
+                    raise RuntimeError(
+                        "framing_observer retained-slice indices are inconsistent"
+                    )
+                if (
+                    not _waveform_region_is_digital_zero(
+                        source_waveform,
+                        0,
+                        evidence.trimmed_leading_samples,
+                    )
+                    or not _waveform_region_is_digital_zero(
+                        source_waveform,
+                        evidence.source_samples - evidence.trimmed_trailing_samples,
+                        evidence.source_samples,
+                    )
+                    or not _waveform_region_is_digital_zero(
+                        final_waveform,
+                        0,
+                        evidence.padded_leading_samples,
+                    )
+                    or not _waveform_region_is_digital_zero(
+                        final_waveform,
+                        evidence.final_samples - evidence.padded_trailing_samples,
+                        evidence.final_samples,
+                    )
+                ):
+                    raise RuntimeError(
+                        "framing_observer reports a non-zero trimmed or padded region"
+                    )
+                if not _waveform_regions_match_bits(
+                    source_waveform,
+                    observation.retained_source_start_sample,
+                    observation.retained_source_end_sample,
+                    final_waveform,
+                    observation.retained_final_start_sample,
+                    observation.retained_final_end_sample,
+                ):
+                    raise RuntimeError(
+                        "framing_observer retained waveform content was modified"
+                    )
+                if (
+                    evidence.protected_leading_edge or evidence.protected_trailing_edge
+                ) and _waveform_region_is_digital_zero(
+                    source_waveform,
+                    0,
+                    evidence.source_samples,
+                ):
+                    raise RuntimeError(
+                        "framing_observer cannot claim a protected edge for an "
+                        "all-silent source waveform"
+                    )
+                observed_framing_items.append(_copy_framing_observation(observation))
+
+            validated_framing_observer = validate_observation
+        telemetry_state = (
+            _GenerationTelemetryState.start(self)
+            if telemetry_callback is not None
+            else None
+        )
 
         self.eval()
 
-        full_task = self._preprocess_all(
-            text=text,
-            language=language,
-            ref_text=ref_text,
-            ref_audio=ref_audio,
-            voice_clone_prompt=voice_clone_prompt,
-            instruct=instruct,
-            preprocess_prompt=gen_config.preprocess_prompt,
-            speed=speed,
-            duration=duration,
-            normalize_text=normalize_text,
+        input_preparation_started_at = (
+            telemetry_state.timestamp() if telemetry_state is not None else None
         )
+        preprocess_kwargs = {
+            "text": text,
+            "language": language,
+            "ref_text": ref_text,
+            "ref_audio": ref_audio,
+            "voice_clone_prompt": voice_clone_prompt,
+            "instruct": instruct,
+            "preprocess_prompt": gen_config.preprocess_prompt,
+            "speed": speed,
+            "duration": duration,
+            "normalize_text": normalize_text,
+        }
+        if telemetry_state is not None:
+            preprocess_kwargs["_telemetry_state"] = telemetry_state
+        full_task = self._preprocess_all(**preprocess_kwargs)
+        if telemetry_state is not None:
+            assert input_preparation_started_at is not None
+            telemetry_state.input_preparation_seconds += telemetry_state.elapsed_since(
+                input_preparation_started_at
+            )
+
+        if (
+            expected_final_duration_targets is not None
+            and len(expected_final_duration_targets) != full_task.batch_size
+        ):
+            raise RuntimeError(
+                "_preprocess_all changed the batch cardinality after physical-duration "
+                "targets were validated"
+            )
 
         short_idx, long_idx = full_task.get_indices(
             gen_config, self.audio_tokenizer.config.frame_rate
@@ -701,6 +1979,9 @@ class OmniVoice(PreTrainedModel):
 
         results = [None] * full_task.batch_size
 
+        token_generation_started_at = (
+            telemetry_state.timestamp() if telemetry_state is not None else None
+        )
         if short_idx:
             short_task = full_task.slice_task(short_idx)
             short_results = self._generate_iterative(short_task, gen_config)
@@ -712,17 +1993,184 @@ class OmniVoice(PreTrainedModel):
             long_results = self._generate_chunked(long_task, gen_config)
             for idx, res in zip(long_idx, long_results):
                 results[idx] = res
+        if telemetry_state is not None:
+            assert token_generation_started_at is not None
+            telemetry_state.token_generation_seconds += telemetry_state.elapsed_since(
+                token_generation_started_at
+            )
 
         generated_audios = []
+        final_duration_targets = expected_final_duration_targets
         for i in range(full_task.batch_size):
             assert results[i] is not None, f"Result {i} was not generated"
+            decode_kwargs = (
+                {"_telemetry_state": telemetry_state}
+                if telemetry_state is not None
+                else {}
+            )
+            item_final_duration_target = (
+                final_duration_targets[i]
+                if final_duration_targets is not None
+                else None
+            )
+            if item_final_duration_target is not None:
+                decode_kwargs["final_duration_target"] = item_final_duration_target
+                decode_kwargs["item_index"] = i
+                if observer_requested:
+                    assert validated_framing_observer is not None
+                    decode_kwargs["framing_observer"] = validated_framing_observer
             generated_audios.append(
                 self._decode_and_post_process(
                     results[i],
                     full_task.ref_rms[i],
                     gen_config,  # type: ignore[arg-type]
+                    **decode_kwargs,
                 )
             )
+
+        observations_by_index = None
+        if observer_requested:
+            assert observed_framing_items is not None
+            assert expected_observer_items is not None
+            if len(observed_framing_items) != len(expected_observer_items):
+                raise RuntimeError(
+                    "framing_observer evidence is incomplete: "
+                    f"expected {len(expected_observer_items)} item(s), "
+                    f"got {len(observed_framing_items)}"
+                )
+            observations_by_index = {
+                observation.framing.item_index: observation
+                for observation in observed_framing_items
+            }
+            if len(observations_by_index) != len(observed_framing_items):
+                raise RuntimeError("framing_observer evidence contains duplicate items")
+
+        if physical_duration_requested:
+            framing_validation_started_at = (
+                telemetry_state.timestamp() if telemetry_state is not None else None
+            )
+            if len(generated_audios) != full_task.batch_size:
+                raise RuntimeError(
+                    "OmniVoice generation violated output cardinality: "
+                    f"expected {full_task.batch_size}, got {len(generated_audios)}"
+                )
+            for index, audio in enumerate(generated_audios):
+                audio = _validate_output_waveform(
+                    audio,
+                    label=f"OmniVoice output {index}",
+                )
+                target = (
+                    final_duration_targets[index]
+                    if final_duration_targets is not None
+                    else None
+                )
+                if target is not None and audio.shape[0] != target.samples:
+                    raise RuntimeError(
+                        f"OmniVoice output {index} violates the requested physical "
+                        f"duration: expected {target.samples} samples, "
+                        f"got {audio.shape[0]}"
+                    )
+                if target is not None and observations_by_index is not None:
+                    observation = observations_by_index.get(index)
+                    if observation is None:
+                        raise RuntimeError(
+                            f"framing_observer evidence is missing output {index}"
+                        )
+                    if not _waveform_regions_match_bits(
+                        audio[np.newaxis, :],
+                        0,
+                        audio.shape[0],
+                        observation.final_waveform,
+                        0,
+                        observation.final_waveform.shape[-1],
+                    ):
+                        raise RuntimeError(
+                            "framing_observer final waveform does not match the "
+                            f"returned output {index}"
+                        )
+                generated_audios[index] = audio
+            if telemetry_state is not None:
+                expected_evidence = [
+                    (index, target)
+                    for index, target in enumerate(final_duration_targets or [])
+                    if target is not None
+                ]
+                observed_evidence = telemetry_state.final_duration_items
+                if len(observed_evidence) != len(expected_evidence):
+                    raise RuntimeError(
+                        "physical-duration telemetry evidence is incomplete: "
+                        f"expected {len(expected_evidence)} item(s), "
+                        f"got {len(observed_evidence)}"
+                    )
+                canonical_evidence = []
+                for evidence, (expected_index, expected_target) in zip(
+                    observed_evidence,
+                    expected_evidence,
+                ):
+                    _validate_final_duration_evidence(
+                        evidence,
+                        expected_index=expected_index,
+                        expected_target=expected_target,
+                        sample_rate=self.sampling_rate,
+                        expected_protected_leading_edge=(
+                            gen_config.output_mode == "processed"
+                            and gen_config.output_target_lead_silence_ms is not None
+                        ),
+                        expected_protected_trailing_edge=(
+                            gen_config.output_mode == "processed"
+                            and gen_config.output_target_trail_silence_ms is not None
+                        ),
+                        label="physical-duration telemetry",
+                    )
+                    if (
+                        observations_by_index is not None
+                        and evidence != observations_by_index[expected_index].framing
+                    ):
+                        raise RuntimeError(
+                            "physical-duration telemetry evidence does not match the "
+                            f"canonical observer evidence for output {expected_index}"
+                        )
+                    canonical_evidence.append(_copy_final_duration_telemetry(evidence))
+                canonical_final_duration_items = tuple(canonical_evidence)
+            if telemetry_state is not None:
+                assert framing_validation_started_at is not None
+                telemetry_state.output_framing_seconds += telemetry_state.elapsed_since(
+                    framing_validation_started_at
+                )
+
+        telemetry = None
+        if telemetry_callback is not None:
+            assert telemetry_state is not None
+            telemetry = telemetry_state.finish(
+                batch_size=full_task.batch_size,
+                output_count=len(generated_audios),
+                output_mode=gen_config.output_mode,
+                final_duration_items=canonical_final_duration_items,
+            )
+
+        if observer_requested:
+            assert framing_observer is not None
+            assert observed_framing_items is not None
+            assert observations_by_index is not None
+            for observation in observed_framing_items:
+                index = observation.framing.item_index
+                framing_observer(_copy_framing_observation(observation))
+                audio = generated_audios[index]
+                if not _waveform_regions_match_bits(
+                    audio[np.newaxis, :],
+                    0,
+                    audio.shape[0],
+                    observation.final_waveform,
+                    0,
+                    observation.final_waveform.shape[-1],
+                ):
+                    raise RuntimeError(
+                        "framing_observer callback altered the returned waveform for "
+                        f"output {index}"
+                    )
+        if telemetry_callback is not None:
+            assert telemetry is not None
+            _emit_generation_telemetry(telemetry_callback, telemetry)
 
         return generated_audios
 
@@ -789,6 +2237,10 @@ class OmniVoice(PreTrainedModel):
                 mid_sil=200,
                 lead_sil=100,
                 trail_sil=200,
+                # Preserve the historical prompt-conditioning waveform. Before
+                # keep_mid_sil was explicit, pydub retained mid_sil on both
+                # sides of a split (up to 400 ms total here).
+                keep_mid_sil=400,
             )
             if ref_wav.shape[-1] == 0:
                 raise ValueError(
@@ -836,6 +2288,12 @@ class OmniVoice(PreTrainedModel):
         tokens: Union[torch.Tensor, List[torch.Tensor]],
         rms: Union[float, None],
         gen_config: OmniVoiceGenerationConfig,
+        _telemetry_state: Optional[_GenerationTelemetryState] = None,
+        final_duration_target: Optional[_FinalDurationTarget] = None,
+        item_index: int = 0,
+        framing_observer: Optional[
+            Callable[[OmniVoiceFramingObservation], None]
+        ] = None,
     ) -> np.ndarray:
         """
         Args:
@@ -844,8 +2302,207 @@ class OmniVoice(PreTrainedModel):
             rms: RMS of the reference audio for volume adjustment.
             gen_config: Generation config for post-processing options.
         Returns:
-            Decoded and post-processed audio array of shape (T,).
+            Decoded audio array of shape (T,). The configured output pipeline
+            is applied unless ``output_mode`` is ``"raw_codec"``.
         """
+        codec_decode_started_at = (
+            _telemetry_state.timestamp() if _telemetry_state is not None else None
+        )
+        decoded_audio = self._decode_audio_tokens(tokens)
+
+        if gen_config.output_mode == "raw_codec":
+            audio_waveform = (
+                np.concatenate(decoded_audio, axis=-1)
+                if isinstance(decoded_audio, list)
+                else decoded_audio
+            )
+            if _telemetry_state is not None:
+                assert codec_decode_started_at is not None
+                _telemetry_state.codec_decode_seconds += _telemetry_state.elapsed_since(
+                    codec_decode_started_at
+                )
+            if (
+                not isinstance(audio_waveform, np.ndarray)
+                or audio_waveform.ndim != 2
+                or audio_waveform.shape[0] != 1
+            ):
+                raise RuntimeError(
+                    "raw_codec decoder output must have channels-first mono shape "
+                    "(1, samples)"
+                )
+            _validate_output_waveform(
+                audio_waveform[0],
+                label=f"raw_codec decoder output {item_index}",
+            )
+        else:
+            if _telemetry_state is not None:
+                assert codec_decode_started_at is not None
+                _telemetry_state.codec_decode_seconds += _telemetry_state.elapsed_since(
+                    codec_decode_started_at
+                )
+            postprocessing_started_at = (
+                _telemetry_state.timestamp() if _telemetry_state is not None else None
+            )
+            if isinstance(decoded_audio, list):
+                audio_waveform = cross_fade_chunks(decoded_audio, self.sampling_rate)
+            else:
+                audio_waveform = decoded_audio
+            audio_waveform = self._post_process_audio(
+                audio_waveform,
+                ref_rms=rms,
+                gen_config=gen_config,
+            )
+            if _telemetry_state is not None:
+                assert postprocessing_started_at is not None
+                _telemetry_state.postprocessing_seconds += (
+                    _telemetry_state.elapsed_since(postprocessing_started_at)
+                )
+
+        if final_duration_target is not None:
+            framing_started_at = (
+                _telemetry_state.timestamp() if _telemetry_state is not None else None
+            )
+            source_waveform = audio_waveform
+            if (
+                not isinstance(source_waveform, np.ndarray)
+                or source_waveform.ndim != 2
+                or source_waveform.shape[0] != 1
+                or not np.issubdtype(source_waveform.dtype, np.floating)
+            ):
+                raise RuntimeError(
+                    "physical-duration framing requires a mono real-floating "
+                    "channels-first decoder waveform"
+                )
+            source_samples = source_waveform.shape[-1]
+            if source_samples == 0:
+                raise RuntimeError(
+                    "physical-duration framing cannot repair an empty decoder waveform"
+                )
+            if not _waveform_is_finite(source_waveform):
+                raise RuntimeError(
+                    "physical-duration framing received a non-finite decoder waveform"
+                )
+            protected_leading_edge = (
+                gen_config.output_mode == "processed"
+                and gen_config.output_target_lead_silence_ms is not None
+            )
+            protected_trailing_edge = (
+                gen_config.output_mode == "processed"
+                and gen_config.output_target_trail_silence_ms is not None
+            )
+            target_name = (
+                f"final_duration_samples[{item_index}]"
+                if final_duration_target.source == "integer_samples"
+                else f"final_duration[{item_index}]"
+            )
+            (
+                audio_waveform,
+                padded_leading,
+                padded_trailing,
+                trimmed_leading,
+                trimmed_trailing,
+            ) = fit_audio_to_target_samples(
+                audio_waveform,
+                final_duration_target.samples,
+                protect_leading_edge=protected_leading_edge,
+                protect_trailing_edge=protected_trailing_edge,
+                target_name=target_name,
+            )
+            if _telemetry_state is not None:
+                assert framing_started_at is not None
+                _telemetry_state.output_framing_seconds += (
+                    _telemetry_state.elapsed_since(framing_started_at)
+                )
+            framing_evidence = OmniVoiceFinalDurationTelemetry(
+                item_index=item_index,
+                target_source=final_duration_target.source,
+                requested_seconds=final_duration_target.requested_seconds,
+                operation=(
+                    "padded"
+                    if padded_leading or padded_trailing
+                    else "trimmed"
+                    if trimmed_leading or trimmed_trailing
+                    else "unchanged"
+                ),
+                protected_leading_edge=protected_leading_edge,
+                protected_trailing_edge=protected_trailing_edge,
+                sample_rate=self.sampling_rate,
+                target_samples=final_duration_target.samples,
+                source_samples=source_samples,
+                final_samples=audio_waveform.shape[-1],
+                padded_leading_samples=padded_leading,
+                padded_trailing_samples=padded_trailing,
+                trimmed_leading_samples=trimmed_leading,
+                trimmed_trailing_samples=trimmed_trailing,
+            )
+            if _telemetry_state is not None:
+                _telemetry_state.final_duration_items.append(framing_evidence)
+            if framing_observer is not None:
+                observer_started_at = (
+                    _telemetry_state.timestamp()
+                    if _telemetry_state is not None
+                    else None
+                )
+                # One immutable backing copy is sufficient because framing can
+                # either pad, trim, or leave a waveform unchanged, never mix
+                # padding and trimming.  The second observation array is a
+                # slice of that snapshot, keeping opt-in memory bounded by the
+                # larger of the source and final waveforms instead of their sum.
+                if padded_leading or padded_trailing:
+                    final_view = _immutable_waveform_snapshot(audio_waveform)
+                    retained_end = final_view.shape[-1] - padded_trailing
+                    source_view = final_view[..., padded_leading:retained_end]
+                    if not _waveform_regions_match_bits(
+                        source_waveform,
+                        0,
+                        source_samples,
+                        source_view,
+                        0,
+                        source_view.shape[-1],
+                    ):
+                        raise RuntimeError(
+                            "physical-duration padding modified retained content"
+                        )
+                else:
+                    source_view = _immutable_waveform_snapshot(source_waveform)
+                    retained_end = source_samples - trimmed_trailing
+                    final_view = source_view[..., trimmed_leading:retained_end]
+                    if not _waveform_regions_match_bits(
+                        audio_waveform,
+                        0,
+                        audio_waveform.shape[-1],
+                        final_view,
+                        0,
+                        final_view.shape[-1],
+                    ):
+                        raise RuntimeError(
+                            "physical-duration trimming modified retained content"
+                        )
+                observation = OmniVoiceFramingObservation(
+                    framing=_copy_final_duration_telemetry(framing_evidence),
+                    source_waveform=source_view,
+                    final_waveform=final_view,
+                    retained_source_start_sample=trimmed_leading,
+                    retained_source_end_sample=(source_samples - trimmed_trailing),
+                    retained_final_start_sample=padded_leading,
+                    retained_final_end_sample=(
+                        audio_waveform.shape[-1] - padded_trailing
+                    ),
+                )
+                framing_observer(observation)
+                if _telemetry_state is not None:
+                    assert observer_started_at is not None
+                    _telemetry_state.framing_observer_seconds += (
+                        _telemetry_state.elapsed_since(observer_started_at)
+                    )
+        return audio_waveform.squeeze(0)
+
+    def _decode_audio_tokens(
+        self,
+        tokens: Union[torch.Tensor, List[torch.Tensor]],
+    ) -> Union[np.ndarray, List[np.ndarray]]:
+        """Decode audio tokens without modifying decoder waveforms."""
+
         tokenizer_device = self.audio_tokenizer.device
         if isinstance(tokens, list):
             chunk_audios = [
@@ -855,21 +2512,13 @@ class OmniVoice(PreTrainedModel):
                 .numpy()
                 for t in tokens
             ]
-            audio_waveform = cross_fade_chunks(chunk_audios, self.sampling_rate)
-        else:
-            audio_waveform = (
-                self.audio_tokenizer.decode(tokens.to(tokenizer_device).unsqueeze(0))
-                .audio_values[0]
-                .cpu()
-                .numpy()
-            )
-
-        audio_waveform = self._post_process_audio(
-            audio_waveform,
-            ref_rms=rms,
-            gen_config=gen_config,
+            return chunk_audios
+        return (
+            self.audio_tokenizer.decode(tokens.to(tokenizer_device).unsqueeze(0))
+            .audio_values[0]
+            .cpu()
+            .numpy()
         )
-        return audio_waveform.squeeze(0)
 
     def _post_process_audio(
         self,
@@ -887,26 +2536,46 @@ class OmniVoice(PreTrainedModel):
             Processed numpy array of shape (1, T).
         """
         if gen_config.postprocess_output:
+            keep_mid_silence = gen_config.output_keep_silence_ms
+            if keep_mid_silence is None:
+                # Historical OmniVoice passed output_min_silence_ms directly to
+                # pydub's per-side keep_silence parameter. The float-preserving
+                # implementation uses an explicit total-gap contract, so double
+                # the default to retain the same amount across both sides.
+                keep_mid_silence = 2 * gen_config.output_min_silence_ms
             generated_audio = remove_silence(
                 generated_audio,
                 self.sampling_rate,
-                mid_sil=500,
-                lead_sil=100,
-                trail_sil=100,
+                mid_sil=gen_config.output_min_silence_ms,
+                lead_sil=gen_config.output_lead_silence_ms,
+                trail_sil=gen_config.output_trail_silence_ms,
+                keep_mid_sil=keep_mid_silence,
+                preserve_active_edges=gen_config.output_preserve_active_edges,
             )
 
         if ref_rms is not None and ref_rms < 0.1:
             generated_audio = generated_audio * ref_rms / 0.1
-        elif ref_rms is None:
+        elif ref_rms is None and generated_audio.size:
             peak = np.abs(generated_audio).max()
             if peak > 1e-6:
                 generated_audio = generated_audio / peak * 0.5
+
+        generated_audio = limit_audio_peak(
+            generated_audio,
+            gen_config.output_peak_limit,
+        )
 
         generated_audio = fade_and_pad_audio(
             generated_audio,
             pad_duration=gen_config.pad_duration,
             fade_duration=gen_config.fade_duration,
             sample_rate=self.sampling_rate,
+        )
+        generated_audio = match_edge_silence(
+            generated_audio,
+            self.sampling_rate,
+            target_lead_silence_ms=gen_config.output_target_lead_silence_ms,
+            target_trail_silence_ms=gen_config.output_target_trail_silence_ms,
         )
         return generated_audio
 
@@ -1041,6 +2710,7 @@ class OmniVoice(PreTrainedModel):
         speed: Union[float, list[Optional[float]], None] = None,
         duration: Union[float, list[Optional[float]], None] = None,
         normalize_text: bool = False,
+        _telemetry_state: Optional[_GenerationTelemetryState] = None,
     ) -> GenerationTask:
         if isinstance(text, str):
             text_list = [text]
@@ -1081,6 +2751,9 @@ class OmniVoice(PreTrainedModel):
             ref_text_list = self._ensure_list(ref_text, batch_size, auto_repeat=False)
             ref_audio_list = self._ensure_list(ref_audio, batch_size, auto_repeat=False)
 
+            prompt_preparation_started_at = (
+                _telemetry_state.timestamp() if _telemetry_state is not None else None
+            )
             voice_clone_prompt = []
             for i in range(len(ref_text_list)):
                 voice_clone_prompt.append(
@@ -1089,6 +2762,11 @@ class OmniVoice(PreTrainedModel):
                         ref_text=ref_text_list[i],
                         preprocess_prompt=preprocess_prompt,
                     )
+                )
+            if _telemetry_state is not None:
+                assert prompt_preparation_started_at is not None
+                _telemetry_state.add_prompt_preparation(
+                    _telemetry_state.elapsed_since(prompt_preparation_started_at)
                 )
 
         voice_clone_prompt_list = self._ensure_list(voice_clone_prompt, batch_size)
@@ -1112,13 +2790,7 @@ class OmniVoice(PreTrainedModel):
         else:
             user_speed = None
 
-        if duration is not None:
-            if isinstance(duration, (int, float)):
-                durations = [float(duration)] * batch_size
-            else:
-                durations = list(duration)
-        else:
-            durations = None
+        durations = _normalize_duration_values(duration, batch_size)
 
         num_target_tokens_list = []
         for i in range(batch_size):
@@ -1136,15 +2808,15 @@ class OmniVoice(PreTrainedModel):
             )
             num_target_tokens_list.append(est)
 
-        # Per-item duration overrides: set target_lens to exact frame count
-        # and compute speed ratio so chunked generation scales proportionally.
+        # Per-item duration overrides set the exact target audio-token frame count
+        # and compute a speed ratio so chunked generation scales proportionally.
         speed_list: Optional[List[float]] = None
         if durations is not None:
             frame_rate = self.audio_tokenizer.config.frame_rate
             speed_list = []
             for i in range(batch_size):
                 if durations[i] is not None:
-                    target_tokens = max(1, int(durations[i] * frame_rate))
+                    target_tokens = _duration_to_target_tokens(durations[i], frame_rate)
                     est = num_target_tokens_list[i]
                     speed_list.append(est / target_tokens if target_tokens > 0 else 1.0)
                     num_target_tokens_list[i] = target_tokens

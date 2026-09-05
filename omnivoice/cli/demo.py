@@ -254,9 +254,10 @@ def build_demo(
             )
             du = gr.Number(
                 value=None,
-                label="Duration (seconds)",
+                label="Audio-token budget (seconds)",
                 info=(
-                    "Leave empty to use speed. Set a fixed duration to override speed."
+                    "Leave empty to use speed. This pre-synthesis budget overrides "
+                    "speed; post-processing can change the physical WAV duration."
                 ),
             )
             ns = gr.Slider(
