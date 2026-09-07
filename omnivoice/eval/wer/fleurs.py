@@ -90,7 +90,7 @@ rename = {
 
 def read_language_mapping_from_tsv(
     mapping_path: Path,
-) -> dict[str, Union[str, List[str]]]:
+) -> dict[str, str | list[str]]:
     with open(mapping_path, "r", encoding="utf-8") as f:
         _ = f.readline()  # Skip header
         language_mapping = {}

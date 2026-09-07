@@ -35,7 +35,6 @@ from omnivoice import OmniVoice, OmniVoiceGenerationConfig
 from omnivoice.utils.common import get_best_device
 from omnivoice.utils.lang_map import LANG_NAMES, lang_display_name
 
-
 # ---------------------------------------------------------------------------
 # Language list — all 600+ supported languages
 # ---------------------------------------------------------------------------
@@ -185,7 +184,7 @@ def build_demo(
 
         lang = language if (language and language != "Auto") else None
 
-        kw: Dict[str, Any] = dict(
+        kw: dict[str, Any] = dict(
             text=text.strip(), language=lang, generation_config=gen_config
         )
 

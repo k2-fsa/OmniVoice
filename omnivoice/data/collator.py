@@ -49,7 +49,7 @@ class PaddingDataCollator:
         self.batch_tokens = batch_tokens
         self.processor = processor
 
-    def __call__(self, processed_samples: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def __call__(self, processed_samples: list[dict[str, Any]]) -> dict[str, Any]:
         pad_id = self.processor.text_tokenizer.pad_token_id
         max_len = max(s["length"] for s in processed_samples)
         B = len(processed_samples)
@@ -107,7 +107,7 @@ class PackingDataCollator:
         self.batch_tokens = batch_tokens
         self.processor = processor
 
-    def __call__(self, processed_samples: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def __call__(self, processed_samples: list[dict[str, Any]]) -> dict[str, Any]:
         target_length = self.batch_tokens
 
         input_ids = torch.cat(

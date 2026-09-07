@@ -59,12 +59,14 @@ import struct
 import subprocess
 import sys
 import threading
+from collections.abc import Sequence
 from concurrent.futures import FIRST_COMPLETED, Future, wait
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Sequence, Union
+from typing import Any, Dict, List, Optional, Union
 
 import numpy as np
+import soundfile as sf
 import torch
 import torchaudio
 import webdataset as wds
@@ -73,7 +75,6 @@ from tqdm.auto import tqdm
 
 from omnivoice.data.batching import StreamLengthGroupDataset
 from omnivoice.data.dataset import JsonlDatasetReader, WebDatasetReader
-import soundfile as sf
 from omnivoice.utils.common import str2bool
 
 SIDON_INPUT_SAMPLE_RATE = 16_000
@@ -236,7 +237,7 @@ ReturnType = Union[torch.Tensor, np.ndarray]
 
 
 def extract_seamless_m4t_features(
-    raw_speech: Union[torch.Tensor, List[float], List[torch.Tensor], List[List[float]]],
+    raw_speech: torch.Tensor | list[float] | list[torch.Tensor] | list[list[float]],
     sampling_rate: int = 16000,
     num_mel_bins: int = 80,
     frame_length: int = 25,
@@ -247,13 +248,13 @@ def extract_seamless_m4t_features(
     do_normalize_per_mel_bins: bool = True,
     stride: int = 2,
     padding: PaddingStrategy = "longest",
-    max_length: Optional[int] = None,
-    pad_to_multiple_of: Optional[int] = 2,
-    return_tensors: Optional[str] = "pt",
+    max_length: int | None = None,
+    pad_to_multiple_of: int | None = 2,
+    return_tensors: str | None = "pt",
     return_attention_mask: bool = True,
     padding_value: float = 0.0,
     device: torch.device = torch.device("cpu"),
-) -> Dict[str, ReturnType]:
+) -> dict[str, ReturnType]:
     """Extract SeamlessM4T features using Torch-only operators."""
     if not isinstance(raw_speech, list):
         raw_speech = [raw_speech]
@@ -263,7 +264,7 @@ def extract_seamless_m4t_features(
         for sample in raw_speech
     ]
 
-    features: List[torch.Tensor] = []
+    features: list[torch.Tensor] = []
     for waveform in processed_speech:
         if waveform.ndim > 1:
             waveform = waveform[0]
@@ -284,7 +285,7 @@ def extract_seamless_m4t_features(
         features.append(feature.squeeze(0))
 
     if do_normalize_per_mel_bins:
-        normalised: List[torch.Tensor] = []
+        normalised: list[torch.Tensor] = []
         for feature in features:
             mean = feature.mean(0, keepdim=True)
             var = feature.var(0, keepdim=True)
@@ -292,10 +293,10 @@ def extract_seamless_m4t_features(
         features = normalised
 
     def _pad_batch(
-        features: List[torch.Tensor],
+        features: list[torch.Tensor],
         padding_strategy: PaddingStrategy = "longest",
-        max_length: Optional[int] = None,
-        pad_to_multiple_of: Optional[int] = None,
+        max_length: int | None = None,
+        pad_to_multiple_of: int | None = None,
         padding_value: float = 0.0,
     ) -> tuple[torch.Tensor, torch.Tensor]:
         if padding_strategy == "longest":
@@ -355,7 +356,7 @@ def extract_seamless_m4t_features(
         batch_size, new_num_frames // stride, num_channels * stride
     )
 
-    output: Dict[str, ReturnType] = {"input_features": input_features}
+    output: dict[str, ReturnType] = {"input_features": input_features}
     if return_attention_mask:
         output["attention_mask"] = attention_mask[:, 1::stride]
 
@@ -427,9 +428,9 @@ class SpeechDenoisingProcessor:
     def process_batch(
         self,
         waveforms: torch.Tensor,
-        sample_rates: Optional[Sequence[int]] = None,
-        expected_lengths: Optional[Sequence[int]] = None,
-    ) -> List[torch.Tensor]:
+        sample_rates: Sequence[int] | None = None,
+        expected_lengths: Sequence[int] | None = None,
+    ) -> list[torch.Tensor]:
         if expected_lengths is None:
             expected_lengths: list[int] = []
             for waveform, sample_rate in zip(waveforms, sample_rates):
@@ -450,7 +451,7 @@ class SpeechDenoisingProcessor:
         )["last_hidden_state"]
         restored_waveforms = self.decoder(feature_tensor.transpose(1, 2)).cpu()
 
-        results: List[torch.Tensor] = []
+        results: list[torch.Tensor] = []
         for sample_idx, sample in enumerate(restored_waveforms):
             restored_waveform = sample.view(-1)
             target_length = expected_lengths[sample_idx]
