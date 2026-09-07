@@ -133,7 +133,7 @@ class Wav2Vec2Model(nn.Module):
 class ConvFeatureExtractionModel(nn.Module):
     """Feature Encoder."""
 
-    def __init__(self, conv_layers: List[Tuple[int, int, int]]):
+    def __init__(self, conv_layers: list[tuple[int, int, int]]):
         super().__init__()  # pyright: ignore [reportUnknownMemberType]
 
         def block(
@@ -249,8 +249,8 @@ class SamePad(nn.Module):
 
 
 def pad_to_multiple(
-    x: Optional[Tensor], multiple: int, dim: int = -1, value: float = 0
-) -> Tuple[Optional[Tensor], int]:
+    x: Tensor | None, multiple: int, dim: int = -1, value: float = 0
+) -> tuple[Tensor | None, int]:
     """Tail padding."""
     if x is None:
         return None, 0
@@ -296,7 +296,7 @@ class TransformerSentenceEncoderLayer(nn.Module):
         self.self_attn_layer_norm = nn.LayerNorm(feat)
         self.final_layer_norm = nn.LayerNorm(feat)
 
-    def forward(self, x: Tensor, self_attn_padding_mask: Optional[Tensor]):
+    def forward(self, x: Tensor, self_attn_padding_mask: Tensor | None):
         # Res[Attn-Do]-LN
         residual = x
         x = self.self_attn(x, x, x, self_attn_padding_mask)
@@ -333,7 +333,7 @@ class MultiheadAttention(nn.Module):
         query: Tensor,
         key: Tensor,
         value: Tensor,
-        key_padding_mask: Optional[Tensor],
+        key_padding_mask: Tensor | None,
     ) -> Tensor:
         """
         Args:
