@@ -50,7 +50,11 @@ from pydantic import BaseModel
 ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(ROOT))
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s", datefmt="%H:%M:%S")
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    datefmt="%H:%M:%S",
+)
 logger = logging.getLogger("omnivoice-server")
 
 app = FastAPI(title="OmniVoice TTS", version="1.0")
@@ -69,8 +73,13 @@ PROMPT_CACHE_DIR = Path("prompt_cache")
 # (404 vs 500) and let them clone the voice out of any audio file on this PC.
 # These three cover every path the GUI produces (refmaker writes clips into
 # ref-voice-ai/, reads ref-voice-ai-pre-processed/).
-REF_ROOTS = [ROOT / "ref", ROOT / "ref-output", ROOT / "ref-input",
-             ROOT / "ref-voice-ai", ROOT / "ref-voice-ai-pre-processed"]   # last two: legacy local layout
+REF_ROOTS = [
+    ROOT / "ref",
+    ROOT / "ref-output",
+    ROOT / "ref-input",
+    ROOT / "ref-voice-ai",
+    ROOT / "ref-voice-ai-pre-processed",
+]  # last two: legacy local layout
 AUDIO_EXTS = {".wav", ".mp3", ".flac", ".ogg", ".m4a", ".opus"}
 
 
@@ -92,15 +101,16 @@ def _resolve_ref(candidate: str) -> str:
         raise HTTPException(400, "ref_audio not found")
     return str(resolved)
 
+
 # Emotion mapping disabled — all None. Dict + handler plumbing preserved so
 # a future strategy slots in without touching request handling.
 EMOTION_TAG = {
-    "NEUTRAL":   None,
-    "HAPPY":     None,
-    "SAD":       None,
-    "ANGRY":     None,
+    "NEUTRAL": None,
+    "HAPPY": None,
+    "SAD": None,
+    "ANGRY": None,
     "SURPRISED": None,
-    "THINKING":  None,
+    "THINKING": None,
 }
 
 # Back to OmniVoice default. At 3.0 the model pronounces non-whitelisted
@@ -119,19 +129,19 @@ GUIDANCE_SCALE = 2.0
 # Two defences, in order:
 #   1. force a minimum frame budget via generate(duration=...) for short text
 #   2. verify the returned audio and regenerate if it still came out degenerate
-MIN_DURATION_S = 1.6      # forced frame budget floor for short text
-SHORT_TEXT_CHARS = 14     # inputs at or below this length get the floor
-CHECK_BELOW_S = 3.0       # only verify short outputs; long ones are reliable
+MIN_DURATION_S = 1.6  # forced frame budget floor for short text
+SHORT_TEXT_CHARS = 14  # inputs at or below this length get the floor
+CHECK_BELOW_S = 3.0  # only verify short outputs; long ones are reliable
 # Thresholds recalibrated 2026-08-26 against real short-clip output. The first
 # cut used flatness > 0.12, but legitimate SHORT clips measure 0.057-0.137 --
 # the threshold sat inside the normal range and rejected good audio, costing a
 # full regeneration each time (3 of 6 normal lines were hitting 3 attempts).
 # Pitch variation is the clean separator: degenerate tones measure ~11-21,
 # healthy short speech 121-298. Flatness survives only as a far-out backstop.
-F0STD_MIN = 60.0          # a held tone has near-zero pitch variation
-FLATNESS_MAX = 0.22       # backstop for noise bursts; well above healthy speech
+F0STD_MIN = 60.0  # a held tone has near-zero pitch variation
+FLATNESS_MAX = 0.22  # backstop for noise bursts; well above healthy speech
 CLIP_FRACTION_MAX = 0.02  # degenerate blowups slam into full-scale clipping
-MAX_ATTEMPTS = 2          # the detector is accurate now; a 3rd try rarely helped
+MAX_ATTEMPTS = 2  # the detector is accurate now; a 3rd try rarely helped
 
 
 def _get_prompt(ref_path: str):
@@ -158,7 +168,7 @@ def _get_prompt(ref_path: str):
     if cache_file.exists():
         try:
             prompt = VoiceClonePrompt.load(str(cache_file))
-            logger.info(f"[prompt] loaded {cache_file.name} in {time.time()-t0:.1f}s")
+            logger.info(f"[prompt] loaded {cache_file.name} in {time.time() - t0:.1f}s")
         except Exception as e:
             logger.warning(f"[prompt] cache load failed ({e}), rebuilding")
             prompt = None
@@ -170,7 +180,7 @@ def _get_prompt(ref_path: str):
             prompt.save(str(cache_file))
         except Exception as e:
             logger.warning(f"[prompt] could not persist prompt: {e}")
-        logger.info(f"[prompt] built in {time.time()-t0:.1f}s -> {cache_file.name}")
+        logger.info(f"[prompt] built in {time.time() - t0:.1f}s -> {cache_file.name}")
 
     _prompt_cache[ref_path] = prompt
     return prompt
@@ -208,7 +218,9 @@ def _degeneracy(audio: np.ndarray, sr: int) -> Optional[str]:
         # yin, not pyin: 12 ms vs 764 ms for the same decision.
         f0 = librosa.yin(
             librosa.resample(y, orig_sr=sr, target_sr=16000),
-            fmin=65, fmax=800, sr=16000,
+            fmin=65,
+            fmax=800,
+            sr=16000,
         )
         f0 = f0[np.isfinite(f0)]
         if f0.size:
@@ -228,11 +240,21 @@ class SynthRequest(BaseModel):
     emotion: Optional[str] = "NEUTRAL"
     language: Optional[str] = "en"  # OmniVoice auto-detects; field kept for API compat
     speed: Optional[float] = 1.0
-    ref_audio: Optional[str] = None  # path under REF_ROOTS; falls back to startup default
-    instruct: Optional[str] = None  # whitelist style hint: "high pitch", "whisper", "young adult", etc.
-    guidance_scale: Optional[float] = None  # per-request override; falls back to GUIDANCE_SCALE
-    duration: Optional[float] = None  # force output length (s); overrides the short-text floor
-    asmr: Optional[str] = None  # post-process preset: close | room | drift (server/asmr_fx.py)
+    ref_audio: Optional[str] = (
+        None  # path under REF_ROOTS; falls back to startup default
+    )
+    instruct: Optional[str] = (
+        None  # whitelist style hint: "high pitch", "whisper", "young adult", etc.
+    )
+    guidance_scale: Optional[float] = (
+        None  # per-request override; falls back to GUIDANCE_SCALE
+    )
+    duration: Optional[float] = (
+        None  # force output length (s); overrides the short-text floor
+    )
+    asmr: Optional[str] = (
+        None  # post-process preset: close | room | drift (server/asmr_fx.py)
+    )
 
 
 class SynthResponse(BaseModel):
@@ -264,7 +286,9 @@ async def startup():
         asr_device="cpu",
     )
     _gen_config = OmniVoiceGenerationConfig(guidance_scale=GUIDANCE_SCALE)
-    logger.info(f"Model loaded in {time.time()-t0:.1f}s. CUDA: {torch.cuda.is_available()}")
+    logger.info(
+        f"Model loaded in {time.time() - t0:.1f}s. CUDA: {torch.cuda.is_available()}"
+    )
     logger.info(f"Reference audio: {ref_audio_path}")
     logger.info(f"Guidance scale: {GUIDANCE_SCALE}")
     audio_dir.mkdir(exist_ok=True)
@@ -304,18 +328,27 @@ async def synthesize(req: SynthRequest):
     emotion = (req.emotion or "NEUTRAL").upper()
     tag = EMOTION_TAG.get(emotion)
     tagged_text = f"{tag} {text}" if tag else text
-    logger.info(f"[synth] emotion={emotion} tag={tag!r} guidance={GUIDANCE_SCALE} text={text[:60]}")
+    logger.info(
+        f"[synth] emotion={emotion} tag={tag!r} guidance={GUIDANCE_SCALE} text={text[:60]}"
+    )
 
     # The startup default is operator-supplied (--ref-audio) and exempt; only a
     # path arriving in the request body is untrusted.
     ref = _resolve_ref(req.ref_audio) if req.ref_audio else ref_audio_path
 
     from omnivoice.models.omnivoice import OmniVoiceGenerationConfig
+
     gscale = req.guidance_scale if req.guidance_scale is not None else GUIDANCE_SCALE
-    gen_config = OmniVoiceGenerationConfig(guidance_scale=gscale) if gscale != GUIDANCE_SCALE else _gen_config
+    gen_config = (
+        OmniVoiceGenerationConfig(guidance_scale=gscale)
+        if gscale != GUIDANCE_SCALE
+        else _gen_config
+    )
 
     forced_duration = _floor_duration(text, req.duration)
-    logger.info(f"[synth] instruct={req.instruct!r} gscale={gscale} duration={forced_duration}")
+    logger.info(
+        f"[synth] instruct={req.instruct!r} gscale={gscale} duration={forced_duration}"
+    )
 
     t0 = time.time()
     audio = None
@@ -353,20 +386,27 @@ async def synthesize(req: SynthRequest):
         forced_duration = (forced_duration or MIN_DURATION_S) + 0.5
 
     if reason is not None:
-        logger.error(f"[synth] still degenerate after {MAX_ATTEMPTS} attempts ({reason})")
+        logger.error(
+            f"[synth] still degenerate after {MAX_ATTEMPTS} attempts ({reason})"
+        )
 
     elapsed = time.time() - t0
     audio = np.asarray(audio)
     if req.asmr:
         from asmr_fx import PRESETS, asmr_pipeline
+
         if req.asmr not in PRESETS:
-            raise HTTPException(400, f"unknown asmr preset; valid: {', '.join(PRESETS)}")
-        audio, _ = asmr_pipeline(audio, sample_rate, req.asmr)   # -> stereo
+            raise HTTPException(
+                400, f"unknown asmr preset; valid: {', '.join(PRESETS)}"
+            )
+        audio, _ = asmr_pipeline(audio, sample_rate, req.asmr)  # -> stereo
     filename = f"{uuid.uuid4().hex[:12]}.wav"
     filepath = audio_dir / filename
     duration = _save_wav(audio, sample_rate, filepath)
     rtf = elapsed / duration if duration > 0 else 0
-    logger.info(f"[synth] {duration:.1f}s in {elapsed:.1f}s (RTF={rtf:.2f}): {filename}")
+    logger.info(
+        f"[synth] {duration:.1f}s in {elapsed:.1f}s (RTF={rtf:.2f}): {filename}"
+    )
 
     return SynthResponse(
         audio_url=f"/audio/{filename}",
@@ -387,6 +427,7 @@ async def get_audio(filename: str):
 
 if __name__ == "__main__":
     import uvicorn
+
     parser = argparse.ArgumentParser()
     parser.add_argument("--host", default="0.0.0.0")
     parser.add_argument("--port", type=int, default=9192)

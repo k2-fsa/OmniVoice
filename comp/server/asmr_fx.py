@@ -11,6 +11,7 @@ pan or slow L<->R drift) -> optional silence padding at sentence ends.
 Presets: "close" (intimate, dry), "room" (more reverb), "drift" (slow pan).
 Pure functions on float32 arrays in [-1, 1]; mono in, stereo out.
 """
+
 from __future__ import annotations
 
 import numpy as np
@@ -57,8 +58,14 @@ def _allpass(x: np.ndarray, delay: int, g: float = 0.5) -> np.ndarray:
     return y
 
 
-def reverb(x: np.ndarray, sr: float, mix: float = 0.12, decay: float = 0.72, damp: float = 0.35,
-           size: float = 0.6) -> np.ndarray:
+def reverb(
+    x: np.ndarray,
+    sr: float,
+    mix: float = 0.12,
+    decay: float = 0.72,
+    damp: float = 0.35,
+    size: float = 0.6,
+) -> np.ndarray:
     """Schroeder: 4 parallel combs + 2 series allpasses. `size` scales the
     delays (0.6 = small room). Returns wet/dry mix, mono."""
     base = np.array([1116, 1188, 1277, 1356]) * (sr / 44100.0) * size
@@ -77,7 +84,9 @@ def to_stereo(x: np.ndarray, pan: float = 0.0) -> np.ndarray:
     return np.stack([x * np.cos(theta), x * np.sin(theta)], axis=1).astype(np.float32)
 
 
-def drift_stereo(x: np.ndarray, sr: float, period_s: float = 9.0, depth: float = 0.6) -> np.ndarray:
+def drift_stereo(
+    x: np.ndarray, sr: float, period_s: float = 9.0, depth: float = 0.6
+) -> np.ndarray:
     """Slow left<->right movement, the classic ASMR 'walking around you'."""
     t = np.arange(len(x)) / sr
     pan = depth * np.sin(2 * np.pi * t / period_s)
@@ -91,13 +100,21 @@ def normalize(y: np.ndarray, peak: float = 0.9) -> np.ndarray:
 
 
 PRESETS = {
-    "close": dict(hp=80.0, lp=6500.0, mix=0.08, decay=0.6, size=0.45, pan=0.0, drift=False),
-    "room": dict(hp=70.0, lp=7500.0, mix=0.18, decay=0.78, size=0.7, pan=0.0, drift=False),
-    "drift": dict(hp=80.0, lp=6500.0, mix=0.10, decay=0.65, size=0.5, pan=0.0, drift=True),
+    "close": dict(
+        hp=80.0, lp=6500.0, mix=0.08, decay=0.6, size=0.45, pan=0.0, drift=False
+    ),
+    "room": dict(
+        hp=70.0, lp=7500.0, mix=0.18, decay=0.78, size=0.7, pan=0.0, drift=False
+    ),
+    "drift": dict(
+        hp=80.0, lp=6500.0, mix=0.10, decay=0.65, size=0.5, pan=0.0, drift=True
+    ),
 }
 
 
-def asmr_pipeline(x: np.ndarray, sr: float, preset: str = "close", gain_db: float = -1.0) -> tuple[np.ndarray, float]:
+def asmr_pipeline(
+    x: np.ndarray, sr: float, preset: str = "close", gain_db: float = -1.0
+) -> tuple[np.ndarray, float]:
     p = PRESETS[preset]
     x = np.asarray(x, dtype=np.float32)
     if x.ndim == 2:
@@ -113,6 +130,7 @@ def asmr_pipeline(x: np.ndarray, sr: float, preset: str = "close", gain_db: floa
 if __name__ == "__main__":
     import sys
     import soundfile as sf
+
     src, dst = sys.argv[1], sys.argv[2]
     preset = sys.argv[3] if len(sys.argv) > 3 else "close"
     x, sr = sf.read(src, dtype="float32")

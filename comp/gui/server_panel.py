@@ -42,7 +42,9 @@ def find_pid_on_port(port: int) -> int | None:
     try:
         result = subprocess.run(
             ["netstat", "-ano"],
-            capture_output=True, text=True, timeout=5,
+            capture_output=True,
+            text=True,
+            timeout=5,
             creationflags=_CREATE_NO_WINDOW,
         )
         for line in result.stdout.splitlines():
@@ -57,7 +59,8 @@ def kill_pid(pid: int) -> None:
     try:
         subprocess.run(
             ["taskkill", "/F", "/T", "/PID", str(pid)],
-            capture_output=True, timeout=10,
+            capture_output=True,
+            timeout=10,
             creationflags=_CREATE_NO_WINDOW,
         )
     except (OSError, subprocess.SubprocessError):
@@ -77,21 +80,31 @@ class ServerBar(ttk.Frame):
         self.transition: str | None = None  # "Starting" / "Stopping" / None
         self.autostart_var = tk.BooleanVar(value=bool(self.cfg["server_autostart"]))
 
-        self.dot = tk.Label(self, text="⬤", fg=DOT_COLORS["stopped"], font=("Segoe UI", 10))
+        self.dot = tk.Label(
+            self, text="⬤", fg=DOT_COLORS["stopped"], font=("Segoe UI", 10)
+        )
         self.dot.pack(side="left")
         self.name_lbl = ttk.Label(self, font=("Segoe UI", 10, "bold"))
         self.name_lbl.pack(side="left", padx=(6, 4))
-        self.status_lbl = ttk.Label(self, text="Stopped", foreground=DOT_COLORS["stopped"], width=9)
+        self.status_lbl = ttk.Label(
+            self, text="Stopped", foreground=DOT_COLORS["stopped"], width=9
+        )
         self.status_lbl.pack(side="left")
 
         self.start_btn = ttk.Button(self, text="Start", width=7, command=self.start)
         self.start_btn.pack(side="left", padx=(8, 2))
-        self.stop_btn = ttk.Button(self, text="Stop", width=7, command=self.stop, state="disabled")
+        self.stop_btn = ttk.Button(
+            self, text="Stop", width=7, command=self.stop, state="disabled"
+        )
         self.stop_btn.pack(side="left", padx=2)
 
-        ttk.Button(self, text="⚙", width=3, command=self.open_settings).pack(side="right")
+        ttk.Button(self, text="⚙", width=3, command=self.open_settings).pack(
+            side="right"
+        )
         ttk.Checkbutton(
-            self, text="auto-start", variable=self.autostart_var,
+            self,
+            text="auto-start",
+            variable=self.autostart_var,
             command=self._save_autostart,
         ).pack(side="right", padx=(0, 8))
 
@@ -125,8 +138,10 @@ class ServerBar(ttk.Frame):
             if sys.platform == "win32":
                 flags |= subprocess.CREATE_NEW_PROCESS_GROUP
             self.proc = subprocess.Popen(
-                cmd, cwd=str(ROOT),
-                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                cmd,
+                cwd=str(ROOT),
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
                 creationflags=flags,
             )
             self._set_transition("Starting")
@@ -202,20 +217,29 @@ class ServerBar(ttk.Frame):
 
         def _validate(*_):
             probs = appconfig.validate_omnivoice_dir(dir_var.get().strip())
-            problem_var.set("✓ folder looks good" if not probs else "✗ " + "; ".join(probs))
+            problem_var.set(
+                "✓ folder looks good" if not probs else "✗ " + "; ".join(probs)
+            )
+
         dir_var.trace_add("write", _validate)
 
-        ttk.Label(body, text="OmniVoice folder:").grid(row=0, column=0, sticky="w", pady=3)
+        ttk.Label(body, text="OmniVoice folder:").grid(
+            row=0, column=0, sticky="w", pady=3
+        )
         ttk.Entry(body, textvariable=dir_var).grid(row=0, column=1, sticky="ew", padx=4)
         ttk.Button(
-            body, text="Browse",
-            command=lambda: dir_var.set(filedialog.askdirectory(initialdir=dir_var.get()) or dir_var.get()),
+            body,
+            text="Browse",
+            command=lambda: dir_var.set(
+                filedialog.askdirectory(initialdir=dir_var.get()) or dir_var.get()
+            ),
         ).grid(row=0, column=2)
         ttk.Label(body, textvariable=problem_var, foreground="gray").grid(
             row=1, column=1, columnspan=2, sticky="w", padx=4
         )
         ttk.Label(
-            body, text="(used by the launcher exe — takes effect next launch)",
+            body,
+            text="(used by the launcher exe — takes effect next launch)",
             foreground="gray",
         ).grid(row=2, column=1, columnspan=2, sticky="w", padx=4, pady=(0, 6))
 
@@ -224,19 +248,24 @@ class ServerBar(ttk.Frame):
             row=3, column=1, sticky="w", padx=4
         )
 
-        ttk.Label(body, text="Server ref audio:").grid(row=4, column=0, sticky="w", pady=3)
+        ttk.Label(body, text="Server ref audio:").grid(
+            row=4, column=0, sticky="w", pady=3
+        )
         ttk.Entry(body, textvariable=ref_var).grid(row=4, column=1, sticky="ew", padx=4)
         ttk.Button(
-            body, text="Browse",
+            body,
+            text="Browse",
             command=lambda: ref_var.set(
                 filedialog.askopenfilename(
                     filetypes=[("WAV files", "*.wav"), ("All files", "*.*")],
                     initialdir=str(ROOT / "ref-output"),
-                ) or ref_var.get()
+                )
+                or ref_var.get()
             ),
         ).grid(row=4, column=2)
         ttk.Label(
-            body, text="(leave empty to use ref\\default_ref.wav; restart server to apply)",
+            body,
+            text="(leave empty to use ref\\default_ref.wav; restart server to apply)",
             foreground="gray",
         ).grid(row=5, column=1, columnspan=2, sticky="w", padx=4)
 

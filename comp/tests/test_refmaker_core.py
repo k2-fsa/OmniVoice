@@ -33,9 +33,7 @@ def _silence(seconds: float) -> np.ndarray:
 @pytest.fixture
 def speech_wav(tmp_path: Path) -> Path:
     """30s file: 10s tone, 2s silence, 10s tone, 2s silence, 6s tone."""
-    y = np.concatenate(
-        [_tone(10), _silence(2), _tone(10), _silence(2), _tone(6)]
-    )
+    y = np.concatenate([_tone(10), _silence(2), _tone(10), _silence(2), _tone(6)])
     path = tmp_path / "speech.wav"
     sf.write(str(path), y, SR, subtype="PCM_16")
     return path
@@ -115,7 +113,9 @@ def test_find_speech_intervals_drops_tiny_blip(tmp_path: Path):
 
 def test_merge_speech_capped_stops_near_target(speech_wav: Path, tmp_path: Path):
     out = tmp_path / "merged.wav"
-    _, length = core.merge_speech(out_path=out, source_path=speech_wav, target_len_s=15.0)
+    _, length = core.merge_speech(
+        out_path=out, source_path=speech_wav, target_len_s=15.0
+    )
     data, sr = sf.read(str(out))
     assert sr == core.DEFAULT_TARGET_SR
     assert data.ndim == 1  # mono
@@ -146,9 +146,7 @@ def test_merge_speech_uses_supplied_intervals(speech_wav: Path, tmp_path: Path):
     # Pass an explicit span (mimics a VAD result) — only that 3s gets merged,
     # bypassing the energy split that would otherwise find ~26s.
     out = tmp_path / "merged.wav"
-    _, length = core.merge_speech(
-        speech_wav, out, intervals=[(2.0, 5.0)], full=True
-    )
+    _, length = core.merge_speech(speech_wav, out, intervals=[(2.0, 5.0)], full=True)
     assert 2.5 < length < 3.6  # ~3s span + padding
 
 

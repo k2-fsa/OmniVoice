@@ -26,7 +26,7 @@ import soundfile as sf
 # under pythonw.
 _CREATE_NO_WINDOW = 0x08000000 if sys.platform == "win32" else 0
 
-EXTRACT_SR = 44100   # demucs htdemucs is trained at 44.1k stereo
+EXTRACT_SR = 44100  # demucs htdemucs is trained at 44.1k stereo
 DEFAULT_TARGET_SR = 24000
 DEFAULT_CLIP_LEN_S = 8.0
 ANALYSIS_SR = 16000  # plenty for silence/energy analysis, keeps it fast
@@ -60,7 +60,9 @@ def _run(cmd: list[str], timeout: float | None = None) -> subprocess.CompletedPr
     if proc.returncode != 0:
         msg = (proc.stderr or proc.stdout or "").strip()
         tail = "\n".join(msg.splitlines()[-15:])
-        raise RuntimeError(f"`{cmd[0]} {cmd[1] if len(cmd) > 1 else ''}` failed:\n{tail}")
+        raise RuntimeError(
+            f"`{cmd[0]} {cmd[1] if len(cmd) > 1 else ''}` failed:\n{tail}"
+        )
     return proc
 
 
@@ -93,8 +95,15 @@ def extract_audio(input_path: str | Path, workdir: str | Path | None = None) -> 
     out = work / f"{input_path.stem}_audio.wav"
     _run(
         [
-            "ffmpeg", "-y", "-i", str(input_path),
-            "-vn", "-ac", "2", "-ar", str(EXTRACT_SR),
+            "ffmpeg",
+            "-y",
+            "-i",
+            str(input_path),
+            "-vn",
+            "-ac",
+            "2",
+            "-ar",
+            str(EXTRACT_SR),
             str(out),
         ]
     )
@@ -112,9 +121,15 @@ def isolate_vocals(
     py = python_exe or sys.executable
     _run(
         [
-            py, "-m", "demucs",
-            "--two-stems=vocals", "-n", "htdemucs",
-            "-o", str(out_root), str(wav_path),
+            py,
+            "-m",
+            "demucs",
+            "--two-stems=vocals",
+            "-n",
+            "htdemucs",
+            "-o",
+            str(out_root),
+            str(wav_path),
         ]
     )
     vocals = out_root / "htdemucs" / wav_path.stem / "vocals.wav"
@@ -257,11 +272,7 @@ def find_speech_intervals(
         else:
             merged.append([s, e])
 
-    return [
-        (round(s, 3), round(e, 3))
-        for s, e in merged
-        if (e - s) >= min_seg_s
-    ]
+    return [(round(s, 3), round(e, 3)) for s, e in merged if (e - s) >= min_seg_s]
 
 
 def _append_xfade(buf: np.ndarray, seg: np.ndarray, xfade: int) -> np.ndarray:
@@ -331,7 +342,7 @@ def merge_speech(
     for s, e in intervals:
         a = max(0.0, s - pad)
         b = min(total_s, e + pad)
-        seg = y[int(a * sr):int(b * sr)].astype(np.float32)
+        seg = y[int(a * sr) : int(b * sr)].astype(np.float32)
         if seg.size == 0:
             continue
         buf = _append_xfade(buf, seg, xfade)

@@ -6,6 +6,7 @@ that clip as its own condition. Output: demo_out/asmr/<char>_<lang>_<cond>.wav
 
     .venv/Scripts/python.exe tests/asmr_samples.py
 """
+
 from __future__ import annotations
 
 import json
@@ -32,7 +33,10 @@ TEXT = {
 CHARS = {
     # edit to your own clips under ref/ or ref-output/
     "voice_a": {"ref": "ref/default_ref.wav", "whisper_ref": None},
-    "voice_b": {"ref": "ref-output/voice_b.wav", "whisper_ref": "ref-output/voice_b_asmr.wav"},
+    "voice_b": {
+        "ref": "ref-output/voice_b.wav",
+        "whisper_ref": "ref-output/voice_b_asmr.wav",
+    },
 }
 
 # name -> (ref key, instruct)
@@ -41,7 +45,7 @@ CONDS = [
     ("whisper", "ref", "whisper"),
     ("whisper_female", "ref", "female, whisper"),
     ("whisper_lowpitch", "ref", "whisper, low pitch"),
-    ("whisperref", "whisper_ref", None),           # only voices with a real whisper clip
+    ("whisperref", "whisper_ref", None),  # only voices with a real whisper clip
     ("whisperref_whisper", "whisper_ref", "whisper"),
 ]
 
@@ -50,8 +54,12 @@ def synth(text, ref, instruct, lang):
     body = {"text": text, "ref_audio": ref, "language": lang, "guidance_scale": 2.0}
     if instruct:
         body["instruct"] = instruct
-    req = urllib.request.Request(BASE + "/synthesize", data=json.dumps(body).encode("utf-8"),
-                                 headers={"Content-Type": "application/json"}, method="POST")
+    req = urllib.request.Request(
+        BASE + "/synthesize",
+        data=json.dumps(body).encode("utf-8"),
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
     with urllib.request.urlopen(req, timeout=300) as r:
         j = json.load(r)
     with urllib.request.urlopen(BASE + j["audio_url"], timeout=120) as r:
@@ -76,7 +84,12 @@ def main():
                     print("FAIL", name, e)
                     continue
                 open(dst, "wb").write(wav)
-                rows.append((name, f"{meta['duration']:.1f}s rtf={meta['rtf']:.2f} {time.time() - t0:.1f}s"))
+                rows.append(
+                    (
+                        name,
+                        f"{meta['duration']:.1f}s rtf={meta['rtf']:.2f} {time.time() - t0:.1f}s",
+                    )
+                )
                 print("ok", name, rows[-1][1])
                 # DSP variants on the plain whisper takes
                 if cond in ("whisper", "whisperref"):
@@ -87,7 +100,10 @@ def main():
                         sf.write(d2, y, sr)
                         rows.append((os.path.basename(d2), "dsp"))
     with open(os.path.join(OUT, "INDEX.txt"), "w", encoding="utf-8") as fh:
-        fh.write("Phase B ASMR listening set\n\nText EN: %s\nText JA: %s\n\n" % (TEXT["en"], TEXT["ja"]))
+        fh.write(
+            "Phase B ASMR listening set\n\nText EN: %s\nText JA: %s\n\n"
+            % (TEXT["en"], TEXT["ja"])
+        )
         for n, info in rows:
             fh.write(f"{n:48s} {info}\n")
     print("\nwrote", len(rows), "files ->", OUT)

@@ -26,8 +26,8 @@ import refmaker_core as core  # noqa: E402
 import tempcleanup  # noqa: E402
 
 ROOT = Path(__file__).parent.parent
-REF_PREPROCESSED = ROOT / "ref-input"                   # dirty long rips (input, gitignored contents)
-REF_OUT = ROOT / "ref-output"                           # clean refs (output, gitignored contents)
+REF_PREPROCESSED = ROOT / "ref-input"  # dirty long rips (input, gitignored contents)
+REF_OUT = ROOT / "ref-output"  # clean refs (output, gitignored contents)
 DEFAULT_OUTDIR = str(REF_OUT)
 INPUT_TYPES = [
     ("Media files", "*.mp4 *.mkv *.webm *.mov *.avi *.mp3 *.m4a *.flac *.wav *.ogg"),
@@ -51,7 +51,9 @@ class RefMakerTab(ttk.Frame):
         self.sr_var = tk.IntVar(value=core.DEFAULT_TARGET_SR)
         self.start_var = tk.DoubleVar(value=0.0)
         self.end_var = tk.DoubleVar(value=0.0)
-        self.status_var = tk.StringVar(value="Ready. Pick a video or audio file to start.")
+        self.status_var = tk.StringVar(
+            value="Ready. Pick a video or audio file to start."
+        )
 
         # Path actually analyzed/exported from (demucs vocals, or extracted audio).
         self.source_path: Path | None = None
@@ -84,13 +86,17 @@ class RefMakerTab(ttk.Frame):
         frm_in = ttk.Frame(self.root)
         frm_in.pack(fill="x", **pad)
         ttk.Label(frm_in, text="Input:", width=8).pack(side="left")
-        ttk.Entry(frm_in, textvariable=self.input_var).pack(side="left", fill="x", expand=True, padx=4)
+        ttk.Entry(frm_in, textvariable=self.input_var).pack(
+            side="left", fill="x", expand=True, padx=4
+        )
         ttk.Button(frm_in, text="Browse", command=self.browse_input).pack(side="left")
 
         frm_out = ttk.Frame(self.root)
         frm_out.pack(fill="x", **pad)
         ttk.Label(frm_out, text="Output:", width=8).pack(side="left")
-        ttk.Entry(frm_out, textvariable=self.outdir_var).pack(side="left", fill="x", expand=True, padx=4)
+        ttk.Entry(frm_out, textvariable=self.outdir_var).pack(
+            side="left", fill="x", expand=True, padx=4
+        )
         ttk.Button(frm_out, text="Browse", command=self.browse_outdir).pack(side="left")
 
         frm_opt = ttk.LabelFrame(self.root, text="Options", padding=6)
@@ -100,12 +106,20 @@ class RefMakerTab(ttk.Frame):
         ).pack(side="left")
         ttk.Label(frm_opt, text="Clip length (s):").pack(side="left", padx=(12, 2))
         ttk.Spinbox(
-            frm_opt, from_=4.0, to=15.0, increment=0.5, width=5,
+            frm_opt,
+            from_=4.0,
+            to=15.0,
+            increment=0.5,
+            width=5,
             textvariable=self.cliplen_var,
         ).pack(side="left")
         ttk.Label(frm_opt, text="Output SR:").pack(side="left", padx=(12, 2))
         ttk.Spinbox(
-            frm_opt, from_=16000, to=48000, increment=8000, width=7,
+            frm_opt,
+            from_=16000,
+            to=48000,
+            increment=8000,
+            width=7,
             textvariable=self.sr_var,
         ).pack(side="left")
         self.analyze_btn = ttk.Button(frm_opt, text="Analyze", command=self.analyze)
@@ -114,7 +128,9 @@ class RefMakerTab(ttk.Frame):
         self.progress = ttk.Progressbar(self.root, mode="indeterminate")
         self.progress.pack(fill="x", padx=8, pady=(0, 2))
 
-        frm_list = ttk.LabelFrame(self.root, text="Candidate clips (best first)", padding=6)
+        frm_list = ttk.LabelFrame(
+            self.root, text="Candidate clips (best first)", padding=6
+        )
         frm_list.pack(fill="both", expand=True, **pad)
         cols = ("idx", "range", "len", "score")
         self.tree = ttk.Treeview(frm_list, columns=cols, show="headings", height=10)
@@ -136,21 +152,35 @@ class RefMakerTab(ttk.Frame):
         frm_trim.pack(fill="x", **pad)
         ttk.Label(frm_trim, text="Start (s):").pack(side="left")
         ttk.Spinbox(
-            frm_trim, from_=0.0, to=99999.0, increment=0.1, width=9,
-            textvariable=self.start_var, command=self.update_duration,
+            frm_trim,
+            from_=0.0,
+            to=99999.0,
+            increment=0.1,
+            width=9,
+            textvariable=self.start_var,
+            command=self.update_duration,
         ).pack(side="left", padx=2)
         ttk.Label(frm_trim, text="End (s):").pack(side="left", padx=(8, 0))
         ttk.Spinbox(
-            frm_trim, from_=0.0, to=99999.0, increment=0.1, width=9,
-            textvariable=self.end_var, command=self.update_duration,
+            frm_trim,
+            from_=0.0,
+            to=99999.0,
+            increment=0.1,
+            width=9,
+            textvariable=self.end_var,
+            command=self.update_duration,
         ).pack(side="left", padx=2)
         self.dur_lbl = ttk.Label(frm_trim, text="0.0s", width=10, foreground="gray")
         self.dur_lbl.pack(side="left", padx=6)
-        ttk.Button(frm_trim, text="Preview", command=self.preview).pack(side="left", padx=4)
+        ttk.Button(frm_trim, text="Preview", command=self.preview).pack(
+            side="left", padx=4
+        )
         ttk.Button(frm_trim, text="Stop", command=self.stop).pack(side="left")
         self.save_btn = ttk.Button(frm_trim, text="Save clip", command=self.save_clip)
         self.save_btn.pack(side="left", padx=8)
-        ttk.Button(frm_trim, text="Open output folder", command=self.open_folder).pack(side="right")
+        ttk.Button(frm_trim, text="Open output folder", command=self.open_folder).pack(
+            side="right"
+        )
 
         ttk.Separator(self.root, orient="horizontal").pack(fill="x", padx=8)
         ttk.Label(self.root, textvariable=self.status_var, foreground="gray").pack(
@@ -167,7 +197,9 @@ class RefMakerTab(ttk.Frame):
             self.input_var.set(path)
 
     def browse_outdir(self) -> None:
-        path = filedialog.askdirectory(title="Pick output folder", initialdir=self.outdir_var.get())
+        path = filedialog.askdirectory(
+            title="Pick output folder", initialdir=self.outdir_var.get()
+        )
         if path:
             self.outdir_var.set(path)
 
@@ -217,16 +249,25 @@ class RefMakerTab(ttk.Frame):
             tempcleanup.remove_workdir(self._workdir)
             workdir = tempcleanup.new_workdir("refmaker_")
             self._workdir = workdir
-            self.root.after(0, lambda: self.status_var.set("Extracting audio (ffmpeg)..."))
+            self.root.after(
+                0, lambda: self.status_var.set("Extracting audio (ffmpeg)...")
+            )
             audio = core.extract_audio(inp, workdir=workdir)
 
             if self.isolate_var.get():
-                self.root.after(0, lambda: self.status_var.set("Isolating vocals (demucs)... this is the slow part"))
+                self.root.after(
+                    0,
+                    lambda: self.status_var.set(
+                        "Isolating vocals (demucs)... this is the slow part"
+                    ),
+                )
                 source = core.isolate_vocals(audio, workdir=workdir / "separated")
             else:
                 source = audio
 
-            self.root.after(0, lambda: self.status_var.set("Detecting clean speech segments..."))
+            self.root.after(
+                0, lambda: self.status_var.set("Detecting clean speech segments...")
+            )
             clip_len = float(self.cliplen_var.get())
             cands = core.find_candidates(source, clip_len_s=clip_len)
             self.root.after(0, lambda: self._on_analyzed(Path(inp).stem, source, cands))
@@ -234,14 +275,18 @@ class RefMakerTab(ttk.Frame):
             msg = str(e)
             self.root.after(0, lambda: self._on_error(msg))
 
-    def _on_analyzed(self, stem: str, source: Path, cands: list[core.Candidate]) -> None:
+    def _on_analyzed(
+        self, stem: str, source: Path, cands: list[core.Candidate]
+    ) -> None:
         self.source_stem = stem
         self.source_path = source
         self.candidates = cands
         self.tree.delete(*self.tree.get_children())
         for i, c in enumerate(cands, 1):
             self.tree.insert(
-                "", "end", iid=str(i - 1),
+                "",
+                "end",
+                iid=str(i - 1),
                 values=(
                     i,
                     f"{core.format_ts(c.start_s)} – {core.format_ts(c.end_s)}",
@@ -254,9 +299,13 @@ class RefMakerTab(ttk.Frame):
             self.tree.selection_set("0")
             self.tree.focus("0")
             self.on_select()
-            self.status_var.set(f"Found {len(cands)} candidates. Preview and Save the good ones.")
+            self.status_var.set(
+                f"Found {len(cands)} candidates. Preview and Save the good ones."
+            )
         else:
-            self.status_var.set("No clean segments found. Try a longer source or untick demucs.")
+            self.status_var.set(
+                "No clean segments found. Try a longer source or untick demucs."
+            )
 
     def _on_error(self, err: str) -> None:
         self.set_busy(False)
@@ -301,7 +350,9 @@ class RefMakerTab(ttk.Frame):
     def _preview_worker(self, a: float, b: float) -> None:
         try:
             tmp = Path(tempfile.gettempdir()) / "refmaker_preview.wav"
-            core.export_clip(self.source_path, a, b, tmp, target_sr=int(self.sr_var.get()))
+            core.export_clip(
+                self.source_path, a, b, tmp, target_sr=int(self.sr_var.get())
+            )
             winsound.PlaySound(str(tmp), winsound.SND_FILENAME | winsound.SND_ASYNC)
             self.root.after(0, lambda: self.status_var.set(f"Preview: {b - a:.1f}s"))
         except Exception as e:  # noqa: BLE001
@@ -320,12 +371,21 @@ class RefMakerTab(ttk.Frame):
         n = self._next_index(outdir)
         out = outdir / f"{self.source_stem}_{n:02d}.wav"
         self.set_busy(True, f"Saving {out.name}...")
-        threading.Thread(target=self._save_worker, args=(a, b, out), daemon=True).start()
+        threading.Thread(
+            target=self._save_worker, args=(a, b, out), daemon=True
+        ).start()
 
     def _save_worker(self, a: float, b: float, out: Path) -> None:
         try:
-            core.export_clip(self.source_path, a, b, out, target_sr=int(self.sr_var.get()))
-            self.root.after(0, lambda: self.set_busy(False, f"Saved -> {out}  ({b - a:.1f}s, {self.sr_var.get()}Hz mono)"))
+            core.export_clip(
+                self.source_path, a, b, out, target_sr=int(self.sr_var.get())
+            )
+            self.root.after(
+                0,
+                lambda: self.set_busy(
+                    False, f"Saved -> {out}  ({b - a:.1f}s, {self.sr_var.get()}Hz mono)"
+                ),
+            )
         except Exception as e:  # noqa: BLE001
             msg = str(e)
             self.root.after(0, lambda: self._on_error(msg))

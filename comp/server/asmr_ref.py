@@ -24,6 +24,7 @@ Two derivation methods:
         passage with instruct "whisper" from the normal ref; that output
         becomes the reference (the model's own idea of this voice whispering).
 """
+
 from __future__ import annotations
 
 import argparse
@@ -45,6 +46,7 @@ def load(path: str, sr: int = SR) -> np.ndarray:
     x = x.mean(axis=1)
     if s != sr:
         from math import gcd
+
         g = gcd(sr, s)
         x = resample_poly(x, sr // g, s // g).astype(np.float32)
     return x
@@ -55,7 +57,7 @@ def _frames(x: np.ndarray, n: int = 1024, hop: int = 256):
     if len(x) < n:
         x = np.pad(x, (0, n - len(x)))
     idx = np.arange(0, len(x) - n + 1, hop)
-    return np.stack([x[i:i + n] for i in idx]) * np.hanning(n)
+    return np.stack([x[i : i + n] for i in idx]) * np.hanning(n)
 
 
 def _f0_and_hnr(frame: np.ndarray, sr: int, fmin=70.0, fmax=500.0):
@@ -63,8 +65,8 @@ def _f0_and_hnr(frame: np.ndarray, sr: int, fmin=70.0, fmax=500.0):
     if np.max(np.abs(frame)) < 1e-4:
         return 0.0, -60.0
     f = frame - frame.mean()
-    ac = np.correlate(f, f, mode="full")[len(f) - 1:]
-    ac /= (ac[0] + 1e-9)
+    ac = np.correlate(f, f, mode="full")[len(f) - 1 :]
+    ac /= ac[0] + 1e-9
     lo, hi = int(sr / fmax), int(sr / fmin)
     seg = ac[lo:hi]
     if not len(seg):
@@ -78,13 +80,15 @@ def _f0_and_hnr(frame: np.ndarray, sr: int, fmin=70.0, fmax=500.0):
 
 def features(x: np.ndarray, sr: int = SR) -> dict:
     fr = _frames(x)
-    rms_f = np.sqrt((fr ** 2).mean(axis=1)) + 1e-9
+    rms_f = np.sqrt((fr**2).mean(axis=1)) + 1e-9
     active = rms_f > rms_f.max() * 0.08
     f0s, hnrs = [], []
     for i in np.where(active)[0]:
         f0, h = _f0_and_hnr(fr[i], sr)
-        f0s.append(f0); hnrs.append(h)
-    f0s = np.array(f0s); hnrs = np.array(hnrs)
+        f0s.append(f0)
+        hnrs.append(h)
+    f0s = np.array(f0s)
+    hnrs = np.array(hnrs)
     voiced = f0s[f0s > 0]
     spec = np.abs(np.fft.rfft(fr[active], axis=1)) ** 2
     freqs = np.fft.rfftfreq(fr.shape[1], 1 / sr)
@@ -101,7 +105,7 @@ def features(x: np.ndarray, sr: int = SR) -> dict:
     return {
         "voicing": round(float((f0s > 0).mean()) if len(f0s) else 0.0, 3),
         "f0": round(float(np.median(voiced)) if len(voiced) else 0.0, 1),
-        "rms": round(float(20 * np.log10(np.sqrt((x ** 2).mean()) + 1e-9)), 1),
+        "rms": round(float(20 * np.log10(np.sqrt((x**2).mean()) + 1e-9)), 1),
         "centroid": round(centroid, 0),
         "tilt": round(float(tilt), 1),
         "hnr": round(float(np.median(hnrs)) if len(hnrs) else -60.0, 1),
@@ -130,43 +134,73 @@ def analyze(normal_dir: str, asmr_dir: str) -> dict:
     for k in keys:
         na = np.array([r["normal"][k] for r in rows], dtype=float)
         aa = np.array([r["asmr"][k] for r in rows], dtype=float)
-        delta[k] = {"normal": round(float(na.mean()), 2), "asmr": round(float(aa.mean()), 2),
-                    "delta": round(float((aa - na).mean()), 2)}
+        delta[k] = {
+            "normal": round(float(na.mean()), 2),
+            "asmr": round(float(aa.mean()), 2),
+            "delta": round(float((aa - na).mean()), 2),
+        }
     return {"pairs": len(rows), "delta": delta, "rows": rows}
 
 
 def _load_any(path: str) -> np.ndarray:
     if path.lower().endswith(".m4a") or path.lower().endswith(".mp3"):
-        import subprocess, tempfile
+        import subprocess
+        import tempfile
+
         tmp = tempfile.mktemp(suffix=".wav")
-        subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", path, "-ar", str(SR), "-ac", "1", tmp], check=True)
-        x = load(tmp); os.unlink(tmp); return x
+        subprocess.run(
+            [
+                "ffmpeg",
+                "-v",
+                "error",
+                "-y",
+                "-i",
+                path,
+                "-ar",
+                str(SR),
+                "-ac",
+                "1",
+                tmp,
+            ],
+            check=True,
+        )
+        x = load(tmp)
+        os.unlink(tmp)
+        return x
     return load(path)
 
 
 # ------------------------------------------------------------------ derivation
 def _lpc(frame: np.ndarray, order: int) -> np.ndarray:
     """Autocorrelation LPC (Levinson-Durbin). Returns a[0..order], a[0]=1."""
-    r = np.correlate(frame, frame, "full")[len(frame) - 1:len(frame) + order]
+    r = np.correlate(frame, frame, "full")[len(frame) - 1 : len(frame) + order]
     if r[0] < 1e-9:
         return np.r_[1.0, np.zeros(order)]
-    a = np.zeros(order + 1); a[0] = 1.0
+    a = np.zeros(order + 1)
+    a[0] = 1.0
     e = r[0]
     for i in range(1, order + 1):
-        acc = r[i] + np.dot(a[1:i], r[i - 1:0:-1])
+        acc = r[i] + np.dot(a[1:i], r[i - 1 : 0 : -1])
         k = -acc / e
         a_new = a.copy()
-        a_new[1:i] = a[1:i] + k * a[i - 1:0:-1]
+        a_new[1:i] = a[1:i] + k * a[i - 1 : 0 : -1]
         a_new[i] = k
         a = a_new
-        e *= (1 - k * k)
+        e *= 1 - k * k
         if e <= 1e-12:
             break
     return a
 
 
-def whisperize_lpc(x: np.ndarray, sr: int = SR, order: int = 24, n: int = 2048, hop: int = 512,
-                   breath: float = 1.0, voice_mix: float = 0.3) -> np.ndarray:
+def whisperize_lpc(
+    x: np.ndarray,
+    sr: int = SR,
+    order: int = 24,
+    n: int = 2048,
+    hop: int = 512,
+    breath: float = 1.0,
+    voice_mix: float = 0.3,
+) -> np.ndarray:
     """Replace the voiced excitation with shaped noise; keep the vocal tract
     (formants) so it still sounds like the same person, whispering.
 
@@ -178,26 +212,26 @@ def whisperize_lpc(x: np.ndarray, sr: int = SR, order: int = 24, n: int = 2048, 
     out = np.zeros(len(x) + n)
     norm = np.zeros(len(x) + n)
     rng = np.random.default_rng(7)
-    pre = lfilter([1, -0.97], [1], x)         # pre-emphasis for a cleaner LPC fit
+    pre = lfilter([1, -0.97], [1], x)  # pre-emphasis for a cleaner LPC fit
     for i in range(0, len(x) - n, hop):
-        fr = pre[i:i + n] * win
-        energy = np.sqrt((fr ** 2).mean())
+        fr = pre[i : i + n] * win
+        energy = np.sqrt((fr**2).mean())
         if energy < 1e-5:
             continue
         a = _lpc(fr, order)
         noise = rng.standard_normal(n)
         syn = lfilter([1.0], a, noise)
         syn = lfilter([1.0], [1, -0.97], syn)  # de-emphasis
-        syn *= energy * breath / (np.sqrt((syn ** 2).mean()) + 1e-9)
-        out[i:i + n] += syn * win
-        norm[i:i + n] += win ** 2
-    out = out[:len(x)] / np.maximum(norm[:len(x)], 1e-3)
+        syn *= energy * breath / (np.sqrt((syn**2).mean()) + 1e-9)
+        out[i : i + n] += syn * win
+        norm[i : i + n] += win**2
+    out = out[: len(x)] / np.maximum(norm[: len(x)], 1e-3)
     # breath noise lives ~1-8 kHz; tame the top so it is air, not hiss
     out = sosfilt(butter(2, 8500 / (sr / 2), btype="low", output="sos"), out)
     if voice_mix > 0:
         # match loudness before blending so the mix ratio means what it says
-        ro = np.sqrt((out ** 2).mean()) + 1e-9
-        rx = np.sqrt((x ** 2).mean()) + 1e-9
+        ro = np.sqrt((out**2).mean()) + 1e-9
+        rx = np.sqrt((x**2).mean()) + 1e-9
         out = (1.0 - voice_mix) * out + voice_mix * x * (ro / rx)
     return out.astype(np.float32)
 
@@ -207,7 +241,9 @@ def apply_delta(y: np.ndarray, sr: int, delta: dict | None) -> np.ndarray:
     if not delta:
         return y
     cur = features(y, sr)["tilt"]
-    tilt_db = float(delta.get("tilt", {}).get("asmr", cur)) - cur   # reach the measured whisper tilt
+    tilt_db = (
+        float(delta.get("tilt", {}).get("asmr", cur)) - cur
+    )  # reach the measured whisper tilt
     if abs(tilt_db) > 0.5:
         # one shelving stage: boost/cut above 4 kHz by tilt_db
         sos = butter(2, 4000 / (sr / 2), btype="high", output="sos")
@@ -217,17 +253,28 @@ def apply_delta(y: np.ndarray, sr: int, delta: dict | None) -> np.ndarray:
     # level: noise excitation is spiky, so normalise by RMS (not peak) to the
     # measured whisper loudness, then soft-limit the peaks
     target_db = float(delta.get("rms", {}).get("asmr", -24.0))
-    rms = float(np.sqrt((y ** 2).mean())) + 1e-9
+    rms = float(np.sqrt((y**2).mean())) + 1e-9
     y = y * (10 ** (target_db / 20.0) / rms)
     y = np.tanh(y * 1.2) / 1.2
     return y.astype(np.float32)
 
 
-def make_tts_ref(normal_ref: str, out_path: str, server: str, text: str, language: str = "ja") -> str:
-    body = {"text": text, "ref_audio": normal_ref, "instruct": "whisper", "language": language,
-            "guidance_scale": 2.0}
-    req = urllib.request.Request(server + "/synthesize", data=json.dumps(body).encode(),
-                                 headers={"Content-Type": "application/json"}, method="POST")
+def make_tts_ref(
+    normal_ref: str, out_path: str, server: str, text: str, language: str = "ja"
+) -> str:
+    body = {
+        "text": text,
+        "ref_audio": normal_ref,
+        "instruct": "whisper",
+        "language": language,
+        "guidance_scale": 2.0,
+    }
+    req = urllib.request.Request(
+        server + "/synthesize",
+        data=json.dumps(body).encode(),
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
     j = json.load(urllib.request.urlopen(req, timeout=300))
     wav = urllib.request.urlopen(server + j["audio_url"], timeout=120).read()
     open(out_path, "wb").write(wav)
@@ -243,8 +290,13 @@ TTS_PASSAGE = {
 def main():
     ap = argparse.ArgumentParser()
     sub = ap.add_subparsers(dest="cmd", required=True)
-    a = sub.add_parser("analyze"); a.add_argument("normal_dir"); a.add_argument("asmr_dir"); a.add_argument("--out")
-    m = sub.add_parser("make"); m.add_argument("normal_ref"); m.add_argument("out")
+    a = sub.add_parser("analyze")
+    a.add_argument("normal_dir")
+    a.add_argument("asmr_dir")
+    a.add_argument("--out")
+    m = sub.add_parser("make")
+    m.add_argument("normal_ref")
+    m.add_argument("out")
     m.add_argument("--method", choices=["lpc", "tts", "both"], default="both")
     m.add_argument("--delta", help="json from analyze")
     m.add_argument("--server", default="http://127.0.0.1:9192")
@@ -264,11 +316,20 @@ def main():
         x = load(args.normal_ref)
         y = apply_delta(whisperize_lpc(x, voice_mix=args.voice_mix), SR, delta)
         p = base + ("_lpc" if args.method == "both" else "") + ext
-        sf.write(p, y, SR); print("wrote", p, "(lpc)")
+        sf.write(p, y, SR)
+        print("wrote", p, "(lpc)")
     if args.method in ("tts", "both"):
         p = base + ("_tts" if args.method == "both" else "") + ext
-        make_tts_ref(os.path.relpath(args.normal_ref, os.path.dirname(os.path.dirname(os.path.abspath(__file__)))).replace("\\", "/"),
-                     p, args.server, TTS_PASSAGE[args.lang], args.lang)
+        make_tts_ref(
+            os.path.relpath(
+                args.normal_ref,
+                os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+            ).replace("\\", "/"),
+            p,
+            args.server,
+            TTS_PASSAGE[args.lang],
+            args.lang,
+        )
         print("wrote", p, "(tts)")
 
 

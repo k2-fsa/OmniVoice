@@ -15,11 +15,11 @@ from pathlib import Path
 from tkinter import ttk
 
 sys.path.insert(0, str(Path(__file__).parent))
-import appconfig                       # noqa: E402
-from server_panel import ServerBar     # noqa: E402
-from generate_tab import GenerateTab   # noqa: E402
-from refmaker_tab import RefMakerTab   # noqa: E402
-from merge_tab import MergeTab         # noqa: E402
+import appconfig  # noqa: E402
+from server_panel import ServerBar  # noqa: E402
+from generate_tab import GenerateTab  # noqa: E402
+from refmaker_tab import RefMakerTab  # noqa: E402
+from merge_tab import MergeTab  # noqa: E402
 
 if __name__ == "__main__":
     root = tk.Tk()

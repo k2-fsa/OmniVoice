@@ -25,7 +25,7 @@ from tkinter import filedialog, messagebox, ttk
 
 import appconfig
 
-SUGGESTED_DIR = ""   # no machine-specific guess; the picker opens at the user's home
+SUGGESTED_DIR = ""  # no machine-specific guess; the picker opens at the user's home
 _CREATE_NO_WINDOW = 0x08000000
 _CREATE_NEW_PROCESS_GROUP = 0x00000200
 _CREATE_BREAKAWAY_FROM_JOB = 0x01000000
@@ -38,9 +38,16 @@ def _clean_env() -> dict:
     its own temp extraction dir, which is deleted the moment this launcher
     exits — the spawned studio must not inherit them or its tkinter dies.
     """
-    drop_exact = {"TCL_LIBRARY", "TK_LIBRARY", "TIX_LIBRARY", "PYTHONPATH", "PYTHONHOME"}
+    drop_exact = {
+        "TCL_LIBRARY",
+        "TK_LIBRARY",
+        "TIX_LIBRARY",
+        "PYTHONPATH",
+        "PYTHONHOME",
+    }
     return {
-        k: v for k, v in os.environ.items()
+        k: v
+        for k, v in os.environ.items()
         if k not in drop_exact and not k.startswith(("_MEI", "_PYI"))
     }
 
@@ -60,7 +67,9 @@ def launch_studio(root_dir: Path) -> None:
         cwd=str(root_dir),
         env=_clean_env(),
         close_fds=True,
-        stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
     )
     flags = _CREATE_NO_WINDOW | _CREATE_NEW_PROCESS_GROUP
     try:
@@ -79,7 +88,11 @@ def pick_folder_dialog(cfg: dict) -> Path | None:
     win.resizable(False, False)
 
     initial = cfg["omnivoice_dir"]
-    if not initial and SUGGESTED_DIR and appconfig.validate_omnivoice_dir(SUGGESTED_DIR):
+    if (
+        not initial
+        and SUGGESTED_DIR
+        and appconfig.validate_omnivoice_dir(SUGGESTED_DIR)
+    ):
         initial = SUGGESTED_DIR
     dir_var = tk.StringVar(value=initial)
     problem_var = tk.StringVar()
@@ -91,14 +104,15 @@ def pick_folder_dialog(cfg: dict) -> Path | None:
     ttk.Label(
         body,
         text="Where is your OmniVoice folder?\n"
-             "(the one containing .venv, gui, server, ref-output)",
+        "(the one containing .venv, gui, server, ref-output)",
         justify="left",
     ).grid(row=0, column=0, columnspan=2, sticky="w", pady=(0, 8))
 
     entry = ttk.Entry(body, textvariable=dir_var)
     entry.grid(row=1, column=0, sticky="ew")
     ttk.Button(
-        body, text="Browse",
+        body,
+        text="Browse",
         command=lambda: dir_var.set(
             filedialog.askdirectory(initialdir=dir_var.get() or "C:\\") or dir_var.get()
         ),

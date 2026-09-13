@@ -47,11 +47,14 @@ def _get_vad():
     global _VAD
     if _VAD is None:
         from silero_vad import load_silero_vad
+
         _VAD = load_silero_vad()
     return _VAD
 
 
-def detect_speech(audio_path: str | Path, sr: int = ENHANCE_SR) -> list[tuple[float, float]]:
+def detect_speech(
+    audio_path: str | Path, sr: int = ENHANCE_SR
+) -> list[tuple[float, float]]:
     """Return real speech spans [(start_s, end_s), ...] via Silero VAD."""
     from silero_vad import get_speech_timestamps, read_audio
 
@@ -122,7 +125,7 @@ def deep_clean(
     out = np.zeros(0, dtype=np.float32)
     i = 0
     while i < len(y):
-        chunk = y[i:i + hop + ov]
+        chunk = y[i : i + hop + ov]
         mix = torch.tensor(chunk, dtype=torch.float32, device=device).unsqueeze(0)
         with torch.no_grad():
             est = model.separate_batch(mix)[0, :, 0].detach().cpu().numpy()

@@ -22,10 +22,10 @@ CONFIG_DIR = Path(os.environ.get("APPDATA", str(Path.home()))) / "OmniVoiceStudi
 CONFIG_PATH = CONFIG_DIR / "config.json"
 
 DEFAULTS: dict = {
-    "omnivoice_dir": "",       # folder holding .venv/, gui/, server/, ref-output/
+    "omnivoice_dir": "",  # folder holding .venv/, gui/, server/, ref-output/
     "server_port": 9192,
-    "server_ref_audio": "",    # --ref-audio passed to server/app.py; "" = omit
-    "server_autostart": False, # start the TTS server when the studio opens
+    "server_ref_audio": "",  # --ref-audio passed to server/app.py; "" = omit
+    "server_autostart": False,  # start the TTS server when the studio opens
 }
 
 

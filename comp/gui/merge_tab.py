@@ -25,8 +25,8 @@ import enhance  # noqa: E402  — lazy heavy deps (speechbrain/silero); cheap to
 import tempcleanup  # noqa: E402
 
 ROOT = Path(__file__).parent.parent
-REF_PREPROCESSED = ROOT / "ref-input"                   # dirty long rips (input, gitignored contents)
-REF_OUT = ROOT / "ref-output"                           # clean refs (output, gitignored contents)
+REF_PREPROCESSED = ROOT / "ref-input"  # dirty long rips (input, gitignored contents)
+REF_OUT = ROOT / "ref-output"  # clean refs (output, gitignored contents)
 DEFAULT_OUTDIR = str(REF_OUT)
 INPUT_TYPES = [
     ("Media files", "*.mp4 *.mkv *.webm *.mov *.avi *.mp3 *.m4a *.flac *.wav *.ogg"),
@@ -67,28 +67,38 @@ class MergeTab(ttk.Frame):
         frm_in = ttk.Frame(self.root)
         frm_in.pack(fill="x", **pad)
         ttk.Label(frm_in, text="Input:", width=8).pack(side="left")
-        ttk.Entry(frm_in, textvariable=self.input_var).pack(side="left", fill="x", expand=True, padx=4)
+        ttk.Entry(frm_in, textvariable=self.input_var).pack(
+            side="left", fill="x", expand=True, padx=4
+        )
         ttk.Button(frm_in, text="Browse", command=self.browse_input).pack(side="left")
 
         frm_out = ttk.Frame(self.root)
         frm_out.pack(fill="x", **pad)
         ttk.Label(frm_out, text="Output:", width=8).pack(side="left")
-        ttk.Entry(frm_out, textvariable=self.outdir_var).pack(side="left", fill="x", expand=True, padx=4)
+        ttk.Entry(frm_out, textvariable=self.outdir_var).pack(
+            side="left", fill="x", expand=True, padx=4
+        )
         ttk.Button(frm_out, text="Browse", command=self.browse_outdir).pack(side="left")
 
         frm_opt = ttk.LabelFrame(self.root, text="Options", padding=6)
         frm_opt.pack(fill="x", **pad)
         ttk.Checkbutton(
-            frm_opt, text="Isolate vocals (demucs) — removes BGM/SFX",
+            frm_opt,
+            text="Isolate vocals (demucs) — removes BGM/SFX",
             variable=self.isolate_var,
         ).pack(side="left")
         ttk.Checkbutton(
-            frm_opt, text="Deep clean (removes blips overlapping speech)",
+            frm_opt,
+            text="Deep clean (removes blips overlapping speech)",
             variable=self.clean_var,
         ).pack(side="left", padx=(12, 0))
         ttk.Label(frm_opt, text="Output SR:").pack(side="left", padx=(12, 2))
         ttk.Spinbox(
-            frm_opt, from_=16000, to=48000, increment=8000, width=7,
+            frm_opt,
+            from_=16000,
+            to=48000,
+            increment=8000,
+            width=7,
             textvariable=self.sr_var,
         ).pack(side="left")
 
@@ -97,7 +107,10 @@ class MergeTab(ttk.Frame):
         ttk.Label(frm_len, text="Target (s):").pack(side="left")
         self.len_lbl = ttk.Label(frm_len, text="25", width=4)
         ttk.Scale(
-            frm_len, from_=10.0, to=60.0, orient="horizontal",
+            frm_len,
+            from_=10.0,
+            to=60.0,
+            orient="horizontal",
             variable=self.target_var,
             command=lambda v: self.len_lbl.config(text=f"{float(v):.0f}"),
         ).pack(side="left", fill="x", expand=True, padx=4)
@@ -110,10 +123,14 @@ class MergeTab(ttk.Frame):
         frm_run.pack(fill="x", **pad)
         self.run_btn = ttk.Button(frm_run, text="Cut & Merge", command=self.run)
         self.run_btn.pack(side="left")
-        self.preview_btn = ttk.Button(frm_run, text="Preview", command=self.preview, state="disabled")
+        self.preview_btn = ttk.Button(
+            frm_run, text="Preview", command=self.preview, state="disabled"
+        )
         self.preview_btn.pack(side="left", padx=4)
         ttk.Button(frm_run, text="Stop", command=self.stop).pack(side="left")
-        ttk.Button(frm_run, text="Open output folder", command=self.open_folder).pack(side="right")
+        ttk.Button(frm_run, text="Open output folder", command=self.open_folder).pack(
+            side="right"
+        )
 
         self.progress = ttk.Progressbar(self.root, mode="indeterminate")
         self.progress.pack(fill="x", padx=8, pady=(2, 2))
@@ -128,7 +145,9 @@ class MergeTab(ttk.Frame):
             anchor="w", padx=8, pady=(2, 0)
         )
 
-        ttk.Separator(self.root, orient="horizontal").pack(fill="x", padx=8, pady=(8, 0))
+        ttk.Separator(self.root, orient="horizontal").pack(
+            fill="x", padx=8, pady=(8, 0)
+        )
         ttk.Label(self.root, textvariable=self.status_var, foreground="gray").pack(
             anchor="w", padx=8, pady=6
         )
@@ -143,7 +162,9 @@ class MergeTab(ttk.Frame):
             self.input_var.set(path)
 
     def browse_outdir(self) -> None:
-        path = filedialog.askdirectory(title="Pick output folder", initialdir=self.outdir_var.get())
+        path = filedialog.askdirectory(
+            title="Pick output folder", initialdir=self.outdir_var.get()
+        )
         if path:
             self.outdir_var.set(path)
 
@@ -188,7 +209,9 @@ class MergeTab(ttk.Frame):
         isolate = bool(self.isolate_var.get())
         clean = bool(self.clean_var.get())
         also_full = bool(self.full_var.get())
-        self.set_busy(True, "Working... (extract -> separate -> detect -> merge -> clean)")
+        self.set_busy(
+            True, "Working... (extract -> separate -> detect -> merge -> clean)"
+        )
         self.preview_btn.config(state="disabled")
         threading.Thread(
             target=self._run_worker,
@@ -202,7 +225,12 @@ class MergeTab(ttk.Frame):
     def _make_one(self, source, out_path, sr, target, full, intervals, clean) -> float:
         """Merge (optionally VAD-detected) then optionally deep-clean. Returns length_s."""
         _, length = core.merge_speech(
-            source, out_path, target_sr=sr, target_len_s=target, full=full, intervals=intervals
+            source,
+            out_path,
+            target_sr=sr,
+            target_len_s=target,
+            full=full,
+            intervals=intervals,
         )
         if clean:
             self._status(f"Deep cleaning {out_path.name} (SepFormer)...")
@@ -231,13 +259,17 @@ class MergeTab(ttk.Frame):
 
             self._status("Merging speech...")
             out_path = outdir / f"{stem}.wav"
-            length = self._make_one(source, out_path, sr, target, False, intervals, clean)
+            length = self._make_one(
+                source, out_path, sr, target, False, intervals, clean
+            )
             msg = f"Saved -> {out_path}  ({length:.1f}s, {sr}Hz mono)"
 
             if also_full:
                 self._status("Building full merge...")
                 full_path = outdir / f"{stem}_full.wav"
-                full_len = self._make_one(source, full_path, sr, target, True, intervals, clean)
+                full_len = self._make_one(
+                    source, full_path, sr, target, True, intervals, clean
+                )
                 msg += f"  +  {full_path.name} ({full_len:.1f}s)"
 
             self.last_out = out_path
@@ -264,7 +296,9 @@ class MergeTab(ttk.Frame):
         if not self.last_out or not self.last_out.exists():
             messagebox.showwarning("Nothing yet", "Run Cut & Merge first.")
             return
-        winsound.PlaySound(str(self.last_out), winsound.SND_FILENAME | winsound.SND_ASYNC)
+        winsound.PlaySound(
+            str(self.last_out), winsound.SND_FILENAME | winsound.SND_ASYNC
+        )
         self.status_var.set(f"Playing {self.last_out.name}")
 
     def stop(self) -> None:
