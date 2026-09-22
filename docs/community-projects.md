@@ -61,3 +61,6 @@ If you have a project you'd like to add, please open a PR.
 
 - **[LocalText2Voice](https://github.com/estebanstifli/LocalText2Voice)** —
   User-friendly Windows desktop pipeline for long-form audiobook and podcast production with OmniVoice support, voice-library management, chapter-aware generation, Whisper-based segment review and retries, multi-voice markup, music/SFX mixing, and MCP automation.
+
+- **[ClearVoice](https://github.com/roryclear/clearvoice)** -
+  iOS and MacOS app for running OmniVoice Text to Speech and voice cloning locally. Available on the App Store
