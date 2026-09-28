@@ -38,9 +38,9 @@ from typing import Any, List, Optional, Union
 
 import numpy as np
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
 import torchaudio
+from torch import nn
 
 try:
     from torch.nn.attention.flex_attention import create_block_mask
@@ -72,6 +72,8 @@ from omnivoice.utils.lang_map import LANG_IDS, LANG_NAMES
 from omnivoice.utils.text import (
     add_punctuation,
     chunk_text_punctuation,
+)
+from omnivoice.utils.text import (
     normalize_text as _normalize_text,
 )
 from omnivoice.utils.voice_design import (
@@ -198,14 +200,14 @@ class OmniVoiceGenerationConfig:
 @dataclass
 class GenerationTask:
     batch_size: int
-    texts: List[str]
-    target_lens: List[int]
-    langs: List[Optional[str]]
-    instructs: List[Optional[str]]
-    ref_texts: List[Optional[str]]
-    ref_audio_tokens: List[Optional[torch.Tensor]]
-    ref_rms: List[Optional[float]]
-    speed: Optional[List[float]] = None
+    texts: list[str]
+    target_lens: list[int]
+    langs: list[str | None]
+    instructs: list[str | None]
+    ref_texts: list[str | None]
+    ref_audio_tokens: list[torch.Tensor | None]
+    ref_rms: list[float | None]
+    speed: list[float] | None = None
 
     def get_indices(self, config: OmniVoiceGenerationConfig, frame_rate: int):
         threshold = int(config.audio_chunk_threshold * frame_rate)
@@ -213,7 +215,7 @@ class GenerationTask:
         long_idx = [i for i, l in enumerate(self.target_lens) if l > threshold]
         return short_idx, long_idx
 
-    def slice_task(self, indices: List[int]):
+    def slice_task(self, indices: list[int]):
         if not indices:
             return None
         return GenerationTask(
@@ -231,8 +233,8 @@ class GenerationTask:
 
 @dataclass
 class OmniVoiceModelOutput(ModelOutput):
-    loss: Optional[torch.Tensor] = None
-    logits: Optional[torch.Tensor] = None
+    loss: torch.Tensor | None = None
+    logits: torch.Tensor | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -249,8 +251,8 @@ class OmniVoiceConfig(PretrainedConfig):
         audio_vocab_size: int = 1025,
         audio_mask_id: int = 1024,
         num_audio_codebook: int = 8,
-        audio_codebook_weights: Optional[list[float]] = None,
-        llm_config: Optional[Union[dict, PretrainedConfig]] = None,
+        audio_codebook_weights: list[float] | None = None,
+        llm_config: dict | PretrainedConfig | None = None,
         **kwargs,
     ):
         if isinstance(llm_config, dict):
@@ -281,7 +283,7 @@ class OmniVoice(PreTrainedModel):
     _supports_sdpa = True
     config_class = OmniVoiceConfig
 
-    def __init__(self, config: OmniVoiceConfig, llm: Optional[PreTrainedModel] = None):
+    def __init__(self, config: OmniVoiceConfig, llm: PreTrainedModel | None = None):
         super().__init__(config)
 
         if llm is not None:
@@ -387,9 +389,7 @@ class OmniVoice(PreTrainedModel):
     # ASR support (optional, for auto-transcription)
     # -------------------------------------------------------------------
 
-    def load_asr_model(
-        self, model_name: Optional[str] = None, device: Optional[str] = None
-    ):
+    def load_asr_model(self, model_name: str | None = None, device: str | None = None):
         """Load a Whisper ASR model for reference audio transcription.
 
         Args:
@@ -431,7 +431,7 @@ class OmniVoice(PreTrainedModel):
     @torch.inference_mode()
     def transcribe(
         self,
-        audio: Union[str, tuple],
+        audio: str | tuple,
     ) -> str:
         """Transcribe audio using the loaded Whisper ASR model.
 
@@ -493,10 +493,10 @@ class OmniVoice(PreTrainedModel):
         self,
         input_ids: torch.LongTensor,
         audio_mask: torch.Tensor,
-        labels: Optional[torch.LongTensor] = None,
-        attention_mask: Optional[torch.Tensor] = None,
-        document_ids: Optional[torch.Tensor] = None,
-        position_ids: Optional[torch.LongTensor] = None,
+        labels: torch.LongTensor | None = None,
+        attention_mask: torch.Tensor | None = None,
+        document_ids: torch.Tensor | None = None,
+        position_ids: torch.LongTensor | None = None,
     ):
         inputs_embeds = self._prepare_embed_inputs(input_ids, audio_mask)
 
@@ -583,23 +583,19 @@ class OmniVoice(PreTrainedModel):
     @torch.inference_mode()
     def generate(
         self,
-        text: Union[str, list[str]],
-        language: Union[str, list[str], None] = None,
-        ref_text: Union[str, list[str], None] = None,
-        ref_audio: Union[
-            str,
-            list[str],
-            tuple[torch.Tensor, int],
-            list[tuple[torch.Tensor, int]],
-            None,
-        ] = None,
-        voice_clone_prompt: Union[
-            VoiceClonePrompt, list[VoiceClonePrompt], None
-        ] = None,
-        instruct: Union[str, list[str], None] = None,
-        duration: Union[float, list[Optional[float]], None] = None,
-        speed: Union[float, list[Optional[float]], None] = None,
-        generation_config: Optional[OmniVoiceGenerationConfig] = None,
+        text: str | list[str],
+        language: str | list[str] | None = None,
+        ref_text: str | list[str] | None = None,
+        ref_audio: str
+        | list[str]
+        | tuple[torch.Tensor, int]
+        | list[tuple[torch.Tensor, int]]
+        | None = None,
+        voice_clone_prompt: VoiceClonePrompt | list[VoiceClonePrompt] | None = None,
+        instruct: str | list[str] | None = None,
+        duration: float | list[float | None] | None = None,
+        speed: float | list[float | None] | None = None,
+        generation_config: OmniVoiceGenerationConfig | None = None,
         normalize_text: bool = False,
         **kwargs,
     ) -> list[np.ndarray]:
@@ -728,8 +724,8 @@ class OmniVoice(PreTrainedModel):
 
     def create_voice_clone_prompt(
         self,
-        ref_audio: Union[str, tuple[torch.Tensor, int]],
-        ref_text: Optional[str] = None,
+        ref_audio: str | tuple[torch.Tensor, int],
+        ref_text: str | None = None,
         preprocess_prompt: bool = True,
     ) -> VoiceClonePrompt:
         """Create a reusable voice clone prompt from reference audio.
@@ -833,8 +829,8 @@ class OmniVoice(PreTrainedModel):
 
     def _decode_and_post_process(
         self,
-        tokens: Union[torch.Tensor, List[torch.Tensor]],
-        rms: Union[float, None],
+        tokens: torch.Tensor | list[torch.Tensor],
+        rms: float | None,
         gen_config: OmniVoiceGenerationConfig,
     ) -> np.ndarray:
         """
@@ -874,7 +870,7 @@ class OmniVoice(PreTrainedModel):
     def _post_process_audio(
         self,
         generated_audio: np.ndarray,
-        ref_rms: Union[float, None],
+        ref_rms: float | None,
         gen_config: OmniVoiceGenerationConfig,
     ) -> np.ndarray:
         """Optionally remove long silences, adjust volume, and add edge padding.
@@ -912,7 +908,7 @@ class OmniVoice(PreTrainedModel):
 
     def _generate_chunked(
         self, task: GenerationTask, gen_config: OmniVoiceGenerationConfig
-    ) -> List[List[torch.Tensor]]:
+    ) -> list[list[torch.Tensor]]:
         """Generate long audio by splitting text into chunks and batching.
 
         Each item in the returned list corresponds to one input and contains
@@ -1023,23 +1019,19 @@ class OmniVoice(PreTrainedModel):
 
     def _preprocess_all(
         self,
-        text: Union[str, list[str]],
-        language: Union[str, list[str], None] = None,
-        ref_text: Union[str, list[str], None] = None,
-        ref_audio: Union[
-            str,
-            list[str],
-            tuple[torch.Tensor, int],
-            list[tuple[torch.Tensor, int]],
-            None,
-        ] = None,
-        voice_clone_prompt: Union[
-            VoiceClonePrompt, list[VoiceClonePrompt], None
-        ] = None,
-        instruct: Union[str, list[str], None] = None,
+        text: str | list[str],
+        language: str | list[str] | None = None,
+        ref_text: str | list[str] | None = None,
+        ref_audio: str
+        | list[str]
+        | tuple[torch.Tensor, int]
+        | list[tuple[torch.Tensor, int]]
+        | None = None,
+        voice_clone_prompt: VoiceClonePrompt | list[VoiceClonePrompt] | None = None,
+        instruct: str | list[str] | None = None,
         preprocess_prompt: bool = True,
-        speed: Union[float, list[Optional[float]], None] = None,
-        duration: Union[float, list[Optional[float]], None] = None,
+        speed: float | list[float | None] | None = None,
+        duration: float | list[float | None] | None = None,
         normalize_text: bool = False,
     ) -> GenerationTask:
         if isinstance(text, str):
@@ -1138,7 +1130,7 @@ class OmniVoice(PreTrainedModel):
 
         # Per-item duration overrides: set target_lens to exact frame count
         # and compute speed ratio so chunked generation scales proportionally.
-        speed_list: Optional[List[float]] = None
+        speed_list: list[float] | None = None
         if durations is not None:
             frame_rate = self.audio_tokenizer.config.frame_rate
             speed_list = []
@@ -1181,8 +1173,8 @@ class OmniVoice(PreTrainedModel):
         return max(1, int(est))
 
     def _ensure_list(
-        self, x: Union[Any, List[Any]], batch_size: int, auto_repeat: bool = True
-    ) -> List[Any]:
+        self, x: Any | list[Any], batch_size: int, auto_repeat: bool = True
+    ) -> list[Any]:
         x_list = x if isinstance(x, list) else [x]
         if len(x_list) not in (
             1,
@@ -1199,10 +1191,10 @@ class OmniVoice(PreTrainedModel):
         self,
         text: str,
         num_target_tokens: int,
-        ref_text: Optional[str] = None,
-        ref_audio_tokens: Optional[torch.Tensor] = None,
-        lang: Optional[str] = None,
-        instruct: Optional[str] = None,
+        ref_text: str | None = None,
+        ref_audio_tokens: torch.Tensor | None = None,
+        lang: str | None = None,
+        instruct: str | None = None,
         denoise: bool = True,
     ):
         """Prepare input_ids and audio masks for inference.
@@ -1274,7 +1266,7 @@ class OmniVoice(PreTrainedModel):
 
     def _generate_iterative(
         self, task: GenerationTask, gen_config: OmniVoiceGenerationConfig
-    ) -> List[torch.Tensor]:
+    ) -> list[torch.Tensor]:
         """N-step iterative unmasked decoding.
 
         Args:
@@ -1469,7 +1461,7 @@ def _mask_mod_packed(document_ids, b, h, q_idx, kv_idx):
     return same_doc
 
 
-def _resolve_language(language: Optional[str]) -> Union[str, None]:
+def _resolve_language(language: str | None) -> str | None:
     from omnivoice.utils.lang_map import LANG_IDS, LANG_NAME_TO_ID
 
     if language is None or language.lower() == "none":
@@ -1489,9 +1481,7 @@ def _resolve_language(language: Optional[str]) -> Union[str, None]:
     return None
 
 
-def _resolve_instruct(
-    instruct: Optional[str], use_zh: bool = False
-) -> Union[str, None]:
+def _resolve_instruct(instruct: str | None, use_zh: bool = False) -> str | None:
     """Validate and normalise a voice-design instruct string.
 
     Supported instruct items (case-insensitive for English):
@@ -1695,7 +1685,7 @@ def _tokenize_with_nonverbal_tags(text: str, tokenizer) -> torch.Tensor:
     return result
 
 
-def _combine_text(text, ref_text: Optional[str] = None) -> str:
+def _combine_text(text, ref_text: str | None = None) -> str:
     # combine with reference text if not None
     if ref_text:
         full_text = ref_text.strip() + " " + text.strip()
