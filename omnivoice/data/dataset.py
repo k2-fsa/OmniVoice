@@ -40,14 +40,15 @@ import json
 import logging
 import os
 import random
-from typing import Any, Dict, Iterator, List, Optional, Tuple
+from collections.abc import Iterator
+from typing import Any, Dict, List, Optional, Tuple
 
 import torch
 import torch.distributed as dist
 import webdataset as wds
+from torch.utils.data import IterableDataset
 
 from omnivoice.utils.audio import load_audio, load_audio_bytes
-from torch.utils.data import IterableDataset
 
 
 def load_audio_webdataset(data, sample_rate: int = 24000, device="cpu"):
@@ -62,7 +63,7 @@ def load_audio_webdataset(data, sample_rate: int = 24000, device="cpu"):
 
 def prepare_data_manifests_from_json(
     data_config: str,
-) -> Tuple[List[Tuple[str, str, int, float]], List[Tuple[str, str, int, float]]]:
+) -> tuple[list[tuple[str, str, int, float]], list[tuple[str, str, int, float]]]:
     """
     Prepare data manifests from a json file.
     A typical multilingual json file is in the following format:
@@ -157,7 +158,7 @@ def prepare_data_manifests_from_json(
 
 def webdataset_manifest_reader(
     manifest_path: str,
-) -> List[Tuple[str, str]]:
+) -> list[tuple[str, str]]:
     """
     Read a manifest file containing webdataset tar paths and label jsonl paths.
     Each line in the manifest file is in the format of:
@@ -193,9 +194,9 @@ class SampleDecoder:
 
     def __init__(
         self,
-        tar_to_label: Dict,
+        tar_to_label: dict,
         sample_rate: int = 24000,
-        audio_format: Optional[Tuple[str]] = None,
+        audio_format: tuple[str] | None = None,
         normalize_audio: bool = True,
     ):
         """
@@ -284,7 +285,7 @@ class IterableDataReader:
     def set_epoch(self, epoch: int):
         raise NotImplementedError
 
-    def __iter__(self) -> Iterator[Dict[str, Any]]:
+    def __iter__(self) -> Iterator[dict[str, Any]]:
         raise NotImplementedError
 
     def __len__(self) -> int:
@@ -297,14 +298,14 @@ class WrappedIterableDataset(IterableDataset):
     def set_epoch(self, epoch: int):
         raise NotImplementedError
 
-    def __iter__(self) -> Iterator[List[Dict[str, Any]]]:
+    def __iter__(self) -> Iterator[list[dict[str, Any]]]:
         raise NotImplementedError
 
 
 class WebDatasetReader(IterableDataReader):
     def __init__(
         self,
-        manifests: List[Tuple[str, str, int, float]],
+        manifests: list[tuple[str, str, int, float]],
         evaluation: bool = False,
         shuffle_buffer_size: int = 20000,
         sample_rate: int = 24000,
@@ -338,7 +339,7 @@ class WebDatasetReader(IterableDataReader):
         if not self.evaluation:
             random.Random(epoch).shuffle(self.urls)
 
-    def __iter__(self) -> Iterator[Dict[str, Any]]:
+    def __iter__(self) -> Iterator[dict[str, Any]]:
         dataset = wds.WebDataset(
             self.urls,
             shardshuffle=False,
@@ -441,8 +442,8 @@ class JsonlDatasetReader(IterableDataReader):
 class MuxWebDatasetReader(IterableDataReader):
     def __init__(
         self,
-        readers: List[WebDatasetReader],
-        weights: Optional[List[float]] = None,
+        readers: list[WebDatasetReader],
+        weights: list[float] | None = None,
         stop_early: bool = False,
         seed: int = 0,
     ):
@@ -462,7 +463,7 @@ class MuxWebDatasetReader(IterableDataReader):
         for reader in self.readers:
             reader.set_epoch(epoch)
 
-    def __iter__(self) -> Iterator[Dict[str, Any]]:
+    def __iter__(self) -> Iterator[dict[str, Any]]:
         return iter(self.mux_iterator)
 
 
@@ -485,7 +486,7 @@ class LazyIteratorMultiplexer:
         self,
         *iterators: IterableDataReader,
         stop_early: bool = False,
-        weights: Optional[List[float]] = None,
+        weights: list[float] | None = None,
         seed: int = 0,
     ) -> None:
         self.iterators = list(iterators)
