@@ -27,7 +27,8 @@ Provides:
 
 import logging
 import re
-from typing import Callable, List, Optional
+from collections.abc import Callable
+from typing import List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -125,8 +126,8 @@ ABBREVIATIONS = {
 def chunk_text_punctuation(
     text: str,
     chunk_len: int,
-    min_chunk_len: Optional[int] = None,
-) -> List[str]:
+    min_chunk_len: int | None = None,
+) -> list[str]:
     """
     Splits the input tokens list into chunks according to punctuations,
     avoiding splits on common abbreviations (e.g., Mr., No.).
@@ -295,7 +296,7 @@ def _get_en_normalizer():
     return _EN_NORMALIZER
 
 
-def _resolve_lang_code(language: Optional[str], text: str) -> str:
+def _resolve_lang_code(language: str | None, text: str) -> str:
     """Map a language name/code to ``"zh"``/``"en"``/other code.
 
     When ``language`` is ``None`` (or unrecognized), fall back to detecting
@@ -369,14 +370,14 @@ def _apply_with_protection(
 
     # Merge overlapping/adjacent protected spans, then normalize the gaps.
     spans.sort()
-    merged: List[List[int]] = []
+    merged: list[list[int]] = []
     for start, end in spans:
         if merged and start <= merged[-1][1]:
             merged[-1][1] = max(merged[-1][1], end)
         else:
             merged.append([start, end])
 
-    out: List[str] = []
+    out: list[str] = []
     last = 0
     for start, end in merged:
         if start > last:
@@ -388,7 +389,7 @@ def _apply_with_protection(
     return "".join(out)
 
 
-def normalize_text(text: str, language: Optional[str] = None) -> str:
+def normalize_text(text: str, language: str | None = None) -> str:
     """Normalize numbers, dates, currency, etc. into their spoken form.
 
     Chinese is routed to WeTextProcessing's ``ZhNormalizer`` and English to its

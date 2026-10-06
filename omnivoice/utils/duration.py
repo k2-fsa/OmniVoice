@@ -210,7 +210,7 @@ class RuleDurationEstimator:
         target_text: str,
         ref_text: str,
         ref_duration: float,
-        low_threshold: Optional[float] = 50,
+        low_threshold: float | None = 50,
         boost_strength: float = 3,
     ) -> float:
         """
