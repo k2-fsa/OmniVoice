@@ -197,7 +197,7 @@ class PackedAttnRunner:
         )
         self._planned_key = None
 
-    def plan(self, doc_lens: List[int], dtype: torch.dtype):
+    def plan(self, doc_lens: list[int], dtype: torch.dtype):
         key = (tuple(doc_lens), dtype)
         if key == self._planned_key:
             return
@@ -221,7 +221,7 @@ class PackedAttnRunner:
 
 def _generate_iterative_packed(
     self, task: GenerationTask, gen_config: OmniVoiceGenerationConfig
-) -> List[torch.Tensor]:
+) -> list[torch.Tensor]:
     """Packed-sequence rewrite of OmniVoice._generate_iterative.
 
     Documents are packed as [cond_0, uncond_0, cond_1, uncond_1, ...] into a
