@@ -7,16 +7,19 @@ import pytest
 
 class RecordingModel:
     def __init__(self, scores):
+        """Initialize the score lookup and mutable call log."""
         self.scores = scores
         self.calls = []
 
     def score(self, audio_path):
+        """Record the requested file and return its configured test score."""
         path = Path(audio_path)
         self.calls.append(path)
         return self.scores[path.name]
 
 
 def test_select_korean_wavs_filters_multilingual_test_list(tmp_path):
+    """Select Korean rows while preserving their requested audio extension."""
     from omnivoice.eval.mos.komos import select_korean_wavs
 
     samples = [
@@ -32,6 +35,7 @@ def test_select_korean_wavs_filters_multilingual_test_list(tmp_path):
 
 
 def test_select_korean_wavs_rejects_lists_without_korean_rows(tmp_path):
+    """Reject test lists that contain no Korean audio."""
     from omnivoice.eval.mos.komos import select_korean_wavs
 
     with pytest.raises(ValueError, match="no Korean samples"):
@@ -41,6 +45,7 @@ def test_select_korean_wavs_rejects_lists_without_korean_rows(tmp_path):
 
 
 def test_score_korean_wavs_skips_missing_files_and_averages_valid_scores(tmp_path):
+    """Retain valid scores and report missing files without scoring them."""
     from omnivoice.eval.mos.komos import score_korean_wavs
 
     first = tmp_path / "korean_00000.wav"
@@ -58,6 +63,7 @@ def test_score_korean_wavs_skips_missing_files_and_averages_valid_scores(tmp_pat
 
 
 def test_score_korean_wavs_propagates_model_failures(tmp_path):
+    """Preserve inference failures instead of silently dropping samples."""
     from omnivoice.eval.mos.komos import score_korean_wavs
 
     wav_file = tmp_path / "korean_00000.wav"
@@ -65,6 +71,7 @@ def test_score_korean_wavs_propagates_model_failures(tmp_path):
 
     class BrokenModel:
         def score(self, audio_path):
+            """Simulate an inference failure that the evaluator must propagate."""
             raise RuntimeError("CUDA out of memory")
 
     with pytest.raises(RuntimeError, match="CUDA out of memory"):
@@ -72,6 +79,7 @@ def test_score_korean_wavs_propagates_model_failures(tmp_path):
 
 
 def test_write_results_emits_per_file_and_average(tmp_path):
+    """Write per-file MOS values and their mean in the documented format."""
     from omnivoice.eval.mos.komos import write_results
 
     output = tmp_path / "nested" / "komos.log"
@@ -89,6 +97,7 @@ def test_write_results_emits_per_file_and_average(tmp_path):
 
 
 def test_load_model_uses_pinned_revision_and_selected_device(monkeypatch):
+    """Load the pinned checkpoint on the selected device in evaluation mode."""
     from omnivoice.eval.mos import komos
 
     captured = {}
@@ -96,14 +105,17 @@ def test_load_model_uses_pinned_revision_and_selected_device(monkeypatch):
     class FakeKOMOS:
         @classmethod
         def from_pretrained(cls, model_id, *, revision):
+            """Record the checkpoint identifier and revision for assertions."""
             captured.update(model_id=model_id, revision=revision)
             return cls()
 
         def to(self, device):
+            """Record the device requested by the evaluator."""
             captured["device"] = device
             return self
 
         def eval(self):
+            """Record the request to enable evaluation mode."""
             captured["eval"] = True
             return self
 

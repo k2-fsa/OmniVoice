@@ -10,7 +10,7 @@ Evaluate OmniVoice models with standard TTS metrics: WER (intelligibility), SIM-
 | **Seed-TTS (en)** | English | Whisper WER | WER + MOS |
 | **Seed-TTS (zh)** | Chinese | Paraformer WER | WER + MOS |
 | **FLEURS** | 102 languages | Omnilingual-ASR WER | WER (per-language + macro-avg) |
-| **MiniMax Multilingual** | 24 languages | Whisper + Paraformer | WER + Korean KOMOS |
+| **MiniMax Multilingual** | 24 languages | Whisper + Paraformer | WER + Speaker Sim + Korean KOMOS (optional) |
 
 ## Prerequisites
 

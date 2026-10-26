@@ -28,10 +28,13 @@ MODEL_REVISION = "c558983b9777d4f01aa61003b151dea37db0cc2d"
 
 
 class ScoringModel(Protocol):
-    def score(self, audio_path: str | Path) -> float: ...
+    def score(self, audio_path: str | Path) -> float:
+        """Return the calibrated MOS for an audio file."""
+        ...
 
 
 def get_parser() -> argparse.ArgumentParser:
+    """Build the command-line parser for Korean KOMOS evaluation."""
     parser = argparse.ArgumentParser(
         description="Calculate KOMOS for the Korean subset of a TTS test list."
     )
@@ -117,6 +120,7 @@ def load_model(device: str) -> ScoringModel:
 
 
 def main() -> int:
+    """Score Korean test-list files and optionally save their MOS results."""
     args = get_parser().parse_args()
     logging.basicConfig(
         format="%(asctime)s %(levelname)s [%(filename)s:%(lineno)d] %(message)s",
