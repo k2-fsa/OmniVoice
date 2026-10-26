@@ -63,9 +63,7 @@ class TrainLogger:
                 disable=not self.accelerator.is_local_main_process,
             )
 
-    def update(
-        self, step: int, loss: Optional[float] = None, lr: Optional[float] = None
-    ):
+    def update(self, step: int, loss: float | None = None, lr: float | None = None):
         """
         Called every step to update the progress bar UI.
         """
@@ -82,7 +80,7 @@ class TrainLogger:
             if postfix:
                 self.progress_bar.set_postfix(postfix)
 
-    def log_metrics(self, step: int, metrics: Dict[str, Any]):
+    def log_metrics(self, step: int, metrics: dict[str, Any]):
         """
         Called periodically to log to TensorBoard/WandB and console.
         """

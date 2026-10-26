@@ -29,7 +29,7 @@ def load_eval_waveform(
     dtype: str = "float32",
     device: torch.device = torch.device("cpu"),
     return_numpy: bool = False,
-    max_seconds: Optional[float] = None,
+    max_seconds: float | None = None,
 ) -> torch.Tensor:
     """
     Load an audio file, preprocess it, and convert to a PyTorch tensor.

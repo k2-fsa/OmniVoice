@@ -65,12 +65,11 @@ from concurrent.futures import (
 from itertools import islice
 from pathlib import Path
 
+import soundfile as sf
 import torch
 import torchaudio
 import webdataset as wds
 from tqdm import tqdm
-
-import soundfile as sf
 
 from omnivoice.utils.audio import load_waveform
 from omnivoice.utils.common import str2bool
