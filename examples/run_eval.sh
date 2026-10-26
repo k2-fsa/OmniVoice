@@ -22,6 +22,9 @@ export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7"
 CHECKPOINT=k2-fsa/OmniVoice
 emilia_checkpoint=false
 
+# Set to true to score the Korean subset of MiniMax with KOMOS.
+enable_komos=false
+
 # CHECKPOINT=k2-fsa/OmniVoice
 # emilia_checkpoint=true
 
@@ -242,6 +245,13 @@ if [ ${stage} -le 5 ] && [ ${stop_stage} -ge 5 ]; then
         --test-list "${test_jsonl}" \
         --decode-path "${wav_path}.wer.log" \
         --model-dir "${TTS_EVAL_MODEL_DIR}"
+
+    if [ "${enable_komos}" = true ]; then
+        python -m omnivoice.eval.mos.komos \
+            --wav-path "${wav_path}" \
+            --test-list "${test_jsonl}" \
+            --decode-path "${wav_path}.komos.log"
+    fi
 fi
 
 

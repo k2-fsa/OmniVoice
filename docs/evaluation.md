@@ -10,7 +10,7 @@ Evaluate OmniVoice models with standard TTS metrics: WER (intelligibility), SIM-
 | **Seed-TTS (en)** | English | Whisper WER | WER + MOS |
 | **Seed-TTS (zh)** | Chinese | Paraformer WER | WER + MOS |
 | **FLEURS** | 102 languages | Omnilingual-ASR WER | WER (per-language + macro-avg) |
-| **MiniMax Multilingual** | 24 languages | Whisper + Paraformer | WER + MOS |
+| **MiniMax Multilingual** | 24 languages | Whisper + Paraformer | WER + Korean KOMOS |
 
 ## Prerequisites
 
@@ -46,3 +46,11 @@ Cosine similarity between speaker embeddings (ECAPA-TDNN + WavLM) of the referen
 
 ### UTMOS (Predicted MOS)
 Neural network that predicts Mean Opinion Score from audio. Higher is better.
+
+### KOMOS (Korean Predicted MOS)
+
+KOMOS is an optional no-reference predictor trained on Korean listener ratings.
+The MiniMax stage applies it only to rows with `language_id: ko`; it does not
+replace UTMOS or score non-Korean rows. Higher is better on its calibrated 1--5
+MOS scale. `score()` evaluates the first 10 seconds of each file. Set
+`enable_komos=true` in `examples/run_eval.sh` to include this optional step.
