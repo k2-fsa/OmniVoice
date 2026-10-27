@@ -54,3 +54,6 @@ The MiniMax stage applies it only to rows with `language_id: ko`; it does not
 replace UTMOS or score non-Korean rows. Higher is better on its calibrated 1--5
 MOS scale. `score()` evaluates the first 10 seconds of each file. Set
 `enable_komos=true` in `examples/run_eval.sh` to include this optional step.
+
+The script uses CUDA for KOMOS by default. Set `KOMOS_DEVICE=cpu` when running
+on CPU, or select a device directly with the evaluator's `--device` option.

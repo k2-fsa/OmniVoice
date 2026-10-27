@@ -250,7 +250,8 @@ if [ ${stage} -le 5 ] && [ ${stop_stage} -ge 5 ]; then
         python -m omnivoice.eval.mos.komos \
             --wav-path "${wav_path}" \
             --test-list "${test_jsonl}" \
-            --decode-path "${wav_path}.komos.log"
+            --decode-path "${wav_path}.komos.log" \
+            --device "${KOMOS_DEVICE:-cuda}"
     fi
 fi
 
