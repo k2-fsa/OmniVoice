@@ -338,7 +338,9 @@ def split_segments(text: str, max_chars: int = 300) -> list[str]:
         paragraph = paragraph.strip()
         if not paragraph:
             continue
-        sentences = [s.strip() for s in _SENTENCE_SPLIT_RE.split(paragraph) if s.strip()]
+        sentences = [
+            s.strip() for s in _SENTENCE_SPLIT_RE.split(paragraph) if s.strip()
+        ]
         if not sentences:
             continue
 

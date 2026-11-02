@@ -167,7 +167,9 @@ def save_design_voice(name: str, instruct: str, language: str | None) -> dict:
     if not name:
         raise VoiceError("Give the voice a name first.")
     if not instruct:
-        raise VoiceError("Describe the voice (e.g. 'female, low pitch, british accent').")
+        raise VoiceError(
+            "Describe the voice (e.g. 'female, low pitch, british accent')."
+        )
 
     _unique_name(name)
     folder = _folder_for(name)

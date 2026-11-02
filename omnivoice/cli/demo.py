@@ -663,8 +663,7 @@ def build_demo(
             name, audio_name, summary = rows[0]
             if produced:
                 status = (
-                    f"### Done — `{audio_name}`\n{summary}\n\n"
-                    f"Saved to `{produced[0]}`"
+                    f"### Done — `{audio_name}`\n{summary}\n\nSaved to `{produced[0]}`"
                 )
             else:
                 status = f"**{name}**: {summary}"
@@ -914,9 +913,7 @@ by Xiaomi AI Lab Next-gen Kaldi team.
                         ab_preview_btn = gr.Button("Check files / 检查文件", size="sm")
                         ab_preview = gr.Markdown()
 
-                        with gr.Accordion(
-                            "Audiobook Settings / 有声书设置", open=True
-                        ):
+                        with gr.Accordion("Audiobook Settings / 有声书设置", open=True):
                             ab_lang = _lang_dropdown()
                             ab_chars = gr.Slider(
                                 120,
@@ -1070,9 +1067,7 @@ by Xiaomi AI Lab Next-gen Kaldi team.
                     inputs=ab_mode,
                     outputs=[ab_ref_group, ab_design_group, ab_saved],
                 )
-                ab_refresh.click(
-                    _refresh_voices, outputs=[ab_saved, ab_delete_target]
-                )
+                ab_refresh.click(_refresh_voices, outputs=[ab_saved, ab_delete_target])
                 ab_saved.change(
                     _load_saved_clip,
                     inputs=ab_saved,
