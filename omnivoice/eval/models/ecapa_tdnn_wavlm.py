@@ -18,8 +18,8 @@
 import os
 
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
+from torch import nn
 
 
 class ECAPA_TDNN_WAVLM(nn.Module):
@@ -180,7 +180,7 @@ class Res2Conv1dReluBn(nn.Module):
         scale=4,
     ):
         super().__init__()
-        assert channels % scale == 0, "{} % {} != 0".format(channels, scale)
+        assert channels % scale == 0, f"{channels} % {scale} != 0"
         self.scale = scale
         self.width = channels // scale
         self.nums = scale if scale == 1 else scale - 1
