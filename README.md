@@ -278,7 +278,7 @@ Three CLI entry points are provided. The CLI tools support all features availabl
 
 | Command | Description | Source |
 |---|---|---|
-| `omnivoice-demo` | Interactive Gradio web demo | [omnivoice/cli/demo.py](omnivoice/cli/demo.py) |
+| `omnivoice-demo` | Interactive Gradio web demo (clone, design, audiobook) | [omnivoice/cli/demo.py](omnivoice/cli/demo.py) |
 | `omnivoice-infer` | Single-item inference | [omnivoice/cli/infer.py](omnivoice/cli/infer.py) |
 | `omnivoice-infer-batch` | Batch inference across multiple GPUs | [omnivoice/cli/infer_batch.py](omnivoice/cli/infer_batch.py) |
 
@@ -288,7 +288,19 @@ Three CLI entry points are provided. The CLI tools support all features availabl
 omnivoice-demo --ip 0.0.0.0 --port 8001
 ```
 
-Provides a web UI for voice cloning and voice design. See `omnivoice-demo --help` for all options.
+Provides a web UI for voice cloning, voice design and audiobook creation. See `omnivoice-demo --help` for all options.
+
+The **Audiobook** tab turns a whole book into one audio file. Drop one or more
+files (TXT, MD, PDF, EPUB, DOC, DOCX, HTML), pick a saved voice, a reference
+clip, a voice design or the automatic voice, and each book is written to
+`--output-dir` (default `./output`) named after the book. Segments are streamed
+to disk as they are generated, so a long book never has to fit in memory.
+
+- PDF input needs `pip install pypdf` (or `pip install omnivoice[audiobook]`).
+- M4A output needs `ffmpeg` on `PATH`; WAV, MP3 and OGG do not.
+- Saved voices live in `--voices-dir` (default `$OMNIVOICE_VOICES_DIR`, else
+  `$XDG_CACHE_HOME/omnivoice/voices`), so the same narrator can be reused across
+  books and sessions.
 
 ### Single Inference
 

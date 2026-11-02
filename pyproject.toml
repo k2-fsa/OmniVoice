@@ -63,6 +63,10 @@ lora = [
     "peft>=0.20.0",       # LoRA fine-tuning support
 ]
 
+audiobook = [
+    "pypdf",              # PDF book text extraction
+]
+
 [project.scripts]
 omnivoice-infer = "omnivoice.cli.infer:main"
 omnivoice-infer-batch = "omnivoice.cli.infer_batch:main"
