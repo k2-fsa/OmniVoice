@@ -26,6 +26,8 @@ with shape ``(C, T)`` (channels-first).
 
 import io
 import logging
+import shutil
+import subprocess
 
 import numpy as np
 import soundfile as sf
@@ -42,12 +44,53 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 
+def _decode_with_ffmpeg(source, *, is_bytes: bool = False):
+    """Decode a container soundfile cannot read, returning (data, sample_rate).
+
+    ffmpeg converts the input to WAV on stdout and soundfile parses that WAV,
+    so the channel count and sample rate come from the file itself and no
+    extra dependency is needed.
+
+    Args:
+        source: path of the audio, or its bytes when *is_bytes* is set.
+        is_bytes: read the container from *source* bytes instead of a path.
+
+    Returns:
+        (data, sample_rate) with data a numpy float32 array of shape (C, T).
+    """
+    ffmpeg = shutil.which("ffmpeg")
+    if ffmpeg is None:
+        name = "<bytes>" if is_bytes else repr(str(source))
+        raise RuntimeError(
+            f"cannot decode {name}: soundfile does not recognise this format "
+            "and ffmpeg is not on PATH"
+        )
+
+    cmd = [ffmpeg, "-v", "error"]
+    if is_bytes:
+        cmd += ["-i", "pipe:0"]
+    else:
+        cmd += ["-nostdin", "-i", str(source)]
+    cmd += ["-f", "wav", "-"]
+
+    proc = subprocess.run(cmd, input=source if is_bytes else None, capture_output=True)
+    if proc.returncode != 0:
+        detail = proc.stderr.decode("utf-8", "replace").strip().splitlines()
+        raise RuntimeError(
+            "ffmpeg could not decode the audio: "
+            + (detail[-1] if detail else f"exit status {proc.returncode}")
+        )
+
+    data, sr = sf.read(io.BytesIO(proc.stdout), dtype="float32", always_2d=True)
+    return data.T, sr  # (T, C) → (C, T)
+
+
 def load_waveform(audio_path: str):
     """Load audio from a file path, returning (data, sample_rate).
 
     Tries two backends in order:
     1. soundfile — covers WAV/FLAC/OGG etc., no ffmpeg needed.
-    2. librosa — covers MP3/M4A etc. via audioread + ffmpeg.
+    2. ffmpeg — covers MP3/M4A and every other container it understands.
 
     Returns:
         (data, sample_rate) where data is a numpy float32 array of
@@ -57,13 +100,8 @@ def load_waveform(audio_path: str):
         data, sr = sf.read(audio_path, dtype="float32", always_2d=True)
         return data.T, sr  # (T, C) → (C, T)
     except Exception:
-        # soundfile cannot handle MP3/M4A etc., fall back to librosa.
-        import librosa
-
-        data, sr = librosa.load(audio_path, sr=None, mono=False)
-        if data.ndim == 1:
-            data = data[np.newaxis, :]
-        return data, sr
+        # soundfile cannot handle MP3/M4A etc., hand the container to ffmpeg.
+        return _decode_with_ffmpeg(audio_path)
 
 
 def load_audio(audio_path: str, sampling_rate: int) -> np.ndarray:
@@ -104,12 +142,7 @@ def load_audio_bytes(raw: bytes, sampling_rate: int) -> np.ndarray:
         data, sr = sf.read(buf, dtype="float32", always_2d=True)
         data = data.T  # (T, C) → (C, T)
     except Exception:
-        import librosa
-
-        buf.seek(0)
-        data, sr = librosa.load(buf, sr=None, mono=False)
-        if data.ndim == 1:
-            data = data[np.newaxis, :]
+        data, sr = _decode_with_ffmpeg(raw, is_bytes=True)
 
     if data.shape[0] > 1:
         data = np.mean(data, axis=0, keepdims=True)
