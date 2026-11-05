@@ -66,7 +66,10 @@ def _decode_with_ffmpeg(source, *, is_bytes: bool = False):
             "and ffmpeg is not on PATH"
         )
 
-    cmd = [ffmpeg, "-v", "error"]
+    # An uploaded container can be a playlist that names remote segments, so
+    # ffmpeg is held to the local file and stdin protocols; a reference audio
+    # file must not be able to make the server open a network connection.
+    cmd = [ffmpeg, "-v", "error", "-protocol_whitelist", "file,pipe"]
     if is_bytes:
         cmd += ["-i", "pipe:0"]
     else:

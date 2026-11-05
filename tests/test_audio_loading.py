@@ -29,6 +29,7 @@ import pytest
 import soundfile as sf
 
 from omnivoice.utils.audio import load_audio, load_audio_bytes, load_waveform
+from omnivoice.utils import audio as audio_module
 
 FFMPEG = shutil.which("ffmpeg")
 requires_ffmpeg = pytest.mark.skipif(
@@ -133,3 +134,39 @@ def test_load_waveform_still_reads_wav_without_ffmpeg(tmp_path):
     data, sample_rate = load_waveform(str(source))
     assert sample_rate == SAMPLE_RATE
     assert data.shape == (1, NUM_SAMPLES)
+
+
+@pytest.mark.parametrize("as_bytes", [False, True])
+def test_ffmpeg_fallback_is_held_to_local_protocols(tmp_path, monkeypatch, as_bytes):
+    """A reference file cannot steer ffmpeg onto the network.
+
+    An uploaded container can be a playlist whose segments are HTTP URLs, so
+    the fallback has to whitelist the local protocols only and leave the
+    remote ones out.
+    """
+    captured = {}
+
+    class _Refused:
+        returncode = 1
+        stdout = b""
+        stderr = b"ffmpeg refused the input"
+
+    def fake_run(cmd, **kwargs):
+        captured["cmd"] = cmd
+        return _Refused()
+
+    monkeypatch.setattr(audio_module.shutil, "which", lambda name: "/usr/bin/ffmpeg")
+    monkeypatch.setattr(audio_module.subprocess, "run", fake_run)
+
+    with pytest.raises(RuntimeError):
+        if as_bytes:
+            audio_module._decode_with_ffmpeg(b"#EXTM3U\n", is_bytes=True)
+        else:
+            playlist = tmp_path / "playlist.m3u8"
+            playlist.write_text("#EXTM3U\n", encoding="utf-8")
+            audio_module._decode_with_ffmpeg(str(playlist))
+
+    cmd = captured["cmd"]
+    assert cmd[cmd.index("-protocol_whitelist") + 1] == "file,pipe"
+    # The restriction is an input option, so it has to precede the -i it guards.
+    assert cmd.index("-protocol_whitelist") < cmd.index("-i")
