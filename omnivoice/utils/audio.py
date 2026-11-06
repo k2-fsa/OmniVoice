@@ -26,8 +26,10 @@ with shape ``(C, T)`` (channels-first).
 
 import io
 import logging
+import os
 import shutil
 import subprocess
+import tempfile
 
 import numpy as np
 import soundfile as sf
@@ -49,7 +51,9 @@ def _decode_with_ffmpeg(source, *, is_bytes: bool = False):
 
     ffmpeg converts the input to WAV on stdout and soundfile parses that WAV,
     so the channel count and sample rate come from the file itself and no
-    extra dependency is needed.
+    extra dependency is needed. Bytes are decoded through a temporary file,
+    because ffmpeg has to seek in a container whose index sits at the end and
+    a pipe cannot.
 
     Args:
         source: path of the audio, or its bytes when *is_bytes* is set.
@@ -69,14 +73,28 @@ def _decode_with_ffmpeg(source, *, is_bytes: bool = False):
     # An uploaded container can be a playlist that names remote segments, so
     # ffmpeg is held to the local file and stdin protocols; a reference audio
     # file must not be able to make the server open a network connection.
-    cmd = [ffmpeg, "-v", "error", "-protocol_whitelist", "file,pipe"]
+    cmd = [ffmpeg, "-v", "error", "-protocol_whitelist", "file,pipe", "-nostdin"]
+    tmp_path = None
     if is_bytes:
-        cmd += ["-i", "pipe:0"]
+        # A container can keep its index at the end, as an M4A keeps its moov
+        # atom, and ffmpeg has to seek back to it. A pipe cannot seek, so bytes
+        # are written to a temporary file first; otherwise a long enough
+        # recording decodes to an empty waveform at exit status 0 (#295).
+        with tempfile.NamedTemporaryFile(delete=False) as tmp:
+            tmp.write(source)
+            tmp_path = tmp.name
+        cmd += ["-i", tmp_path]
     else:
-        cmd += ["-nostdin", "-i", str(source)]
+        cmd += ["-i", str(source)]
     cmd += ["-f", "wav", "-"]
 
-    proc = subprocess.run(cmd, input=source if is_bytes else None, capture_output=True)
+    try:
+        proc = subprocess.run(cmd, capture_output=True)
+    finally:
+        if tmp_path is not None:
+            os.unlink(tmp_path)
+
+    name = "<bytes>" if is_bytes else repr(str(source))
     if proc.returncode != 0:
         detail = proc.stderr.decode("utf-8", "replace").strip().splitlines()
         raise RuntimeError(
@@ -85,6 +103,10 @@ def _decode_with_ffmpeg(source, *, is_bytes: bool = False):
         )
 
     data, sr = sf.read(io.BytesIO(proc.stdout), dtype="float32", always_2d=True)
+    if data.shape[0] == 0:
+        # ffmpeg can report success and still decode nothing, which would hand
+        # the caller a silent empty reference; say so instead.
+        raise RuntimeError(f"ffmpeg decoded no audio from {name}")
     return data.T, sr  # (T, C) → (C, T)
 
 

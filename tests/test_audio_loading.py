@@ -21,6 +21,7 @@ Covers MP3/M4A reference audio: with librosa 1.0 the old fallback re-raised
 soundfile's error, so voice cloning could not use those files at all.
 """
 
+import io
 import shutil
 import subprocess
 
@@ -170,3 +171,49 @@ def test_ffmpeg_fallback_is_held_to_local_protocols(tmp_path, monkeypatch, as_by
     assert cmd[cmd.index("-protocol_whitelist") + 1] == "file,pipe"
     # The restriction is an input option, so it has to precede the -i it guards.
     assert cmd.index("-protocol_whitelist") < cmd.index("-i")
+
+
+def _encode_long_m4a(tmp_path, seconds=30):
+    """Encode an M4A long enough that its index lands after the audio data."""
+    rng = np.random.default_rng(0)
+    signal = (rng.standard_normal(SAMPLE_RATE * seconds) * 0.01).astype("float32")
+    wav_path = tmp_path / "long.wav"
+    sf.write(wav_path, signal, SAMPLE_RATE)
+    return _encode(wav_path, tmp_path / "long.m4a", ["-c:a", "aac", "-f", "ipod"])
+
+
+@requires_ffmpeg
+def test_load_audio_bytes_reads_a_container_whose_index_is_at_the_end(tmp_path):
+    """A long M4A keeps its moov atom after the audio, so the input must seek.
+
+    Decoded through a pipe this file yields an empty waveform at exit status 0,
+    which is why the bytes go through a temporary file.
+    """
+    target = _encode_long_m4a(tmp_path)
+    raw = target.read_bytes()
+
+    # The premise: the index follows the audio, and the file is bigger than the
+    # buffer ffmpeg would otherwise keep in memory for a pipe.
+    assert raw.find(b"moov") > raw.find(b"mdat")
+    assert len(raw) > 100_000
+
+    data = load_audio_bytes(raw, 16000)
+    assert data.shape[0] == 1
+    assert abs(data.shape[1] - 16000 * 30) < 16000 * 3
+
+
+def test_an_empty_decode_is_an_error(monkeypatch):
+    """ffmpeg can exit 0 having decoded nothing; that is not a waveform."""
+    header = io.BytesIO()
+    sf.write(header, np.zeros(0, dtype="float32"), SAMPLE_RATE, format="WAV")
+
+    class _Empty:
+        returncode = 0
+        stdout = header.getvalue()
+        stderr = b""
+
+    monkeypatch.setattr(audio_module.shutil, "which", lambda name: "/usr/bin/ffmpeg")
+    monkeypatch.setattr(audio_module.subprocess, "run", lambda cmd, **kwargs: _Empty())
+
+    with pytest.raises(RuntimeError, match="decoded no audio"):
+        audio_module._decode_with_ffmpeg(b"RIFF....WAVE", is_bytes=True)
