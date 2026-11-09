@@ -63,7 +63,7 @@ class OmniVoiceSampleProcessor:
         self.instruct_ratio = instruct_ratio
         self.only_instruct_ratio = only_instruct_ratio
 
-    def __call__(self, sample: Dict[str, Any]) -> Dict[str, Any]:
+    def __call__(self, sample: dict[str, Any]) -> dict[str, Any]:
         # clean_start_token_idx is only used for prompt denoising training,
         # where the prompt region is augmented with noises and the model
         # needs to learn to recover the clean prompt.
@@ -197,7 +197,7 @@ class OmniVoiceSimpleSampleProcessor:
         self.mask_ratio_range = mask_ratio_range
         self.drop_cond_ratio = drop_cond_ratio
 
-    def __call__(self, sample: Dict[str, Any]) -> Dict[str, Any]:
+    def __call__(self, sample: dict[str, Any]) -> dict[str, Any]:
         drop_cond = random.uniform(0, 1) < self.drop_cond_ratio
         mask_ratio = random.uniform(*self.mask_ratio_range)
 

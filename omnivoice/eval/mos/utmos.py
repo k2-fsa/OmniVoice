@@ -157,8 +157,7 @@ def run_utmos_worker(file_idx, wav_path, language_name):
 
     except Exception as e:
         error_detail = (
-            f"Error processing {wav_path}: {str(e)}\n"
-            f"Traceback:\n{traceback.format_exc()}"
+            f"Error processing {wav_path}: {e!s}\nTraceback:\n{traceback.format_exc()}"
         )
         return file_idx, wav_path, language_name, error_detail, "error"
 
