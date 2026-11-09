@@ -23,7 +23,7 @@ DEV_JSONL="data/my_data_dev.jsonl"
 TOKEN_DIR="data/finetune/tokens"
 
 # Audio tokenizer model (HuggingFace repo or local path)
-TOKENIZER_PATH="eustlb/higgs-audio-v2-tokenizer"
+TOKENIZER_PATH="bosonai/higgs-audio-v2-tokenizer"
 
 # Training config file
 # If you encounter issues with flex_attention on your GPU, use the SDPA config instead:

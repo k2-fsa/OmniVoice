@@ -126,7 +126,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--tokenizer_path",
         type=str,
-        default="eustlb/higgs-audio-v2-tokenizer",
+        default="bosonai/higgs-audio-v2-tokenizer",
         help="Path to audio tokenizer.",
     )
     parser.add_argument(
