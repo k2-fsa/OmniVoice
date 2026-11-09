@@ -179,7 +179,7 @@ def run_similarity_worker(line_idx, sample, wav_dir, extension):
         )
 
     except Exception as e:
-        error_detail = f"Error: {str(e)}\nTraceback:\n{traceback.format_exc()}"
+        error_detail = f"Error: {e!s}\nTraceback:\n{traceback.format_exc()}"
         return line_idx, str(sample), error_detail, "error"
 
 

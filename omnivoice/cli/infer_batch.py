@@ -41,17 +41,15 @@ import traceback
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from typing import List, Optional, Tuple
 
+import soundfile as sf
 import torch
 from tqdm import tqdm
 
 from omnivoice.models.omnivoice import OmniVoice
-import soundfile as sf
-
 from omnivoice.utils.audio import load_audio
 from omnivoice.utils.common import get_best_device_with_count, str2bool
 from omnivoice.utils.data_utils import read_test_list
 from omnivoice.utils.duration import RuleDurationEstimator
-
 
 worker_model = None
 SAMPLING_RATE = 24000
@@ -280,9 +278,9 @@ def _get_audio_duration(audio_path: str) -> float:
 def estimate_sample_total_duration(
     duration_estimator: RuleDurationEstimator,
     text: str,
-    ref_text: Optional[str],
-    ref_audio_path: Optional[str],
-    gen_duration: Optional[float] = None,
+    ref_text: str | None,
+    ref_audio_path: str | None,
+    gen_duration: float | None = None,
 ) -> float:
     """Estimate total duration (ref + generated) for a single sample.
 
@@ -310,9 +308,9 @@ def estimate_sample_total_duration(
 
 
 def _sort_samples_by_duration(
-    samples: List[Tuple],
+    samples: list[tuple],
     duration_estimator: RuleDurationEstimator,
-) -> List[Tuple[Tuple, float]]:
+) -> list[tuple[tuple, float]]:
     """Return (sample, total_duration) pairs sorted by duration descending."""
     sample_with_duration = []
     for sample in samples:
@@ -326,10 +324,10 @@ def _sort_samples_by_duration(
 
 
 def cluster_samples_by_duration(
-    samples: List[Tuple],
+    samples: list[tuple],
     duration_estimator: RuleDurationEstimator,
     batch_duration: float,
-) -> List[List[Tuple]]:
+) -> list[list[tuple]]:
     sample_with_duration = _sort_samples_by_duration(samples, duration_estimator)
     batches = []
     current_batch = []
@@ -356,10 +354,10 @@ def cluster_samples_by_duration(
 
 
 def cluster_samples_by_batch_size(
-    samples: List[Tuple],
+    samples: list[tuple],
     duration_estimator: RuleDurationEstimator,
     batch_size: int,
-) -> List[List[Tuple]]:
+) -> list[list[tuple]]:
     """Split samples into fixed-size batches, sorted by duration to minimize padding."""
     sample_with_duration = _sort_samples_by_duration(samples, duration_estimator)
     sorted_samples = [s for s, _ in sample_with_duration]
@@ -376,10 +374,10 @@ def cluster_samples_by_batch_size(
 
 
 def run_inference_batch(
-    batch_samples: List[Tuple],
+    batch_samples: list[tuple],
     res_dir: str,
     **gen_kwargs,
-) -> List[Tuple]:
+) -> list[tuple]:
     global worker_model
 
     save_names = []
