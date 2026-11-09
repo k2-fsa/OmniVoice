@@ -58,7 +58,7 @@ python -m omnivoice.scripts.extract_audio_tokens_add_noise \
     --input_jsonl data.jsonl \
     --tar_output_pattern data/tokens/shard-%06d.tar \
     --jsonl_output_pattern data/txts/shard-%06d.jsonl \
-    --tokenizer_path eustlb/higgs-audio-v2-tokenizer \
+    --tokenizer_path bosonai/higgs-audio-v2-tokenizer \
     --noise_manifest data/noise_shards/data.lst \
     --rir_manifest data/rir_shards/data.lst \
     --nj_per_gpu 3

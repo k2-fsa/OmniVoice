@@ -353,7 +353,7 @@ class OmniVoice(PreTrainedModel):
 
                 if not os.path.isdir(audio_tokenizer_path):
                     audio_tokenizer_path = _resolve_model_path(
-                        "eustlb/higgs-audio-v2-tokenizer"
+                        "bosonai/higgs-audio-v2-tokenizer"
                     )
 
                 # higgs-audio-v2-tokenizer does not support MPS
