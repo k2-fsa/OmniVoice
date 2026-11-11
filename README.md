@@ -35,6 +35,8 @@ OmniVoice is a state-of-the-art massively multilingual zero-shot text-to-speech 
 
 Choose **one** of the following methods: **pip** or **uv**.
 
+The inference package resamples audio with its existing `librosa` dependency and does not require `torchaudio`. Install the optional `audio-tools` extra (`pip install 'omnivoice[audio-tools]'`) to use the data-preparation, denoising, and evaluation scripts that still depend on it.
+
 ### pip
 
 > We recommend using a fresh virtual environment (e.g., `conda`, `venv`, etc.) to avoid conflicts.
