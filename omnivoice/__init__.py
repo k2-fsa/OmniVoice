@@ -19,16 +19,29 @@ try:
 except PackageNotFoundError:
     __version__ = "0.0.0"
 
-from omnivoice.models.omnivoice import (
-    OmniVoice,
-    OmniVoiceConfig,
-    OmniVoiceGenerationConfig,
-    VoiceClonePrompt,
-)
-
 __all__ = [
     "OmniVoice",
     "OmniVoiceConfig",
     "OmniVoiceGenerationConfig",
     "VoiceClonePrompt",
 ]
+
+
+def __getattr__(name: str):
+    if name not in __all__:
+        raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+    try:
+        import torchaudio  # noqa: F401
+    except (ImportError, OSError) as exc:
+        raise ImportError(
+            "Loading OmniVoice model classes currently requires torchaudio "
+            "through the Transformers Higgs audio tokenizer. Install the "
+            "optional extra with `pip install 'omnivoice[audio-tools]'`."
+        ) from exc
+
+    from omnivoice.models import omnivoice as model_module
+
+    value = getattr(model_module, name)
+    globals()[name] = value
+    return value

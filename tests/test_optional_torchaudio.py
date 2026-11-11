@@ -32,10 +32,10 @@ builtins.__import__ = import_without_torchaudio
 import omnivoice
 """
 
-    subprocess.run(
+    result = subprocess.run(
         [sys.executable, "-c", script],
         cwd=repo_root,
-        check=True,
         capture_output=True,
         text=True,
     )
+    assert result.returncode == 0, result.stderr

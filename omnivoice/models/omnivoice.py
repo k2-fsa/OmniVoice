@@ -51,7 +51,6 @@ from transformers import (
     AutoFeatureExtractor,
     AutoModel,
     AutoTokenizer,
-    HiggsAudioV2TokenizerModel,
     PretrainedConfig,
     PreTrainedModel,
 )
@@ -361,6 +360,17 @@ class OmniVoice(PreTrainedModel):
                 tokenizer_device = (
                     "cpu" if str(model.device).startswith("mps") else model.device
                 )
+                try:
+                    import torchaudio  # noqa: F401
+                except (ImportError, OSError) as exc:
+                    raise ImportError(
+                        "Loading the audio tokenizer requires torchaudio. "
+                        "Install the optional audio-tools extra with "
+                        "`pip install 'omnivoice[audio-tools]'`."
+                    ) from exc
+
+                from transformers import HiggsAudioV2TokenizerModel
+
                 model.audio_tokenizer = HiggsAudioV2TokenizerModel.from_pretrained(
                     audio_tokenizer_path, device_map=tokenizer_device
                 )
