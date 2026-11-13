@@ -31,9 +31,9 @@ from typing import Any, Dict
 def handle_import_error(e: OSError) -> None:
     if "WinError 4551" in str(e) or "shm.dll" in str(e):
         msg = (
-            "\n" + "="*65 + "\n"
+            "\n" + "=" * 65 + "\n"
             " ❌ WINDOWS SECURITY ERROR: Application Control Policy Blocked DLL\n"
-            "="*65 + "\n"
+            "=" * 65 + "\n"
             " Windows Defender is blocking PyTorch from loading 'shm.dll'.\n"
             " This is an environment issue, not an OmniVoice bug.\n\n"
             " To fix this, add your 'venv' folder as an exclusion in Windows Security:\n"
@@ -41,7 +41,8 @@ def handle_import_error(e: OSError) -> None:
             "  2. Under 'Virus & threat protection settings', click 'Manage settings'.\n"
             "  3. Scroll to 'Exclusions' and click 'Add or remove exclusions'.\n"
             "  4. Click 'Add an exclusion' -> 'Folder' -> select your venv folder.\n"
-            + "="*65 + "\n"
+            + "=" * 65
+            + "\n"
         )
         raise RuntimeError(msg) from e
     else:
@@ -52,7 +53,6 @@ try:
     import gradio as gr
     import numpy as np
     import torch
-
 
     from omnivoice import OmniVoice, OmniVoiceGenerationConfig
     from omnivoice.utils.common import get_best_device
