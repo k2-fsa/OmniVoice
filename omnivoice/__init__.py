@@ -15,6 +15,12 @@ warnings.filterwarnings(
 )
 
 try:
+    import torch
+except OSError as e:
+    from omnivoice.utils.win_errors import handle_import_error
+    handle_import_error(e)
+
+try:
     __version__ = version("omnivoice")
 except PackageNotFoundError:
     __version__ = "0.0.0"

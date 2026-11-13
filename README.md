@@ -426,11 +426,5 @@ Users are strictly prohibited from using this model for unauthorized voice cloni
 
 
 ### Windows: `OSError: [WinError 4551]` or `shm.dll` blocked
-If you see an error that says **"An Application Control policy has blocked this file"** referencing `shm.dll` inside your `venv`, this is a Windows security restriction, not an OmniVoice bug. 
 
-
-To fix this, you must tell Windows Defender to ignore your virtual environment:
-1. Open **Windows Security** > **Virus & threat protection**.
-2. Under *Virus & threat protection settings*, click **Manage settings**.
-3. Scroll down to *Exclusions* and click **Add or remove exclusions**.
-4. Click **Add an exclusion** > **Folder** and select your project's `venv` folder.
+This is likely an Application Control policy block (such as AppLocker or Smart App Control). Antivirus exclusions do not bypass Application Control. Please check your Windows Event Viewer for policy block events and contact your IT administrator to request an exception for your Python environment.
