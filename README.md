@@ -403,7 +403,6 @@ You can also scan the QR code to join our wechat group or follow our wechat offi
 OmniVoice is supported by a growing ecosystem of community projects.
 Explore them in [Community Projects](docs/community-projects.md).
 
----
 
 ## Citation
 
@@ -421,3 +420,17 @@ Explore them in [Community Projects](docs/community-projects.md).
 ## Disclaimer
 
 Users are strictly prohibited from using this model for unauthorized voice cloning, voice impersonation, fraud, scams, or any other illegal or unethical activities. All users shall ensure full compliance with applicable local laws, regulations, and ethical standards. The developers assume no liability for any misuse of this model and advocate for responsible AI development and use, encouraging the community to uphold safety and ethical principles in AI research and applications.
+
+
+## 🛠️ Troubleshooting
+
+
+### Windows: `OSError: [WinError 4551]` or `shm.dll` blocked
+If you see an error that says **"An Application Control policy has blocked this file"** referencing `shm.dll` inside your `venv`, this is a Windows security restriction, not an OmniVoice bug. 
+
+
+To fix this, you must tell Windows Defender to ignore your virtual environment:
+1. Open **Windows Security** > **Virus & threat protection**.
+2. Under *Virus & threat protection settings*, click **Manage settings**.
+3. Scroll down to *Exclusions* and click **Add or remove exclusions**.
+4. Click **Add an exclusion** > **Folder** and select your project's `venv` folder.
