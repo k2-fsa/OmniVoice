@@ -33,8 +33,7 @@ def test_initial_import_boundary(monkeypatch):
 
     # We need to ensure omnivoice is not in sys.modules to test the initial import
     if "omnivoice" in sys.modules:
-        del sys.modules["omnivoice"]
-
+        monkeypatch.delitem(sys.modules, "omnivoice")
     original_import = __import__
 
     def mock_import(name, *args, **kwargs):
