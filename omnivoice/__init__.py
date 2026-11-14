@@ -18,6 +18,7 @@ try:
     import torch
 except OSError as e:
     from omnivoice.utils.win_errors import handle_import_error
+
     handle_import_error(e)
 
 try:

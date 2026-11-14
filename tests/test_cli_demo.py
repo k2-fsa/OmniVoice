@@ -30,21 +30,23 @@ def test_handle_import_error_winerror_126():
 
 def test_initial_import_boundary(monkeypatch):
     import sys
-    
+
     # We need to ensure omnivoice is not in sys.modules to test the initial import
-    if 'omnivoice' in sys.modules:
-        del sys.modules['omnivoice']
-        
+    if "omnivoice" in sys.modules:
+        del sys.modules["omnivoice"]
+
     original_import = __import__
-    
+
     def mock_import(name, *args, **kwargs):
-        if name == 'torch':
-            raise OSError("[WinError 4551] An Application Control policy has blocked this file. Error loading 'shm.dll'")
+        if name == "torch":
+            raise OSError(
+                "[WinError 4551] An Application Control policy has blocked this file. Error loading 'shm.dll'"
+            )
         return original_import(name, *args, **kwargs)
-        
-    monkeypatch.setattr('builtins.__import__', mock_import)
-    
+
+    monkeypatch.setattr("builtins.__import__", mock_import)
+
     with pytest.raises(RuntimeError) as exc_info:
         import omnivoice  # This triggers __init__.py, which tries to import torch
-        
+
     assert "WINDOWS SECURITY ERROR" in str(exc_info.value)
