@@ -35,8 +35,8 @@ from accelerate import Accelerator, DistributedDataParallelKwargs
 from accelerate.utils import DeepSpeedPlugin, InitProcessGroupKwargs, set_seed
 from torch.utils.data import DataLoader
 from transformers import (
-    get_cosine_schedule_with_warmup,
     get_constant_schedule_with_warmup,
+    get_cosine_schedule_with_warmup,
 )
 
 from omnivoice.training.checkpoint import TrainLogger, load_checkpoint
@@ -59,10 +59,10 @@ class OmniTrainer:
         model: torch.nn.Module,
         config: Any,  # TrainingConfig
         train_dataloader: DataLoader,
-        eval_dataloader: Optional[DataLoader] = None,
-        tokenizer: Optional[Any] = None,
-        optimizer: Optional[torch.optim.Optimizer] = None,
-        lr_scheduler: Optional[Any] = None,
+        eval_dataloader: DataLoader | None = None,
+        tokenizer: Any | None = None,
+        optimizer: torch.optim.Optimizer | None = None,
+        lr_scheduler: Any | None = None,
     ):
         self.config = config
         self.model = model

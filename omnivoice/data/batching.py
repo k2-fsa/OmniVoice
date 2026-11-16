@@ -30,7 +30,8 @@ Key classes:
 
 import bisect
 import logging
-from typing import Any, Dict, Iterator, List, Optional
+from collections.abc import Iterator
+from typing import Any, Dict, List, Optional
 
 import numpy as np
 
@@ -60,9 +61,9 @@ class StreamLengthGroupDataset(WrappedIterableDataset):
         num_buckets: int = 20,
         audio_key: str = "audio",
         drop_last: bool = False,
-        max_sample: Optional[int] = None,
-        length_fn: Optional[Any] = None,
-        processor: Optional[Any] = None,
+        max_sample: int | None = None,
+        length_fn: Any | None = None,
+        processor: Any | None = None,
     ):
         self.dataset = dataset
         self.batch_duration = batch_duration
@@ -86,7 +87,7 @@ class StreamLengthGroupDataset(WrappedIterableDataset):
     def _get_bucket_id(self, length: float) -> int:
         return bisect.bisect_left(self.boundaries, length)
 
-    def __iter__(self) -> Iterator[List[Dict[str, Any]]]:
+    def __iter__(self) -> Iterator[list[dict[str, Any]]]:
         buckets = [[] for _ in range(self.num_buckets)]
         bucket_max_len = [0.0] * self.num_buckets
 
@@ -111,8 +112,7 @@ class StreamLengthGroupDataset(WrappedIterableDataset):
             b_id = self._get_bucket_id(duration)
             buckets[b_id].append(sample)
 
-            if duration > bucket_max_len[b_id]:
-                bucket_max_len[b_id] = duration
+            bucket_max_len[b_id] = max(bucket_max_len[b_id], duration)
 
             if (
                 bucket_max_len[b_id] * (len(buckets[b_id]) + 1) >= self.batch_duration
@@ -157,7 +157,7 @@ class PackingIterableDataset(WrappedIterableDataset):
         """
         self.dataset.set_epoch(epoch)
 
-    def __iter__(self) -> Iterator[List[Dict[str, Any]]]:
+    def __iter__(self) -> Iterator[list[dict[str, Any]]]:
         current_batch = []
         current_token_count = 0
 
