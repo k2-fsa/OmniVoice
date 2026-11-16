@@ -75,20 +75,22 @@ def _decode_with_ffmpeg(source, *, is_bytes: bool = False):
     # file must not be able to make the server open a network connection.
     cmd = [ffmpeg, "-v", "error", "-protocol_whitelist", "file,pipe", "-nostdin"]
     tmp_path = None
-    if is_bytes:
-        # A container can keep its index at the end, as an M4A keeps its moov
-        # atom, and ffmpeg has to seek back to it. A pipe cannot seek, so bytes
-        # are written to a temporary file first; otherwise a long enough
-        # recording decodes to an empty waveform at exit status 0 (#295).
-        with tempfile.NamedTemporaryFile(delete=False) as tmp:
-            tmp.write(source)
-            tmp_path = tmp.name
-        cmd += ["-i", tmp_path]
-    else:
-        cmd += ["-i", str(source)]
-    cmd += ["-f", "wav", "-"]
-
     try:
+        if is_bytes:
+            # A container can keep its index at the end, as an M4A keeps its moov
+            # atom, and ffmpeg has to seek back to it. A pipe cannot seek, so bytes
+            # are written to a temporary file first; otherwise a long enough
+            # recording decodes to an empty waveform at exit status 0 (#295).
+            with tempfile.NamedTemporaryFile(delete=False) as tmp:
+                # The name is kept before the write: a write that fails (a full
+                # disk) must not leave the partial file behind either.
+                tmp_path = tmp.name
+                tmp.write(source)
+            cmd += ["-i", tmp_path]
+        else:
+            cmd += ["-i", str(source)]
+        cmd += ["-f", "wav", "-"]
+
         proc = subprocess.run(cmd, capture_output=True)
     finally:
         if tmp_path is not None:

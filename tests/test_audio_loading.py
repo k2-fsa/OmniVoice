@@ -22,6 +22,7 @@ soundfile's error, so voice cloning could not use those files at all.
 """
 
 import io
+import os
 import shutil
 import subprocess
 
@@ -200,6 +201,43 @@ def test_load_audio_bytes_reads_a_container_whose_index_is_at_the_end(tmp_path):
     data = load_audio_bytes(raw, 16000)
     assert data.shape[0] == 1
     assert abs(data.shape[1] - 16000 * 30) < 16000 * 3
+
+
+def test_a_failed_temporary_write_leaves_no_file(monkeypatch):
+    """Bytes are staged in a temporary file; a failed write must not leave it.
+
+    The name is kept before the write, so the cleanup still removes a partial
+    file when the disk refuses the data.
+    """
+    opened = []
+    real = audio_module.tempfile.NamedTemporaryFile
+
+    class _FullDisk:
+        def __init__(self, **kwargs):
+            self._file = real(**kwargs)
+            opened.append(self._file.name)
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *exc_info):
+            self._file.close()
+
+        @property
+        def name(self):
+            return self._file.name
+
+        def write(self, data):
+            raise OSError("No space left on device")
+
+    monkeypatch.setattr(audio_module.shutil, "which", lambda name: "/usr/bin/ffmpeg")
+    monkeypatch.setattr(audio_module.tempfile, "NamedTemporaryFile", _FullDisk)
+
+    with pytest.raises(OSError, match="No space left on device"):
+        audio_module._decode_with_ffmpeg(b"#EXTM3U\n", is_bytes=True)
+
+    assert opened, "the temporary file was created"
+    assert not os.path.exists(opened[0])
 
 
 def test_an_empty_decode_is_an_error(monkeypatch):
