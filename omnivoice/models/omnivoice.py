@@ -187,6 +187,7 @@ class OmniVoiceGenerationConfig:
     audio_chunk_threshold: float = 30.0
     pad_duration: float = 0.1
     fade_duration: float = 0.1
+    split_cfg_batch: Optional[bool] = None
 
     @classmethod
     def from_dict(cls, kwargs_dict):
@@ -1317,34 +1318,60 @@ class OmniVoice(PreTrainedModel):
         max_c_len = max(c_lens)
         pad_id = self.config.audio_mask_id  # Or any other tokens
 
-        batch_input_ids = torch.full(
-            (2 * B, self.config.num_audio_codebook, max_c_len),
+        # The unconditional rows only hold the target, so keeping them in the
+        # same tensor as the conditional rows pads them up to ``max_c_len``. In
+        # voice-cloning mode the reference dominates ``c_len``, so that padding
+        # is a large share of every step. Running the two halves as separate
+        # forwards removes it; the padded positions only ever attend to
+        # themselves, so the result is unchanged.
+        #
+        # It trades tokens for kernel launches, which wins where compute is the
+        # bottleneck and loses where launch latency is. Default follows the
+        # device unless ``split_cfg_batch`` says otherwise.
+        split_cfg = gen_config.split_cfg_batch
+        if split_cfg is None:
+            split_cfg = self.device.type != "cuda"
+
+        max_u_len = max(task.target_lens) if split_cfg else max_c_len
+
+        cond_input_ids = torch.full(
+            (B, self.config.num_audio_codebook, max_c_len),
             pad_id,
             dtype=torch.long,
             device=self.device,
         )
-        batch_audio_mask = torch.zeros(
-            (2 * B, max_c_len), dtype=torch.bool, device=self.device
+        cond_audio_mask = torch.zeros(
+            (B, max_c_len), dtype=torch.bool, device=self.device
         )
-        batch_attention_mask = torch.zeros(
-            (2 * B, 1, max_c_len, max_c_len), dtype=torch.bool, device=self.device
+        cond_attention_mask = torch.zeros(
+            (B, 1, max_c_len, max_c_len), dtype=torch.bool, device=self.device
+        )
+        uncond_input_ids = torch.full(
+            (B, self.config.num_audio_codebook, max_u_len),
+            pad_id,
+            dtype=torch.long,
+            device=self.device,
+        )
+        uncond_audio_mask = torch.zeros(
+            (B, max_u_len), dtype=torch.bool, device=self.device
+        )
+        uncond_attention_mask = torch.zeros(
+            (B, 1, max_u_len, max_u_len), dtype=torch.bool, device=self.device
         )
 
         for i, inp in enumerate(inputs_list):
             c_len, u_len = c_lens[i], task.target_lens[i]
 
-            # Cond (0 ~ B-1)
-            batch_input_ids[i, :, :c_len] = inp["input_ids"]
-            batch_audio_mask[i, :c_len] = inp["audio_mask"]
-            batch_attention_mask[i, :, :c_len, :c_len] = True
+            cond_input_ids[i, :, :c_len] = inp["input_ids"]
+            cond_audio_mask[i, :c_len] = inp["audio_mask"]
+            cond_attention_mask[i, :, :c_len, :c_len] = True
 
-            # Uncond (B ~ 2B-1)
-            batch_input_ids[B + i, :, :u_len] = inp["input_ids"][..., -u_len:]
-            batch_audio_mask[B + i, :u_len] = inp["audio_mask"][..., -u_len:]
-            batch_attention_mask[B + i, :, :u_len, :u_len] = True
-            if max_c_len > u_len:
-                pad_diag = torch.arange(u_len, max_c_len, device=self.device)
-                batch_attention_mask[B + i, :, pad_diag, pad_diag] = True
+            uncond_input_ids[i, :, :u_len] = inp["input_ids"][..., -u_len:]
+            uncond_audio_mask[i, :u_len] = inp["audio_mask"][..., -u_len:]
+            uncond_attention_mask[i, :, :u_len, :u_len] = True
+            if max_u_len > u_len:
+                pad_diag = torch.arange(u_len, max_u_len, device=self.device)
+                uncond_attention_mask[i, :, pad_diag, pad_diag] = True
 
         tokens = torch.full(
             (B, self.config.num_audio_codebook, max(task.target_lens)),
@@ -1382,11 +1409,27 @@ class OmniVoice(PreTrainedModel):
         ).view(1, -1, 1)
 
         for step in range(gen_config.num_step):
-            batch_logits = self(
-                input_ids=batch_input_ids,
-                audio_mask=batch_audio_mask,
-                attention_mask=batch_attention_mask,
-            ).logits.to(torch.float32)
+            if split_cfg:
+                cond_logits_all = self(
+                    input_ids=cond_input_ids,
+                    audio_mask=cond_audio_mask,
+                    attention_mask=cond_attention_mask,
+                ).logits.to(torch.float32)
+                uncond_logits_all = self(
+                    input_ids=uncond_input_ids,
+                    audio_mask=uncond_audio_mask,
+                    attention_mask=uncond_attention_mask,
+                ).logits.to(torch.float32)
+            else:
+                batch_logits = self(
+                    input_ids=torch.cat([cond_input_ids, uncond_input_ids], dim=0),
+                    audio_mask=torch.cat([cond_audio_mask, uncond_audio_mask], dim=0),
+                    attention_mask=torch.cat(
+                        [cond_attention_mask, uncond_attention_mask], dim=0
+                    ),
+                ).logits.to(torch.float32)
+                cond_logits_all = batch_logits[:B]
+                uncond_logits_all = batch_logits[B:]
 
             for i in range(B):
                 k = schedules[i][step]
@@ -1397,8 +1440,8 @@ class OmniVoice(PreTrainedModel):
 
                 # Extract real target Logits
                 # [1, C, T, V]
-                c_logits = batch_logits[i : i + 1, :, c_len - t_len : c_len, :]
-                u_logits = batch_logits[B + i : B + i + 1, :, :t_len, :]
+                c_logits = cond_logits_all[i : i + 1, :, c_len - t_len : c_len, :]
+                u_logits = uncond_logits_all[i : i + 1, :, :t_len, :]
 
                 pred_tokens, scores = self._predict_tokens_with_scoring(
                     c_logits, u_logits, gen_config
@@ -1421,8 +1464,8 @@ class OmniVoice(PreTrainedModel):
 
                 # Update individual slices into batched structure
                 tokens[i : i + 1, :, :t_len] = sample_tokens
-                batch_input_ids[i : i + 1, :, c_len - t_len : c_len] = sample_tokens
-                batch_input_ids[B + i : B + i + 1, :, :t_len] = sample_tokens
+                cond_input_ids[i : i + 1, :, c_len - t_len : c_len] = sample_tokens
+                uncond_input_ids[i : i + 1, :, :t_len] = sample_tokens
 
         return [tokens[i, :, : task.target_lens[i]] for i in range(B)]
 
