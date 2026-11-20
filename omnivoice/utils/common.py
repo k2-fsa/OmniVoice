@@ -18,6 +18,7 @@
 """Shared utility functions."""
 
 import argparse
+import math
 import random
 
 import numpy as np
@@ -41,6 +42,69 @@ def str2bool(v):
         return False
     else:
         raise argparse.ArgumentTypeError("Boolean value expected.")
+
+
+def nonnegative_int(value: str) -> int:
+    """Parse a non-negative integer for an argparse option."""
+    try:
+        parsed = int(value)
+    except (TypeError, ValueError) as exc:
+        raise argparse.ArgumentTypeError("Expected a non-negative integer.") from exc
+    if parsed < 0:
+        raise argparse.ArgumentTypeError("Expected a non-negative integer.")
+    return parsed
+
+
+def positive_int(value: str) -> int:
+    """Parse a strictly positive integer for an argparse option."""
+    try:
+        parsed = int(value)
+    except (TypeError, ValueError) as exc:
+        raise argparse.ArgumentTypeError("Expected a positive integer.") from exc
+    if parsed <= 0:
+        raise argparse.ArgumentTypeError("Expected a positive integer.")
+    return parsed
+
+
+def nonnegative_float(value: str) -> float:
+    """Parse a finite non-negative float for an argparse option."""
+    try:
+        parsed = float(value)
+    except (TypeError, ValueError) as exc:
+        raise argparse.ArgumentTypeError(
+            "Expected a finite non-negative number."
+        ) from exc
+    if not math.isfinite(parsed) or parsed < 0:
+        raise argparse.ArgumentTypeError("Expected a finite non-negative number.")
+    return parsed
+
+
+def positive_float(value: str) -> float:
+    """Parse a finite strictly positive float for an argparse option."""
+    try:
+        parsed = float(value)
+    except (TypeError, ValueError) as exc:
+        raise argparse.ArgumentTypeError(
+            "Expected a finite number greater than zero."
+        ) from exc
+    if not math.isfinite(parsed) or parsed <= 0:
+        raise argparse.ArgumentTypeError("Expected a finite number greater than zero.")
+    return parsed
+
+
+def positive_unit_float(value: str) -> float:
+    """Parse a finite float in the interval ``(0, 1]``."""
+    try:
+        parsed = float(value)
+    except (TypeError, ValueError) as exc:
+        raise argparse.ArgumentTypeError(
+            "Expected a finite number greater than zero and at most one."
+        ) from exc
+    if not math.isfinite(parsed) or parsed <= 0 or parsed > 1:
+        raise argparse.ArgumentTypeError(
+            "Expected a finite number greater than zero and at most one."
+        )
+    return parsed
 
 
 def get_best_device():
