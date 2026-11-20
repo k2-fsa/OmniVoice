@@ -26,6 +26,7 @@ Usage:
     apply_flashinfer(model, enable_cuda_graph=True)
 """
 
+import logging
 import math
 import time
 from types import MethodType
@@ -42,6 +43,8 @@ from omnivoice.models.omnivoice import (
     _get_time_steps,
     _gumbel_sample,
 )
+
+logger = logging.getLogger(__name__)
 
 _WORKSPACE_SIZE = 128 * 1024 * 1024
 # Context read by the registered attention function. "wrapper" must be planned
@@ -87,6 +90,148 @@ def _patch_rmsnorm(llm):
             module.forward = MethodType(_fi_rmsnorm_forward, module)
             n += 1
     return n
+
+
+def _fi_fused_model_forward(
+    self,
+    input_ids=None,
+    attention_mask=None,
+    position_ids=None,
+    past_key_values=None,
+    inputs_embeds=None,
+    use_cache: bool | None = None,
+    **kwargs,
+):
+    from transformers.modeling_outputs import BaseModelOutputWithPast
+
+    if (input_ids is None) ^ (inputs_embeds is not None):
+        raise ValueError("You must specify exactly one of input_ids or inputs_embeds")
+    if inputs_embeds is None:
+        inputs_embeds = self.embed_tokens(input_ids)
+    if use_cache is None:
+        use_cache = self.config.use_cache
+    if use_cache and past_key_values is None:
+        from transformers.cache_utils import DynamicCache
+
+        past_key_values = DynamicCache(config=self.config)
+    if position_ids is None:
+        past_seen_tokens = (
+            past_key_values.get_seq_length() if past_key_values is not None else 0
+        )
+        position_ids = (
+            torch.arange(inputs_embeds.shape[1], device=inputs_embeds.device)
+            + past_seen_tokens
+        )
+        position_ids = position_ids.unsqueeze(0)
+
+    if not isinstance(causal_mask_mapping := attention_mask, dict):
+        from transformers.masking_utils import create_causal_mask
+
+        mask_kwargs = {
+            "config": self.config,
+            "inputs_embeds": inputs_embeds,
+            "attention_mask": attention_mask,
+            "past_key_values": past_key_values,
+            "position_ids": position_ids,
+        }
+        causal_mask_mapping = {
+            "full_attention": create_causal_mask(**mask_kwargs),
+        }
+        if self.has_sliding_layers:
+            from transformers.masking_utils import create_sliding_window_causal_mask
+
+            causal_mask_mapping["sliding_attention"] = (
+                create_sliding_window_causal_mask(**mask_kwargs)
+            )
+
+    layers = self.layers[: self.config.num_hidden_layers]
+    hidden_states = inputs_embeds
+    position_embeddings = self.rotary_emb(hidden_states, position_ids)
+
+    bsz, seq, hidden = hidden_states.shape
+    if bsz != 1:
+        raise ValueError(
+            f"_fi_fused_model_forward expects batch=1 (packed) input, got batch={bsz}"
+        )
+    hidden2d = hidden_states.view(seq, hidden)
+    residual = hidden2d.clone()
+
+    num_layers = len(layers)
+
+    # Layer 0: plain rmsnorm (no preceding add to fuse with)
+    normed = flashinfer.norm.rmsnorm(
+        residual,
+        layers[0].input_layernorm.weight,
+        eps=layers[0].input_layernorm.variance_epsilon,
+    )
+
+    for i, layer in enumerate(layers):
+        # normed is ready for this layer's attention (either from layer 0's
+        # standalone rmsnorm above, or from the previous iteration's
+        # fused_add_rmsnorm of mlp_out + this layer's input_layernorm)
+        if isinstance(causal_mask_mapping, dict):
+            attn_mask = causal_mask_mapping[self.config.layer_types[i]]
+        else:
+            attn_mask = causal_mask_mapping
+        attn_out, _ = layer.self_attn(
+            hidden_states=normed.unsqueeze(0),
+            position_embeddings=position_embeddings,
+            attention_mask=attn_mask,
+            past_key_values=past_key_values,
+            use_cache=use_cache,
+            position_ids=position_ids,
+            **kwargs,
+        )
+        attn_out = attn_out.view(seq, hidden)
+
+        # Fusion point 1: attn_out + residual, then post_attention_layernorm
+        # In-place: residual += attn_out; attn_out = rmsnorm(residual) * weight
+        flashinfer.norm.fused_add_rmsnorm(
+            attn_out,
+            residual,
+            layer.post_attention_layernorm.weight,
+            layer.post_attention_layernorm.variance_epsilon,
+        )
+        # attn_out now holds the normed value ready for MLP
+
+        mlp_out = layer.mlp(attn_out.unsqueeze(0)).view(seq, hidden)
+
+        # Fusion point 2: mlp_out + residual, then next layer's input_layernorm
+        if i < num_layers - 1:
+            flashinfer.norm.fused_add_rmsnorm(
+                mlp_out,
+                residual,
+                layers[i + 1].input_layernorm.weight,
+                layers[i + 1].input_layernorm.variance_epsilon,
+            )
+            # mlp_out was overwritten in-place with the normed output
+            normed = mlp_out
+        else:
+            # Last layer: fuse with final model.norm
+            flashinfer.norm.fused_add_rmsnorm(
+                mlp_out,
+                residual,
+                self.norm.weight,
+                self.norm.variance_epsilon,
+            )
+            normed = mlp_out
+
+    return BaseModelOutputWithPast(
+        last_hidden_state=normed.view(bsz, seq, hidden),
+        past_key_values=past_key_values if use_cache else None,
+    )
+
+
+def _patch_fused_residual(llm):
+    llm.forward = MethodType(_fi_fused_model_forward, llm)
+
+
+def _patch_residual_rmsnorm(llm):
+    """New flow: fused residual+RMSNorm model forward on top of the
+    per-module rmsnorm patch. Overrides the plain ``_patch_rmsnorm``
+    arrangement when both are enabled (see ``apply_flashinfer``)."""
+    _patch_rmsnorm(llm)
+    _patch_fused_residual(llm)
 
 
 def _fi_attention_module_forward(
@@ -627,10 +772,34 @@ def apply_flashinfer(
     fuse_attention: bool = True,
     cuda_graph_buckets=None,
     overhead_budget: int = 512,
+    *,
+    fuse_residual_rmsnorm: bool = True,
 ):
-    """Patch an OmniVoice instance to use flashinfer packed attention."""
+    """Patch an OmniVoice instance to use flashinfer packed attention.
+
+    Patching flows:
+      - ``fuse_rmsnorm=True``: every Qwen3RMSNorm is replaced
+        by the single-kernel flashinfer rmsnorm; residual adds stay stock.
+      - ``fuse_residual_rmsnorm=True``: additionally rewrites the
+        model forward so per-layer residual adds and the following RMSNorms
+        are fused via ``flashinfer.norm.fused_add_rmsnorm``.
+    """
     model.llm.set_attn_implementation("omnivoice_fi")
-    if fuse_rmsnorm:
+    if fuse_residual_rmsnorm and not fuse_rmsnorm:
+        logger.info(
+            "fuse_residual_rmsnorm enabled: enabling fuse_rmsnorm automatically"
+        )
+        fuse_rmsnorm = True
+
+    if fuse_residual_rmsnorm:
+        logger.info(
+            "fuse_residual_rmsnorm enabled: using fused residual+RMSNorm model forward"
+        )
+        _patch_residual_rmsnorm(model.llm)
+    elif fuse_rmsnorm:
+        # Original flow: per-module flashinfer rmsnorm only, stock residual
+        # adds in the decoder layer.
+        logger.info("fuse_rmsnorm enabled: using plain flashinfer rmsnorm patch")
         _patch_rmsnorm(model.llm)
     if fuse_attention:
         _patch_attention_forward(model.llm)
