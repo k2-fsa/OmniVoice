@@ -726,6 +726,7 @@ class OmniVoice(PreTrainedModel):
 
         return generated_audios
 
+    @torch.inference_mode()
     def create_voice_clone_prompt(
         self,
         ref_audio: Union[str, tuple[torch.Tensor, int]],
