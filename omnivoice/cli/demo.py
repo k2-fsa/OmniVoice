@@ -25,6 +25,10 @@ Usage:
 
 import argparse
 import logging
+import os
+import tempfile
+import shutil
+import atexit
 from typing import Any, Dict
 
 import gradio as gr
@@ -32,6 +36,7 @@ import numpy as np
 import torch
 
 from omnivoice import OmniVoice, OmniVoiceGenerationConfig
+from omnivoice.utils.audio import save_audio
 from omnivoice.utils.common import get_best_device
 from omnivoice.utils.lang_map import LANG_NAMES, lang_display_name
 
@@ -153,7 +158,7 @@ def build_demo(
     model: OmniVoice,
     checkpoint: str,
     generate_fn=None,
-) -> gr.Blocks:
+) -> tuple[gr.Blocks, Any, str]:
     sampling_rate = model.sampling_rate
 
     # -- shared generation core --
@@ -169,6 +174,7 @@ def build_demo(
         duration,
         preprocess_prompt,
         postprocess_output,
+        output_format,
         mode,
         ref_text=None,
     ):
@@ -210,8 +216,67 @@ def build_demo(
         except Exception as e:
             return None, f"Error: {type(e).__name__}: {e}"
 
-        waveform = (audio[0] * 32767).astype(np.int16)
-        return (sampling_rate, waveform), "Done."
+        if output_format == "mp3":
+            # Prefer Gradio's managed cache directory when available; fall
+            # back to system tempdir. Attempt to register the cache for
+            # cleanup with Gradio when possible, otherwise register an atexit
+            # cleanup that removes our cache subdirectory.
+            cache_dir = None
+            # Try common Gradio helpers
+            try:
+                if hasattr(gr, "get_cache_dir"):
+                    cache_dir = gr.get_cache_dir()
+                elif hasattr(gr, "utils") and hasattr(gr.utils, "get_cache_dir"):
+                    cache_dir = gr.utils.get_cache_dir()
+            except Exception:
+                cache_dir = None
+
+            if not cache_dir:
+                cache_dir = tempfile.gettempdir()
+
+            demo_cache = os.path.join(cache_dir, "omnivoice_demo_cache")
+            os.makedirs(demo_cache, exist_ok=True)
+
+            # Best-effort: let Gradio manage cache cleanup if it exposes a
+            # delete_cache-like API; otherwise register atexit cleanup.
+            _registered_with_gradio = False
+            try:
+                if hasattr(gr, "delete_cache") and callable(gr.delete_cache):
+                    try:
+                        gr.delete_cache(demo_cache)
+                        _registered_with_gradio = True
+                    except Exception:
+                        _registered_with_gradio = False
+            except Exception:
+                _registered_with_gradio = False
+
+            if not _registered_with_gradio:
+
+                def _cleanup_dir(path=demo_cache):
+                    try:
+                        shutil.rmtree(path)
+                    except Exception:
+                        pass
+
+                atexit.register(_cleanup_dir)
+
+            tmp = tempfile.NamedTemporaryFile(
+                suffix=".mp3", delete=False, dir=demo_cache
+            )
+            tmp.close()
+            try:
+                save_audio(audio[0], tmp.name, sampling_rate)
+            except Exception:
+                try:
+                    os.unlink(tmp.name)
+                except OSError:
+                    pass
+                return None, "Failed to encode MP3."
+            return tmp.name, "Done. (MP3)"
+        else:
+            # WAV: return numpy tuple (Gradio's default, plays in browser).
+            waveform = (audio[0] * 32767).astype(np.int16)
+            return (sampling_rate, waveform), "Done."
 
     # Allow external wrappers (e.g. spaces.GPU for ZeroGPU Spaces)
     _gen = generate_fn if generate_fn is not None else _gen_core
@@ -293,19 +358,19 @@ def build_demo(
             )
         return ns, gs, dn, sp, du, pp, po
 
-    with gr.Blocks(theme=theme, css=css, title="OmniVoice Demo") as demo:
+    with gr.Blocks(title="OmniVoice Demo") as demo:
         gr.Markdown(
             """
-# OmniVoice Demo
-
-State-of-the-art text-to-speech model for **600+ languages**, supporting:
-
-- **Voice Clone** — Clone any voice from a reference audio
-- **Voice Design** — Create custom voices with speaker attributes
-
-Built with [OmniVoice](https://github.com/k2-fsa/OmniVoice)
-by Xiaomi AI Lab Next-gen Kaldi team.
-"""
+ # OmniVoice Demo
+ 
+ State-of-the-art text-to-speech model for **600+ languages**, supporting:
+ 
+ - **Voice Clone** — Clone any voice from a reference audio
+ - **Voice Design** — Create custom voices with speaker attributes
+ 
+ Built with [OmniVoice](https://github.com/k2-fsa/OmniVoice)
+ by Xiaomi AI Lab Next-gen Kaldi team.
+ """
         )
 
         with gr.Tabs():
@@ -331,7 +396,7 @@ by Xiaomi AI Lab Next-gen Kaldi team.
                             "</span>"
                         )
                         vc_ref_text = gr.Textbox(
-                            label=("Reference Text (optional) / 参考音频文本（可选）"),
+                            label=("Reference Text (optional) / 参考音频文本 (可选)"),
                             lines=2,
                             placeholder="Transcript of the reference audio. Leave empty"
                             " to auto-transcribe via ASR models.",
@@ -348,16 +413,33 @@ by Xiaomi AI Lab Next-gen Kaldi team.
                             vc_pp,
                             vc_po,
                         ) = _gen_settings()
+                        vc_format = gr.Dropdown(
+                            label="Output format / 输出格式",
+                            choices=["wav", "mp3"],
+                            value="wav",
+                            info="WAV (lossless) or MP3 128kbps (~3x smaller).",
+                        )
                         vc_btn = gr.Button("Generate / 生成", variant="primary")
                     with gr.Column(scale=1):
                         vc_audio = gr.Audio(
                             label="Output Audio / 合成结果",
-                            type="numpy",
                         )
                         vc_status = gr.Textbox(label="Status / 状态", lines=2)
 
                 def _clone_fn(
-                    text, lang, ref_aud, ref_text, instruct, ns, gs, dn, sp, du, pp, po
+                    text,
+                    lang,
+                    ref_aud,
+                    ref_text,
+                    instruct,
+                    ns,
+                    gs,
+                    dn,
+                    sp,
+                    du,
+                    pp,
+                    po,
+                    fmt,
                 ):
                     return _gen(
                         text,
@@ -371,6 +453,7 @@ by Xiaomi AI Lab Next-gen Kaldi team.
                         du,
                         pp,
                         po,
+                        fmt,
                         mode="clone",
                         ref_text=ref_text or None,
                     )
@@ -390,6 +473,7 @@ by Xiaomi AI Lab Next-gen Kaldi team.
                         vc_du,
                         vc_pp,
                         vc_po,
+                        vc_format,
                     ],
                     outputs=[vc_audio, vc_status],
                 )
@@ -428,6 +512,12 @@ by Xiaomi AI Lab Next-gen Kaldi team.
                             vd_pp,
                             vd_po,
                         ) = _gen_settings()
+                        vd_format = gr.Dropdown(
+                            label="Output format / 输出格式",
+                            choices=["wav", "mp3"],
+                            value="wav",
+                            info="WAV (lossless) or MP3 128kbps (~3x smaller).",
+                        )
                         vd_btn = gr.Button("Generate / 生成", variant="primary")
                     with gr.Column(scale=1):
                         vd_audio = gr.Audio(
@@ -458,7 +548,7 @@ by Xiaomi AI Lab Next-gen Kaldi team.
                             parts.append(v)
                     return ", ".join(parts)
 
-                def _design_fn(text, lang, ns, gs, dn, sp, du, pp, po, *groups):
+                def _design_fn(text, lang, ns, gs, dn, sp, du, pp, po, fmt, *groups):
                     return _gen(
                         text,
                         lang,
@@ -471,6 +561,7 @@ by Xiaomi AI Lab Next-gen Kaldi team.
                         du,
                         pp,
                         po,
+                        fmt,
                         mode="design",
                     )
 
@@ -486,12 +577,13 @@ by Xiaomi AI Lab Next-gen Kaldi team.
                         vd_du,
                         vd_pp,
                         vd_po,
+                        vd_format,
                     ]
                     + vd_groups,
                     outputs=[vd_audio, vd_status],
                 )
 
-    return demo
+    return demo, theme, css
 
 
 # ---------------------------------------------------------------------------
@@ -523,9 +615,11 @@ def main(argv=None) -> int:
     )
     print("Model loaded.")
 
-    demo = build_demo(model, checkpoint)
+    demo, theme, css = build_demo(model, checkpoint)
 
     demo.queue().launch(
+        theme=theme,
+        css=css,
         server_name=args.ip,
         server_port=args.port,
         share=args.share,

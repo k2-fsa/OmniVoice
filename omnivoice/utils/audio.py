@@ -26,6 +26,7 @@ with shape ``(C, T)`` (channels-first).
 
 import io
 import logging
+from pathlib import Path
 
 import numpy as np
 import soundfile as sf
@@ -296,6 +297,76 @@ def trim_long_audio(
 
     trimmed = seg[:best_split]
     return audiosegment_to_numpy(trimmed)
+
+
+def save_audio(audio: np.ndarray, save_path: str, sample_rate: int) -> None:
+    """Save a waveform to disk as WAV or MP3.
+
+    Parameters:
+        audio: numpy array of shape (C, T) with dtype float32 in [-1, 1].
+        save_path: destination file path.  Extension determines the format:
+            ``.wav`` → WAV (16-bit PCM), ``.mp3`` → MP3 (128 kbps).
+        sample_rate: sample rate in Hz (e.g. 24000).
+
+    Raises:
+        ValueError: if the file extension is not recognised.
+    """
+    ext = Path(save_path).suffix.lower()
+
+    # Accept either (T,) or (C, T) — normalize to (C, T).
+    arr = np.asarray(audio)
+    if arr.ndim == 1:
+        arr = arr[np.newaxis, :]
+    elif arr.ndim == 2:
+        pass
+    else:
+        raise ValueError("Audio must be a 1-D or 2-D numpy array (T,) or (C, T).")
+
+    if ext == ".wav":
+        # soundfile expects shape (T, C) or (T,) — transpose channels-first.
+        sf.write(save_path, arr.T, sample_rate)
+        return
+
+    if ext == ".mp3":
+        # Import pydub here and surface a clear RuntimeError if pydub or
+        # ffmpeg are not available. Preserve the original exception as the
+        # cause so callers can inspect the underlying failure.
+        try:
+            from pydub import AudioSegment  # re-import locally to be explicit
+        except Exception as e:
+            raise RuntimeError(
+                "pydub/ffmpeg required to export MP3. Install pydub and ensure ffmpeg is available on PATH."
+            ) from e
+
+        # Convert to 16-bit PCM and interleave channels for pydub.
+        audio_int = (arr * 32768.0).clip(-32768, 32767).astype(np.int16)
+        if audio_int.shape[0] > 1:
+            interleaved = audio_int.T.flatten()
+        else:
+            interleaved = audio_int[0]
+
+        channels = int(arr.shape[0])
+        try:
+            segment = AudioSegment(
+                data=interleaved.tobytes(),
+                sample_width=2,
+                frame_rate=sample_rate,
+                channels=channels,
+            )
+            # Export may invoke ffmpeg and raise FileNotFoundError if ffmpeg is missing.
+            segment.export(save_path, format="mp3", bitrate="128k")
+        except FileNotFoundError as e:
+            # ffmpeg binary not found — present a clear RuntimeError and
+            # keep the original exception as the cause.
+            raise RuntimeError(
+                "pydub/ffmpeg required to export MP3. Install pydub and ensure ffmpeg is available on PATH."
+            ) from e
+        except Exception as e:  # pragma: no cover - unexpected export failure
+            # Wrap other export errors to preserve caller expectations.
+            raise RuntimeError("MP3 export failed.") from e
+        return
+
+    raise ValueError(f"Unsupported output format '{ext}'. Use '.wav' or '.mp3'.")
 
 
 def cross_fade_chunks(
