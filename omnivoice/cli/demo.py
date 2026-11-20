@@ -517,7 +517,7 @@ def main(argv=None) -> int:
     model = OmniVoice.from_pretrained(
         checkpoint,
         device_map=device,
-        dtype=torch.float16,
+        dtype=torch.float32 if str(device) == "cpu" else torch.float16,
         load_asr=not args.no_asr,
         asr_model_name=args.asr_model,
     )

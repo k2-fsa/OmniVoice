@@ -127,7 +127,9 @@ def main():
     device = args.device or get_best_device()
     logging.info(f"Loading model from {args.model} on {device} ...")
     model = OmniVoice.from_pretrained(
-        args.model, device_map=device, dtype=torch.float16
+        args.model,
+        device_map=device,
+        dtype=torch.float32 if str(device) == "cpu" else torch.float16,
     )
 
     if args.lora_adapter:
