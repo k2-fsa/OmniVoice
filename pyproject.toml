@@ -52,6 +52,7 @@ tn = [
 
 eval = [
     "jiwer==3.1.0",       # WER
+    "komos==0.0.2",       # Korean predicted MOS
     "s3prl",               # Speech representation (HuBERT etc.)
     "funasr",              # ASR models
     "zhconv",              # Chinese character normalization
