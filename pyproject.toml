@@ -45,6 +45,10 @@ dependencies = [
 
 [project.optional-dependencies]
 
+asr = [
+    "faster-whisper",
+]
+
 tn = [
     "WeTextProcessing",   # zh/en text normalization (numbers, dates, currency)
     "num2words",           # integer-to-words fallback for other languages

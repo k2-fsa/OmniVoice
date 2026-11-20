@@ -199,10 +199,44 @@ def get_parser():
         help="Language id to use when test_list JSONL entries do not contain "
         "a language_id field.",
     )
+    parser.add_argument(
+        "--transcriber",
+        type=str,
+        default="whisper",
+        choices=["whisper", "faster-whisper"],
+        help="ASR backend used when ref_text is omitted.",
+    )
+    parser.add_argument(
+        "--asr-model",
+        type=str,
+        default=None,
+        help="ASR model name or local path. Defaults depend on --transcriber.",
+    )
+    parser.add_argument(
+        "--asr-language",
+        type=str,
+        default=None,
+        help="Optional ASR language tag/code for reference transcription.",
+    )
+    parser.add_argument(
+        "--asr-beam-size",
+        type=int,
+        default=None,
+        help="Optional ASR beam size for reference transcription.",
+    )
     return parser
 
 
-def process_init(rank_queue, model_checkpoint, warmup=0, enable_flashinfer=False):
+def process_init(
+    rank_queue,
+    model_checkpoint,
+    warmup=0,
+    enable_flashinfer=False,
+    transcriber="whisper",
+    asr_model_name=None,
+    asr_language=None,
+    asr_beam_size=None,
+):
     """Initializer for each worker process.
 
     Loads model (with tokenizers and duration estimator) onto a specific GPU
@@ -234,6 +268,10 @@ def process_init(rank_queue, model_checkpoint, warmup=0, enable_flashinfer=False
         model_checkpoint,
         device_map=worker_device,
         dtype=torch.float16,
+        transcriber=transcriber,
+        asr_model_name=asr_model_name,
+        asr_language=asr_language,
+        asr_beam_size=asr_beam_size,
     )
 
     # Opt-in flashinfer acceleration. Applied here because workers are
@@ -483,7 +521,16 @@ def main():
         with ProcessPoolExecutor(
             max_workers=num_processes,
             initializer=process_init,
-            initargs=(rank_queue, args.model, args.warmup, args.enable_flashinfer),
+            initargs=(
+                rank_queue,
+                args.model,
+                args.warmup,
+                args.enable_flashinfer,
+                args.transcriber,
+                args.asr_model,
+                args.asr_language,
+                args.asr_beam_size,
+            ),
         ) as executor:
             futures = []
 
