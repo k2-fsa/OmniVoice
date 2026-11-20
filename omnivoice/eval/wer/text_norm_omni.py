@@ -15,7 +15,7 @@ import unicodedata
 
 from unidecode import unidecode
 
-import omnivoice.eval.wer.norm_config_module as norm_config_module
+from omnivoice.eval.wer import norm_config_module
 
 norm_config = norm_config_module.norm_config  # type: ignore
 
