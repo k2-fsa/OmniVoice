@@ -61,3 +61,6 @@ If you have a project you'd like to add, please open a PR.
 
 - **[LocalText2Voice](https://github.com/estebanstifli/LocalText2Voice)** —
   User-friendly Windows desktop pipeline for long-form audiobook and podcast production with OmniVoice support, voice-library management, chapter-aware generation, Whisper-based segment review and retries, multi-voice markup, music/SFX mixing, and MCP automation.
+
+- **[Murmur](https://www.murmurtts.com)**:
+  Offline text-to-speech app for Mac that runs OmniVoice locally alongside Kokoro, Qwen3-TTS and other models, with voice cloning, voice design, multi-speaker projects and batch export. Closed source, with a free plan.
