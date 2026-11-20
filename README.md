@@ -35,6 +35,8 @@ OmniVoice is a state-of-the-art massively multilingual zero-shot text-to-speech 
 
 Choose **one** of the following methods: **pip** or **uv**.
 
+Importing `omnivoice` and using its file/bytes audio helpers do not require `torchaudio`; resampling uses the existing `librosa` dependency. Accessing the top-level model classes currently requires `torchaudio` through the Transformers Higgs audio-tokenizer. Install the optional `audio-tools` extra (`pip install 'omnivoice[audio-tools]'`) for model loading and for data-preparation, denoising, and evaluation scripts.
+
 ### pip
 
 > We recommend using a fresh virtual environment (e.g., `conda`, `venv`, etc.) to avoid conflicts.
