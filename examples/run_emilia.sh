@@ -27,7 +27,7 @@ MANIFEST_DIR="data/emilia/manifests"
 TOKEN_DIR="data/emilia/tokens"
 
 # Audio tokenizer model (HuggingFace repo or local path)
-TOKENIZER_PATH="eustlb/higgs-audio-v2-tokenizer"
+TOKENIZER_PATH="bosonai/higgs-audio-v2-tokenizer"
 
 # Training config file
 TRAIN_CONFIG="config/train_config_emilia.json"
