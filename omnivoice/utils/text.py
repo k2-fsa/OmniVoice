@@ -138,7 +138,7 @@ def chunk_text_punctuation(
 
     tokens_list = list(text)
 
-    for token in tokens_list:
+    for i, token in enumerate(tokens_list):
         # If the first token of current sentence is punctuation,
         # append it to the end of the previous sentence.
         if (
@@ -162,7 +162,15 @@ def chunk_text_punctuation(
                         if last_word in ABBREVIATIONS:
                             is_abbreviation = True
 
-                if not is_abbreviation:
+                # Do not split inside numbers such as 12.5, 3,400 or 10:30.
+                is_number_separator = (
+                    token in ".,:"
+                    and 0 < i < len(tokens_list) - 1
+                    and tokens_list[i - 1].isdigit()
+                    and tokens_list[i + 1].isdigit()
+                )
+
+                if not is_abbreviation and not is_number_separator:
                     sentences.append(current_sentence)
                     current_sentence = []
     # Assume the last few tokens are also a sentence
