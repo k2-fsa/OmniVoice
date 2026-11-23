@@ -148,9 +148,7 @@ import soundfile as sf
 import torch
 
 model = OmniVoice.from_pretrained(
-    "k2-fsa/OmniVoice",
-    device_map="cuda:0",
-    dtype=torch.float16
+    "k2-fsa/OmniVoice", device_map="cuda:0", dtype=torch.float16
 )
 # Apple Silicon users: use device_map="mps" instead
 # Intel Arc GPU users: use device_map="xpu" instead
@@ -159,7 +157,7 @@ audio = model.generate(
     text="Hello, this is a test of zero-shot voice cloning.",
     ref_audio="ref.wav",
     ref_text="Transcription of the reference audio.",
-) # audio is a list of `np.ndarray` with shape (T,) at 24 kHz.
+)  # audio is a list of `np.ndarray` with shape (T,) at 24 kHz.
 
 # If you don't want to input `ref_text` manually, you can directly omit the `ref_text`.
 # The model will use Whisper ASR to auto-transcribe it. To use a local copy (or
@@ -239,8 +237,8 @@ All above three modes share the same `model.generate()` API. You can further con
 audio = model.generate(
     text="...",
     num_step=32,  # diffusion steps (or 16 for faster inference)
-    speed=1.0,     # speed factor (>1.0 faster, <1.0 slower)
-    duration=10.0, # fixed output duration in seconds (overrides speed)
+    speed=1.0,  # speed factor (>1.0 faster, <1.0 slower)
+    duration=10.0,  # fixed output duration in seconds (overrides speed)
     # ... more options
 )
 ```
@@ -253,7 +251,9 @@ OmniVoice supports inline **non-verbal symbols** and **pronunciation correction*
 **Non-verbal symbols**: Insert tags like `[laughter]` directly in the text to add expressive non-verbal sounds.
 
 ```python
-audio = model.generate(text="[laughter] You really got me. I didn't see that coming at all.")
+audio = model.generate(
+    text="[laughter] You really got me. I didn't see that coming at all."
+)
 ```
 
 Supported tags: `[laughter]`, `[sigh]`, `[confirmation-en]`, `[question-en]`, `[question-ah]`, `[question-oh]`, `[question-ei]`, `[question-yi]`, `[surprise-ah]`, `[surprise-oh]`, `[surprise-wa]`, `[surprise-yo]`, `[dissatisfaction-hnn]`.
@@ -267,7 +267,9 @@ audio = model.generate(text="这批货物打ZHE2出售后他严重SHE2本了，�
 **Pronunciation control (English)**: Use [CMU pronunciation dictionary](https://svn.code.sf.net/p/cmusphinx/code/trunk/cmudict/cmudict.0.7a)  (uppercase, in brackets) to override default English pronunciations.
 
 ```python
-audio = model.generate(text="He plays the [B EY1 S] guitar while catching a [B AE1 S] fish.")
+audio = model.generate(
+    text="He plays the [B EY1 S] guitar while catching a [B AE1 S] fish."
+)
 ```
 
 ---
@@ -361,8 +363,10 @@ or with the Python API:
 ```python
 from omnivoice.models.omnivoice_flashinfer import apply_flashinfer
 
-model = OmniVoice.from_pretrained("k2-fsa/OmniVoice", device_map="cuda", dtype=torch.float16)
-apply_flashinfer(model)                          # throughput / batched inference
+model = OmniVoice.from_pretrained(
+    "k2-fsa/OmniVoice", device_map="cuda", dtype=torch.float16
+)
+apply_flashinfer(model)  # throughput / batched inference
 apply_flashinfer(model, enable_cuda_graph=True)  # recommended for batch=1 (low latency)
 ```
 
