@@ -22,9 +22,8 @@ Usage:
 import argparse
 import logging
 
-import torch
-
 import soundfile as sf
+import torch
 
 from omnivoice.models.omnivoice import OmniVoice
 from omnivoice.utils.common import get_best_device, str2bool
