@@ -28,15 +28,19 @@ from typing import Union
 ONES = ["không", "một", "hai", "ba", "bốn", "năm", "sáu", "bảy", "tám", "chín"]
 
 # Precomposed characters exclusive to Vietnamese orthography (excludes characters
-# shared with French/Spanish/German/Portuguese/Romanian/Croatian/Pinyin such as
-# bare é, à, â, ô, ă, đ, or caron tones ǎ/ǐ/ǒ/ǔ).
+# shared with French/Spanish/German/Portuguese/Romanian/Croatian/Yoruba/Igbo/Pinyin
+# such as bare é, à, â, ô, ă, đ, bare underdots ạ/ẹ/ị/ọ/ụ/ỵ, or carons ǎ/ǐ/ǒ/ǔ).
 VI_SPECIFIC_CHAR_RE = re.compile(
-    r"[ắằẳẵặấầẩẫậếềểễệốồổỗộơớờởỡợưứừửữựảẻỉỏủỷạẹịọụỵỹ]",
+    r"[ắằẳẵặấầẩẫậếềểễệốồổỗộơớờởỡợưứừửữựảẻỉỏủỷỹ]",
+    re.IGNORECASE,
+)
+_VI_D_WITH_ACCENT_RE = re.compile(
+    r"(?=.*[đĐ])(?=.*[àáâãèéêìíòóôõùúýăạẹịọụ])",
     re.IGNORECASE,
 )
 
 _ROMAN_VALS = {"I": 1, "V": 5, "X": 10, "L": 50, "C": 100}
-_VALID_ROMAN_RE = re.compile(r"^(?:X{0,3})(?:IX|IV|V?I{0,3})$")
+_VALID_ROMAN_RE = re.compile(r"^(?:XL|L?X{0,3})(?:IX|IV|V?I{0,3})$")
 
 _RES_MAP = {
     "360": "ba sáu mươi",
@@ -50,7 +54,9 @@ _RES_MAP = {
 
 def has_vietnamese_diacritics(text: str) -> bool:
     """Return True if ``text`` contains precomposed characters specific to Vietnamese."""
-    return bool(text and VI_SPECIFIC_CHAR_RE.search(text))
+    if not text:
+        return False
+    return bool(VI_SPECIFIC_CHAR_RE.search(text) or _VI_D_WITH_ACCENT_RE.search(text))
 
 
 def read_two_digits(val: int, has_hundred: bool = False) -> str:
@@ -100,6 +106,24 @@ def read_three_digits(val: int, is_highest: bool = False) -> str:
     return " ".join(res)
 
 
+def _read_below_billion(val: int, has_higher: bool = False) -> str:
+    """Read an integer in 1..999_999_999, preserving 'không trăm' when preceded by a higher scale."""
+    units = ["", "nghìn", "triệu"]
+    groups = [val % 1000, (val // 1000) % 1000, (val // 1_000_000) % 1000]
+    words = []
+    seen_nonzero = has_higher
+    for i in (2, 1, 0):
+        g = groups[i]
+        if g == 0:
+            continue
+        is_highest = not seen_nonzero
+        seen_nonzero = True
+        g_words = read_three_digits(g, is_highest=is_highest)
+        unit = units[i]
+        words.append(f"{g_words} {unit}" if unit else g_words)
+    return " ".join(words).strip()
+
+
 def read_int(n: Union[int, str]) -> str:
     """Read an arbitrary-size integer into Vietnamese words."""
     try:
@@ -112,28 +136,14 @@ def read_int(n: Union[int, str]) -> str:
     if val < 0:
         return "âm " + read_int(-val)
 
-    units = ["", "nghìn", "triệu", "tỷ"]
-    groups = []
-    temp = val
-    while temp > 0:
-        groups.append(temp % 1000)
-        temp //= 1000
+    if val >= 1_000_000_000:
+        high, low = divmod(val, 1_000_000_000)
+        head = f"{read_int(high)} tỷ"
+        if low == 0:
+            return head
+        return f"{head} {_read_below_billion(low, has_higher=True)}"
 
-    words = []
-    for i in range(len(groups) - 1, -1, -1):
-        g = groups[i]
-        if g == 0:
-            continue
-        is_highest = i == len(groups) - 1
-        g_words = read_three_digits(g, is_highest=is_highest)
-        unit = units[i % 4]
-        ty_repeat = i // 4
-        suffix = (" " + unit if unit else "") + (
-            " tỷ" * ty_repeat if (i % 4 == 0 and ty_repeat > 0) else ""
-        )
-        words.append(g_words + suffix)
-
-    return " ".join(words).strip()
+    return _read_below_billion(val, has_higher=False)
 
 
 def read_digits_verbatim(digits_str: str) -> str:
@@ -234,7 +244,7 @@ def normalize_vietnamese_text(text: str) -> str:
         return f"{label} {read_int(val)}"
 
     s = re.sub(
-        r"(?<!\w)(quý|thế\s+kỷ|chương|phần|tập|mục|cấp|bậc|hạng|loại|vành\s+đai|khóa|lần\s+thứ|đại\s+hội)\s+([IVXL]{1,6})\b",
+        r"(?<!\w)(quý|thế\s+kỷ|chương|phần|tập|mục|cấp|bậc|hạng|loại|vành\s+đai|khóa|lần\s+thứ|đại\s+hội)\s+([IVXL]{1,8})\b",
         _repl_roman_ctx,
         s,
         flags=re.IGNORECASE,
@@ -291,10 +301,9 @@ def normalize_vietnamese_text(text: str) -> str:
         flags=re.IGNORECASE,
     )
 
-    # 3. Dates, 24/7, aspect ratios & clock times
-    s = re.sub(r"\b24\s*/\s*7\b", "hai mươi tư trên bảy", s)
-    s = re.sub(r"\b24\s*/\s*24\b", "hai mươi tư trên hai mươi tư", s)
-
+    # 3. Dates, 24/7 availability, aspect ratios & clock times
+    # Handle full dates and context-prefixed day/month BEFORE 24/7 so dates like
+    # "24/7/2026" and "ngày 24/7" are read as calendar dates rather than "24 trên 7".
     def _read_month_vi(mo: int) -> str:
         return "tư" if mo == 4 else read_int(mo)
 
@@ -341,6 +350,9 @@ def normalize_vietnamese_text(text: str) -> str:
         s,
         flags=re.IGNORECASE,
     )
+
+    s = re.sub(r"(?<![/\d])\b24\s*/\s*7\b(?![/\d])", "hai mươi tư trên bảy", s)
+    s = re.sub(r"(?<![/\d])\b24\s*/\s*24\b(?![/\d])", "hai mươi tư trên hai mươi tư", s)
 
     # Aspect ratios ('tỷ lệ 16:9') before HH:MM
     s = re.sub(
@@ -510,7 +522,7 @@ def normalize_vietnamese_text(text: str) -> str:
     s = re.sub(r"(?<=\d)\s*kW\b", " ki lô oát", s)
     s = re.sub(r"(?<=\d)\s*g\b", " gam", s)
     s = re.sub(r"(?<=\d)\s*[lL]\b", " lít", s)
-    s = re.sub(r"(?<=\d)m\b", " mét", s)
+    s = re.sub(r"(?<=\d)\s*m\b", " mét", s)
     s = re.sub(r"(?<=\d)\s*°\s*C\b", " độ xê", s, flags=re.IGNORECASE)
     s = re.sub(r"(?<=\d)\s*°\s*F\b", " độ ép", s, flags=re.IGNORECASE)
     s = re.sub(r"(?<=\d)\s*°(?![A-Za-z])", " độ", s)
@@ -519,12 +531,14 @@ def normalize_vietnamese_text(text: str) -> str:
     num_tok = r"\d(?:[\d.,]*\d)?"
     s = re.sub(rf"({num_tok})\s*%", r"\1 phần trăm", s)
 
+    def _normalize_intl_comma_thousands(num_s: str) -> str:
+        if re.fullmatch(r"\d{1,3}(?:,\d{3})+", num_s):
+            return num_s.replace(",", ".")
+        return num_s
+
     def _repl_usd_prefix(m: re.Match) -> str:
         sign = m.group(1) or ""
-        num_s = m.group(2)
-        if re.fullmatch(r"\d{1,3}(?:,\d{3})+", num_s):
-            num_s = num_s.replace(",", ".")
-        return f"{sign}{num_s} đô la"
+        return f"{sign}{_normalize_intl_comma_thousands(m.group(2))} đô la"
 
     s = re.sub(rf"([+-])?\$\s*({num_tok})", _repl_usd_prefix, s)
     s = re.sub(
@@ -538,15 +552,14 @@ def normalize_vietnamese_text(text: str) -> str:
         lambda m: f"{m.group(1) or ''}{m.group(2)} bảng Anh",
         s,
     )
-    s = re.sub(rf"({num_tok})\s*\$", r"\1 đô la", s)
+    s = re.sub(
+        rf"({num_tok})\s*\$",
+        lambda m: f"{_normalize_intl_comma_thousands(m.group(1))} đô la",
+        s,
+    )
     s = re.sub(
         rf"({num_tok})\s*USD\b",
-        lambda m: (
-            m.group(1).replace(",", ".")
-            if re.fullmatch(r"\d{1,3}(?:,\d{3})+", m.group(1))
-            else m.group(1)
-        )
-        + " đô la Mỹ",
+        lambda m: f"{_normalize_intl_comma_thousands(m.group(1))} đô la Mỹ",
         s,
         flags=re.IGNORECASE,
     )
@@ -604,6 +617,10 @@ def normalize_vietnamese_text(text: str) -> str:
     )
 
     # 8. Atomic signed & unsigned numeric forms
+    # Allow punctuation such as ':', ';', quotes, and brackets before complete numbers
+    # while excluding '.' and '/' so partial IP/version fragments are never matched.
+    left_bnd = r"(?:(?<=^)|(?<=[\s(\[{:;\"'“”‘’]))"
+
     def _repl_vn_mixed(m: re.Match) -> str:
         sign = _resolve_sign_prefix(m.group(1), s, m.start())
         int_w = read_int(int(m.group(2).replace(".", "")))
@@ -611,7 +628,7 @@ def normalize_vietnamese_text(text: str) -> str:
         return f"{sign}{int_w} phẩy {dec_w}"
 
     s = re.sub(
-        r"(?:(?<=^)|(?<=[\s(\[{]))([+-])?(\d{1,3}(?:\.\d{3})+),(\d+)\b",
+        rf"{left_bnd}([+-])?(\d{{1,3}}(?:\.\d{{3}})+),(\d+)\b",
         _repl_vn_mixed,
         s,
     )
@@ -623,7 +640,7 @@ def normalize_vietnamese_text(text: str) -> str:
         return f"{sign}{int_w} chấm {dec_w}"
 
     s = re.sub(
-        r"(?:(?<=^)|(?<=[\s(\[{]))([+-])?(\d{1,3}(?:,\d{3})+)\.(\d+)\b",
+        rf"{left_bnd}([+-])?(\d{{1,3}}(?:,\d{{3}})+)\.(\d+)\b",
         _repl_en_mixed,
         s,
     )
@@ -633,7 +650,7 @@ def normalize_vietnamese_text(text: str) -> str:
         return f"{sign}{read_int(int(m.group(2).replace(',', '')))}"
 
     s = re.sub(
-        r"(?:(?<=^)|(?<=[\s(\[{]))([+-])?(\d{1,3}(?:,\d{3}){2,})\b",
+        rf"{left_bnd}([+-])?(\d{{1,3}}(?:,\d{{3}}){{2,}})\b",
         _repl_en_thousands,
         s,
     )
@@ -643,7 +660,7 @@ def normalize_vietnamese_text(text: str) -> str:
         return f"{sign}{read_int(int(m.group(2).replace('.', '')))}"
 
     s = re.sub(
-        r"(?:(?<=^)|(?<=[\s(\[{]))([+-])?(\d{1,3}(?:\.\d{3})+)\b(?![.,]\d)",
+        rf"{left_bnd}([+-])?(\d{{1,3}}(?:\.\d{{3}})+)\b(?![.,]\d)",
         _repl_vn_thousands,
         s,
     )
@@ -655,7 +672,7 @@ def normalize_vietnamese_text(text: str) -> str:
         return f"{sign}{int_w} phẩy {dec_w}"
 
     s = re.sub(
-        r"(?:(?<=^)|(?<=[\s(\[{]))([+-])?(\d+),(\d+)\b",
+        rf"{left_bnd}([+-])?(\d+),(\d+)\b",
         _repl_comma_dec,
         s,
     )
@@ -667,7 +684,7 @@ def normalize_vietnamese_text(text: str) -> str:
         return f"{sign}{int_w} chấm {dec_w}"
 
     s = re.sub(
-        r"(?:(?<=^)|(?<=[\s(\[{]))([+-])?(\d+)\.(\d+)\b",
+        rf"{left_bnd}([+-])?(\d+)\.(\d+)\b",
         _repl_dot_dec,
         s,
     )
@@ -677,7 +694,7 @@ def normalize_vietnamese_text(text: str) -> str:
         sign = _resolve_sign_prefix(m.group(1), s, m.start())
         return f"{sign}{read_int(int(m.group(2)))}"
 
-    s = re.sub(r"(?:(?<=^)|(?<=[\s(\[{]))([+-])?(\d+)\b", _repl_signed_int, s)
+    s = re.sub(rf"{left_bnd}([+-])?(\d+)\b", _repl_signed_int, s)
 
     s = re.sub(r"\s+([,.;:!?])", r"\1", s)
     s = re.sub(r"\s+", " ", s).strip()

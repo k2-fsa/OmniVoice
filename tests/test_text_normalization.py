@@ -32,6 +32,10 @@ def test_vietnamese_integer_rules():
     assert read_int(105) == "một trăm lẻ năm"
     assert read_int(1005) == "một nghìn không trăm lẻ năm"
     assert read_int(1_000_050_000) == "một tỷ không trăm năm mươi nghìn"
+    assert read_int(1_000_000_000_000) == "một nghìn tỷ"
+    assert read_int(1_500_000_000_000) == "một nghìn năm trăm tỷ"
+    assert read_int(1_000_000_000_000_000) == "một triệu tỷ"
+    assert read_int(1_000_000_000_000_000_000) == "một tỷ tỷ"
 
 
 def test_mixed_thousands_decimals_and_signs():
@@ -132,6 +136,16 @@ def test_dates_times_roman_numerals_units_and_versions():
     assert normalize_vietnamese_text("Đội nhà thắng với tỷ số 2-1") == (
         "Đội nhà thắng với tỷ số hai một"
     )
+    # Regression checks for 24/7 dates, spaced metres, Roman XL, postfix 1,234$, and colon-prefixed numbers
+    assert normalize_text("Sự kiện ngày 24/7/2026 và ngày 24/7", language="vi") == (
+        "Sự kiện ngày hai mươi tư tháng bảy năm hai nghìn không trăm hai mươi sáu và ngày hai mươi tư tháng bảy"
+    )
+    assert normalize_text("Dài 5 m và rộng 3m", language="vi") == (
+        "Dài năm mét và rộng ba mét"
+    )
+    assert normalize_text("Chương XL gồm 1,234$ (Giá:100)", language="vi") == (
+        "Chương bốn mươi gồm một nghìn hai trăm ba mươi tư đô la (Giá:một trăm)"
+    )
 
 
 def test_inline_control_tags_and_english_loanwords_preserved():
@@ -160,6 +174,8 @@ def test_language_autodetection_for_vietnamese_without_false_positives():
         "São Paulo coração 2026",  # Portuguese
         "România școală 2026",  # Romanian (bare 'ă')
         "Đorđe Petrović 2026",  # Serbian/Croatian (bare 'Đ')
+        "Ọjọ́ 2026",  # Yoruba (underdotted 'ọ')
+        "Ụlọ 2026",  # Igbo (underdotted 'ụ', 'ọ')
         "nǐ hǎo běijīng 2026",  # Pinyin carons
     ):
         assert _resolve_lang_code(None, non_vi) == "en", f"False positive on: {non_vi}"
