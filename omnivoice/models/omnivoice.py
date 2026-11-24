@@ -638,7 +638,8 @@ class OmniVoice(PreTrainedModel):
                 converted to their spoken form, e.g. ``"2345"`` ->
                 ``"twenty three forty five"``). Default ``False`` (paper
                 reproducibility is unaffected). Chinese/English require the
-                optional ``omnivoice[tn]`` dependency (WeTextProcessing); other
+                optional ``omnivoice[tn]`` dependency (WeTextProcessing);
+                Vietnamese uses a built-in zero-dependency normalizer; other
                 languages use ``num2words`` for bare integers when installed.
                 Inline control syntax (``[laughter]``, ``[B EY1 S]``, pinyin
                 tone markers) is preserved. See :func:`omnivoice.utils.text.normalize_text`.
