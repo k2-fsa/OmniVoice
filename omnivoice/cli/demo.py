@@ -372,7 +372,11 @@ by Xiaomi AI Lab Next-gen Kaldi team.
                         pp,
                         po,
                         mode="clone",
-                        ref_text=ref_text or None,
+                        ref_text=(
+                            (ref_text.strip() or None)
+                            if isinstance(ref_text, str)
+                            else ref_text
+                        ),
                     )
 
                 vc_btn.click(

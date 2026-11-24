@@ -753,6 +753,11 @@ class OmniVoice(PreTrainedModel):
                 "with OmniVoice.from_pretrained()."
             )
 
+        # Treat empty or whitespace-only ref_text as omitted so long-audio
+        # trimming and ASR auto-transcription are not skipped.
+        if isinstance(ref_text, str):
+            ref_text = ref_text.strip() or None
+
         if isinstance(ref_audio, str):
             ref_wav = load_audio(ref_audio, self.sampling_rate)
         else:
@@ -1068,9 +1073,12 @@ class OmniVoice(PreTrainedModel):
             use_zh = bool(text_list[i] and _ZH_RE.search(text_list[i]))
             instruct_list[i] = _resolve_instruct(s, use_zh=use_zh)
 
-        if voice_clone_prompt is not None and (
-            ref_text is not None or ref_audio is not None
-        ):
+        has_ref_text = (
+            any(isinstance(t, str) and t.strip() for t in ref_text)
+            if isinstance(ref_text, list)
+            else (isinstance(ref_text, str) and bool(ref_text.strip()))
+        )
+        if voice_clone_prompt is not None and (has_ref_text or ref_audio is not None):
             logger.warning(
                 "Both voice_clone_prompt and ref_text/ref_audio are provided. "
                 "ref_text/ref_audio will be ignored."
@@ -1168,7 +1176,7 @@ class OmniVoice(PreTrainedModel):
 
     def _estimate_target_tokens(self, text, ref_text, num_ref_audio_tokens, speed=1.0):
         """Estimate number of target audio tokens."""
-        if num_ref_audio_tokens is None or ref_text is None or len(ref_text) == 0:
+        if num_ref_audio_tokens is None or ref_text is None or not ref_text.strip():
             # Fall back to a simple heuristic
             ref_text = "Nice to meet you."
             num_ref_audio_tokens = 25
@@ -1696,8 +1704,8 @@ def _tokenize_with_nonverbal_tags(text: str, tokenizer) -> torch.Tensor:
 
 
 def _combine_text(text, ref_text: Optional[str] = None) -> str:
-    # combine with reference text if not None
-    if ref_text:
+    # combine with reference text if non-empty
+    if ref_text and ref_text.strip():
         full_text = ref_text.strip() + " " + text.strip()
     else:
         full_text = text.strip()
