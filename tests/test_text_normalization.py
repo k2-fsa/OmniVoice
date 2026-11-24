@@ -146,6 +146,10 @@ def test_dates_times_roman_numerals_units_and_versions():
     assert normalize_text("Chương XL gồm 1,234$ (Giá:100)", language="vi") == (
         "Chương bốn mươi gồm một nghìn hai trăm ba mươi tư đô la (Giá:một trăm)"
     )
+    assert normalize_text("Giá:1.500đ", language="vi") == "Giá:một nghìn năm trăm đồng"
+    # Structured dotted tokens not matched by IPv4/semver must not be partially rewritten
+    assert normalize_text("IP:192.168.100.01", language="vi") == "IP:192.168.100.01"
+    assert normalize_text("Phiên bản:2026.1.2", language="vi") == "Phiên bản:2026.1.2"
 
 
 def test_inline_control_tags_and_english_loanwords_preserved():

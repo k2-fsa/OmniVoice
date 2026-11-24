@@ -42,6 +42,31 @@ _VI_D_WITH_ACCENT_RE = re.compile(
 _ROMAN_VALS = {"I": 1, "V": 5, "X": 10, "L": 50, "C": 100}
 _VALID_ROMAN_RE = re.compile(r"^(?:XL|L?X{0,3})(?:IX|IV|V?I{0,3})$")
 
+# Pre-compiled atomic numeric patterns requiring complete-token boundaries on both sides
+# (allows ':', ';', quotes, and brackets on the left while blocking partial matches inside
+# dotted/comma-chained structured tokens such as leading-zero IPs or CalVer strings).
+_VN_MIXED_RE = re.compile(
+    r"(?:(?<=^)|(?<=[\s(\[{:;\"'“”‘’]))([+-])?(\d{1,3}(?:\.\d{3})+),(\d+)\b(?![.,]\d)"
+)
+_EN_MIXED_RE = re.compile(
+    r"(?:(?<=^)|(?<=[\s(\[{:;\"'“”‘’]))([+-])?(\d{1,3}(?:,\d{3})+)\.(\d+)\b(?![.,]\d)"
+)
+_EN_THOUSANDS_RE = re.compile(
+    r"(?:(?<=^)|(?<=[\s(\[{:;\"'“”‘’]))([+-])?(\d{1,3}(?:,\d{3}){2,})\b(?![.,]\d)"
+)
+_VN_THOUSANDS_RE = re.compile(
+    r"(?:(?<=^)|(?<=[\s(\[{:;\"'“”‘’]))([+-])?(\d{1,3}(?:\.\d{3})+)\b(?![.,]\d)"
+)
+_COMMA_DEC_RE = re.compile(
+    r"(?:(?<=^)|(?<=[\s(\[{:;\"'“”‘’]))([+-])?(\d+),(\d+)\b(?![.,]\d)"
+)
+_DOT_DEC_RE = re.compile(
+    r"(?:(?<=^)|(?<=[\s(\[{:;\"'“”‘’]))([+-])?(\d+)\.(\d+)\b(?![.,]\d)"
+)
+_SIGNED_INT_RE = re.compile(
+    r"(?:(?<=^)|(?<=[\s(\[{:;\"'“”‘’]))([+-])?(\d+)\b(?![.,]\d)"
+)
+
 _RES_MAP = {
     "360": "ba sáu mươi",
     "480": "bốn tám mươi",
@@ -616,22 +641,14 @@ def normalize_vietnamese_text(text: str) -> str:
         s,
     )
 
-    # 8. Atomic signed & unsigned numeric forms
-    # Allow punctuation such as ':', ';', quotes, and brackets before complete numbers
-    # while excluding '.' and '/' so partial IP/version fragments are never matched.
-    left_bnd = r"(?:(?<=^)|(?<=[\s(\[{:;\"'“”‘’]))"
-
+    # 8. Atomic signed & unsigned numeric forms (complete-token boundaries on both sides)
     def _repl_vn_mixed(m: re.Match) -> str:
         sign = _resolve_sign_prefix(m.group(1), s, m.start())
         int_w = read_int(int(m.group(2).replace(".", "")))
         dec_w = read_digits_verbatim(m.group(3))
         return f"{sign}{int_w} phẩy {dec_w}"
 
-    s = re.sub(
-        rf"{left_bnd}([+-])?(\d{{1,3}}(?:\.\d{{3}})+),(\d+)\b",
-        _repl_vn_mixed,
-        s,
-    )
+    s = _VN_MIXED_RE.sub(_repl_vn_mixed, s)
 
     def _repl_en_mixed(m: re.Match) -> str:
         sign = _resolve_sign_prefix(m.group(1), s, m.start())
@@ -639,31 +656,19 @@ def normalize_vietnamese_text(text: str) -> str:
         dec_w = read_digits_verbatim(m.group(3))
         return f"{sign}{int_w} chấm {dec_w}"
 
-    s = re.sub(
-        rf"{left_bnd}([+-])?(\d{{1,3}}(?:,\d{{3}})+)\.(\d+)\b",
-        _repl_en_mixed,
-        s,
-    )
+    s = _EN_MIXED_RE.sub(_repl_en_mixed, s)
 
     def _repl_en_thousands(m: re.Match) -> str:
         sign = _resolve_sign_prefix(m.group(1), s, m.start())
         return f"{sign}{read_int(int(m.group(2).replace(',', '')))}"
 
-    s = re.sub(
-        rf"{left_bnd}([+-])?(\d{{1,3}}(?:,\d{{3}}){{2,}})\b",
-        _repl_en_thousands,
-        s,
-    )
+    s = _EN_THOUSANDS_RE.sub(_repl_en_thousands, s)
 
     def _repl_vn_thousands(m: re.Match) -> str:
         sign = _resolve_sign_prefix(m.group(1), s, m.start())
         return f"{sign}{read_int(int(m.group(2).replace('.', '')))}"
 
-    s = re.sub(
-        rf"{left_bnd}([+-])?(\d{{1,3}}(?:\.\d{{3}})+)\b(?![.,]\d)",
-        _repl_vn_thousands,
-        s,
-    )
+    s = _VN_THOUSANDS_RE.sub(_repl_vn_thousands, s)
 
     def _repl_comma_dec(m: re.Match) -> str:
         sign = _resolve_sign_prefix(m.group(1), s, m.start())
@@ -671,11 +676,7 @@ def normalize_vietnamese_text(text: str) -> str:
         dec_w = read_digits_verbatim(m.group(3))
         return f"{sign}{int_w} phẩy {dec_w}"
 
-    s = re.sub(
-        rf"{left_bnd}([+-])?(\d+),(\d+)\b",
-        _repl_comma_dec,
-        s,
-    )
+    s = _COMMA_DEC_RE.sub(_repl_comma_dec, s)
 
     def _repl_dot_dec(m: re.Match) -> str:
         sign = _resolve_sign_prefix(m.group(1), s, m.start())
@@ -683,18 +684,14 @@ def normalize_vietnamese_text(text: str) -> str:
         dec_w = read_digits_verbatim(m.group(3))
         return f"{sign}{int_w} chấm {dec_w}"
 
-    s = re.sub(
-        rf"{left_bnd}([+-])?(\d+)\.(\d+)\b",
-        _repl_dot_dec,
-        s,
-    )
+    s = _DOT_DEC_RE.sub(_repl_dot_dec, s)
 
     # 9. Remaining signed & unsigned standalone integers
     def _repl_signed_int(m: re.Match) -> str:
         sign = _resolve_sign_prefix(m.group(1), s, m.start())
         return f"{sign}{read_int(int(m.group(2)))}"
 
-    s = re.sub(rf"{left_bnd}([+-])?(\d+)\b", _repl_signed_int, s)
+    s = _SIGNED_INT_RE.sub(_repl_signed_int, s)
 
     s = re.sub(r"\s+([,.;:!?])", r"\1", s)
     s = re.sub(r"\s+", " ", s).strip()
