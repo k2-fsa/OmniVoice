@@ -296,16 +296,19 @@ def _get_en_normalizer():
 
 
 def _resolve_lang_code(language: Optional[str], text: str) -> str:
-    """Map a language name/code to ``"zh"``/``"en"``/other code.
+    """Map a language name/code to ``"zh"``/``"en"``/``"vi"``/other code.
 
     When ``language`` is ``None`` (or unrecognized), fall back to detecting
-    Chinese vs. English by the presence of CJK characters.
+    Chinese (CJK characters), Vietnamese (Vietnamese-specific precomposed
+    diacritics), or English.
     """
     if language is not None:
         code = language.strip().lower()
         if code and code != "none":
-            if code in ("zh", "en"):
+            if code in ("zh", "en", "vi"):
                 return code
+            if code == "vie":
+                return "vi"
             try:
                 from omnivoice.utils.lang_map import LANG_IDS, LANG_NAME_TO_ID
 
@@ -316,7 +319,13 @@ def _resolve_lang_code(language: Optional[str], text: str) -> str:
             except Exception:  # pragma: no cover - lang_map should be importable
                 pass
             return code  # assume it is already a language id, e.g. "ja", "de"
-    return "zh" if _CJK_RE.search(text) else "en"
+    if _CJK_RE.search(text):
+        return "zh"
+    from omnivoice.utils.vi_normalizer import has_vietnamese_diacritics
+
+    if has_vietnamese_diacritics(text):
+        return "vi"
+    return "en"
 
 
 def _num2words_segment(text: str, lang: str) -> str:
@@ -391,9 +400,10 @@ def _apply_with_protection(
 def normalize_text(text: str, language: Optional[str] = None) -> str:
     """Normalize numbers, dates, currency, etc. into their spoken form.
 
-    Chinese is routed to WeTextProcessing's ``ZhNormalizer`` and English to its
-    ``EnNormalizer`` (configured to only rewrite numeric/symbolic tokens). Any
-    other language falls back to ``num2words`` for bare integers when it is
+    Chinese is routed to WeTextProcessing's ``ZhNormalizer``, English to its
+    ``EnNormalizer`` (configured to only rewrite numeric/symbolic tokens), and
+    Vietnamese to the built-in zero-dependency ``normalize_vietnamese_text``.
+    Any other language falls back to ``num2words`` for bare integers when it is
     installed, otherwise the text is returned unchanged.
 
     Inline OmniVoice control syntax is preserved: bracketed non-verbal tags
@@ -403,8 +413,9 @@ def normalize_text(text: str, language: Optional[str] = None) -> str:
 
     Args:
         text: Input text.
-        language: Language code (``"en"``/``"zh"``) or full name (``"English"``).
-            ``None`` auto-detects Chinese vs. English by script.
+        language: Language code (``"en"``/``"zh"``/``"vi"``) or full name
+            (``"English"``/``"Vietnamese"``). ``None`` auto-detects Chinese,
+            Vietnamese, or English by script/diacritics.
 
     Returns:
         The normalized text.
@@ -423,6 +434,12 @@ def normalize_text(text: str, language: Optional[str] = None) -> str:
     if code == "en":
         normalizer = _get_en_normalizer()
         return _apply_with_protection(text, normalizer.normalize, protect_pinyin=False)
+    if code in ("vi", "vie"):
+        from omnivoice.utils.vi_normalizer import normalize_vietnamese_text
+
+        return _apply_with_protection(
+            text, normalize_vietnamese_text, protect_pinyin=False
+        )
     # Other languages: best-effort integer conversion via num2words.
     return _apply_with_protection(
         text, lambda s: _num2words_segment(s, code), protect_pinyin=False
