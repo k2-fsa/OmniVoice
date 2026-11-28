@@ -35,6 +35,8 @@ OmniVoice is a state-of-the-art massively multilingual zero-shot text-to-speech 
 
 Choose **one** of the following methods: **pip** or **uv**.
 
+Importing `omnivoice` and using its file/bytes audio helpers do not require `torchaudio`; resampling uses the existing `librosa` dependency. Accessing the top-level model classes currently requires `torchaudio` through the Transformers Higgs audio-tokenizer. Install the optional `audio-tools` extra (`pip install 'omnivoice[audio-tools]'`) for model loading and for data-preparation, denoising, and evaluation scripts.
+
 ### pip
 
 > We recommend using a fresh virtual environment (e.g., `conda`, `venv`, etc.) to avoid conflicts.
@@ -89,32 +91,36 @@ python -c "import torch; print(torch.xpu.is_available(), torch.xpu.device_count(
 
 </details>
 
-**Step 2**: Install OmniVoice (choose one)
+**Step 2**: Install OmniVoice for model loading and audio-tool scripts (choose one)
 
 ```bash
 # From PyPI (stable release)
-pip install omnivoice
+pip install 'omnivoice[audio-tools]'
 
 # From the latest source on GitHub (no need to clone)
-pip install git+https://github.com/k2-fsa/OmniVoice.git
+pip install 'omnivoice[audio-tools] @ git+https://github.com/k2-fsa/OmniVoice.git'
 
 # For development (clone first, editable install)
 git clone https://github.com/k2-fsa/OmniVoice.git
 cd OmniVoice
-pip install -e .
+pip install -e '.[audio-tools]'
 ```
 
 ### uv
 
-Clone the repository and sync dependencies:
+Clone the repository and sync dependencies for model loading and audio-tool scripts:
 
 ```bash
 git clone https://github.com/k2-fsa/OmniVoice.git
 cd OmniVoice
-uv sync
+uv sync --extra audio-tools
 ```
 
-> **Tip**: Can use mirror with `uv sync --default-index "https://mirrors.aliyun.com/pypi/simple"`
+Use plain `uv sync` for the audio file and bytes helpers. A subsequent sync without the extra removes `torchaudio` from the project environment.
+
+If uv selects Python 3.14 on Windows or Linux, add `--python 3.13` to the sync command for the locked PyTorch wheels.
+
+> **Tip**: To use a PyPI mirror, add `--default-index "https://mirrors.aliyun.com/pypi/simple"` to the sync command.
 
 ---
 

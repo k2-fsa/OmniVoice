@@ -31,7 +31,6 @@ classifiers = [
 ]
 dependencies = [
     "torch>=2.4",
-    "torchaudio>=2.4",
     "transformers>=5.3.0",
     "accelerate",
     "pydub",
@@ -44,6 +43,10 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+
+audio-tools = [
+    "torchaudio>=2.4",  # Data preparation, denoising, and evaluation scripts.
+]
 
 tn = [
     "WeTextProcessing",   # zh/en text normalization (numbers, dates, currency)
