@@ -3,6 +3,7 @@ import sys
 from pathlib import Path
 
 import numpy as np
+import torch
 
 from omnivoice.utils.audio import resample_audio
 
@@ -14,6 +15,20 @@ def test_resample_audio_preserves_channels_and_float32():
 
     assert resampled.shape == (2, 800)
     assert resampled.dtype == np.float32
+
+
+def test_resample_audio_accepts_float16_reference_waveform():
+    waveform = torch.linspace(-0.5, 0.5, 1600, dtype=torch.float16).numpy()
+    waveform = waveform[np.newaxis, :]
+    resampled = resample_audio(waveform, orig_freq=16000, new_freq=8000)
+    expected = resample_audio(
+        waveform.astype(np.float32), orig_freq=16000, new_freq=8000
+    )
+
+    assert waveform.dtype == np.float16
+    assert resampled.shape == (1, 800)
+    assert resampled.dtype == np.float32
+    np.testing.assert_array_equal(resampled, expected)
 
 
 def test_import_omnivoice_without_torchaudio():

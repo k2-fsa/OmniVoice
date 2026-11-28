@@ -72,6 +72,9 @@ def resample_audio(data: np.ndarray, orig_freq: int, new_freq: int) -> np.ndarra
 
     import librosa
 
+    if data.dtype == np.float16:
+        data = data.astype(np.float32)
+
     return librosa.resample(
         data,
         orig_sr=orig_freq,
